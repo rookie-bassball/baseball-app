@@ -1196,10 +1196,67 @@
     .quiz-retry-btn:hover { background: #e8eaf6; }
 
     ruby rt { font-size: 0.55em; letter-spacing: 0.04em; }
+
+    /* ===== スプラッシュ画面 ===== */
+    #splash {
+      position: fixed; inset: 0; z-index: 99999;
+      background: linear-gradient(160deg, #0d1b6e 0%, #1a237e 50%, #283593 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+    #splash.hide { opacity: 0; pointer-events: none; }
+    #splash-icon {
+      width: 110px; height: 110px; border-radius: 26px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+      margin-bottom: 22px;
+      animation: splashIconIn 0.5s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    #splash-title {
+      color: white; font-size: 28px; font-weight: 900;
+      letter-spacing: 3px; margin-bottom: 4px;
+      animation: splashFadeUp 0.5s 0.15s ease both;
+    }
+    #splash-sub {
+      color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 600;
+      letter-spacing: 1px; margin-bottom: 36px;
+      animation: splashFadeUp 0.5s 0.25s ease both;
+    }
+    #splash-bar-wrap {
+      width: 120px; height: 4px; background: rgba(255,255,255,0.15);
+      border-radius: 2px; overflow: hidden;
+      animation: splashFadeUp 0.5s 0.3s ease both;
+    }
+    #splash-bar {
+      height: 100%; background: rgba(255,255,255,0.85);
+      border-radius: 2px;
+      animation: splashSlide 1.4s 0.4s ease-in-out infinite;
+    }
+    @keyframes splashIconIn {
+      from { opacity:0; transform: scale(0.7); }
+      to   { opacity:1; transform: scale(1); }
+    }
+    @keyframes splashFadeUp {
+      from { opacity:0; transform: translateY(10px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    @keyframes splashSlide {
+      0%   { width:0%;   margin-left:0%; }
+      50%  { width:70%;  margin-left:15%; }
+      100% { width:0%;   margin-left:100%; }
+    }
   </style>
 </head>
 <body>
 <div id="root"></div>
+
+<!-- スプラッシュ画面（JS不要・即座に表示・React起動後にフェードアウト） -->
+<div id="splash">
+  <img id="splash-icon" src="icons/icon-192.png" alt="ROOKIE" />
+  <div id="splash-title">⚾ ROOKIE</div>
+  <div id="splash-sub">BASEBALL</div>
+  <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
+</div>
 
 <script type="text/babel">
 const { useState, useRef } = React;
@@ -2826,6 +2883,14 @@ function playHankoSound() {
 
 // ===== メインアプリ =====
 function App() {
+  // スプラッシュ画面をフェードアウトして除去（React初回レンダー後）
+  React.useEffect(() => {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+    splash.classList.add('hide');
+    setTimeout(() => splash.remove(), 450);
+  }, []);
+
   const [tab, setTab]         = useState(() => window.innerWidth <= 768 ? 'home' : 'practice');
   const [data, setData]       = useState(loadData);
   const [modal, setModal]     = useState(null);
