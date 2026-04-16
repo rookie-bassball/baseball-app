@@ -4,10 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ROOKIE BASEBALL</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#1a237e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ROOKIE" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- 画像プリロード（カード・学習用）-->
+  <link rel="preload" as="image" href="images/field_positions.png" />
+  <link rel="preload" as="image" href="images/base_running.png" />
+  <link rel="preload" as="image" href="images/strike_zone.png" />
+  <link rel="preload" as="image" href="images/card_lv01_meet.png" />
+  <link rel="preload" as="image" href="images/card_lv01_speed.png" />
+  <link rel="preload" as="image" href="images/card_lv01_defense.png" />
+  <link rel="preload" as="image" href="images/card_lv01_arm.png" />
+  <link rel="preload" as="image" href="images/card_lv01_pitcher.png" />
+  <link rel="preload" as="image" href="images/card_lv01_all.png" />
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Service Worker 登録 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { overflow-x: hidden; }
@@ -6463,6 +6492,36 @@ function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<!-- 残りのカード画像・効果音をバックグラウンドでプリロード -->
+<script>
+window.addEventListener('load', () => {
+  const images = [
+    'card_lv05_meet','card_lv05_speed','card_lv05_defense','card_lv05_arm','card_lv05_pitcher','card_lv05_all',
+    'card_lv10_meet','card_lv10_speed','card_lv10_defense','card_lv10_arm','card_lv10_pitcher','card_lv10_all',
+    'card_lv15_meet','card_lv15_speed','card_lv15_defense','card_lv15_arm','card_lv15_pitcher','card_lv15_all',
+    'card_lv20_meet','card_lv20_speed','card_lv20_defense','card_lv20_arm','card_lv20_pitcher','card_lv20_all',
+    'card_lv25_meet','card_lv25_speed','card_lv25_defense','card_lv25_arm','card_lv25_pitcher','card_lv25_all',
+    'card_lv30_meet','card_lv30_speed','card_lv30_defense','card_lv30_arm','card_lv30_pitcher','card_lv30_all',
+    'card_lv50_meet','card_lv50_speed','card_lv50_defense','card_lv50_arm','card_lv50_pitcher','card_lv50_all',
+  ];
+  const sounds = [
+    'hanko.mp3','get_card.mp3','menu_select.mp3',
+    'quiz_correct.mp3','quiz_question.mp3','quiz_wrong.mp3','upgrade.mp3'
+  ];
+
+  // 画像：Imageオブジェクトで非同期プリロード
+  images.forEach(name => {
+    const img = new Image();
+    img.src = 'images/' + name + '.png';
+  });
+
+  // 効果音：fetchでService Workerキャッシュに乗せる
+  sounds.forEach(name => {
+    fetch('sounds/' + name).catch(() => {});
+  });
+});
 </script>
 </body>
 </html>

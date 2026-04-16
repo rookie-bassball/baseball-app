@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#1a237e"/>
+  <circle cx="256" cy="220" r="120" fill="white" stroke="#c62828" stroke-width="8"/>
+  <!-- 野球のステッチライン -->
+  <path d="M175 170 Q210 220 175 270" fill="none" stroke="#c62828" stroke-width="10" stroke-linecap="round"/>
+  <path d="M337 170 Q302 220 337 270" fill="none" stroke="#c62828" stroke-width="10" stroke-linecap="round"/>
+  <!-- 小さなステッチ -->
+  <path d="M182 185 L195 195 M182 255 L195 245" fill="none" stroke="#c62828" stroke-width="6" stroke-linecap="round"/>
+  <path d="M330 185 L317 195 M330 255 L317 245" fill="none" stroke="#c62828" stroke-width="6" stroke-linecap="round"/>
+  <!-- テキスト -->
+  <text x="256" y="410" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="58" font-weight="900" fill="white" letter-spacing="2">ROOKIE</text>
+</svg>
