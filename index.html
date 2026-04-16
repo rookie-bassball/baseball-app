@@ -4425,6 +4425,8 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
   }, [pendingCardDetail]);
 
   function toggleLevel(lv) {
+    const isOpening = !openLevels.has(lv);
+    if (isOpening) playSound('menu_select.mp3', 1.0); // 開くときだけ鳴らす
     setOpenLevels(prev => {
       const next = new Set(prev);
       next.has(lv) ? next.delete(lv) : next.add(lv);
@@ -5751,7 +5753,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
           <div style={{display:'flex', gap:6, marginBottom:16}}>
             {diffConfig.map(d=>(
               <button key={d.key}
-                onClick={()=>{ onDiffFilterChange(d.key); setView('list'); }}
+                onClick={()=>{ playSound('menu_select.mp3', 1.0); onDiffFilterChange(d.key); setView('list'); }}
                 style={{flex:1, padding:'8px 4px', border:`2px solid ${diffFilter===d.key?d.color:'#e0e0e0'}`,
                         borderRadius:10, fontWeight:'bold', fontSize:12, cursor:'pointer',
                         background: diffFilter===d.key ? d.bg : 'white',
@@ -5764,7 +5766,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
             const cleared = state === 'cleared';
             const locked = state === 'locked';
             return (
-              <div key={sec.key} onClick={()=>{ if(!locked) openSection(sec); }}
+              <div key={sec.key} onClick={()=>{ if(!locked) { playSound('menu_select.mp3', 1.0); openSection(sec); } }}
                 style={{background: cleared ? '#e8f5e9' : locked ? '#f5f5f5' : 'white',
                         borderRadius:14, marginBottom:10, padding:'14px 18px',
                         border:`1.5px solid ${cleared ? dc.color+'66' : locked ? '#e0e0e0' : dc.color+'33'}`,
