@@ -3305,6 +3305,7 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
   const [targetEditMode, setTargetEditMode] = React.useState(false);
   const [targetPinInput, setTargetPinInput] = React.useState('');
   const [targetPinError, setTargetPinError] = React.useState('');
+  const [targetPinVerified, setTargetPinVerified] = React.useState(false); // PIN認証済みフラグ
   const [targetInputs, setTargetInputs]     = React.useState(() => {
     const init = {};
     MENUS.forEach(m => {
@@ -3482,10 +3483,12 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
                     onTargetsChange(next);
                     setTargetSaved(true);
                     setTargetEditMode(false);
+                    setTargetPinVerified(false); // 保存後は再認証が必要
                   }}>保存する</button>
                   <button className="pin-del-btn" onClick={() => {
                     setTargetEditMode(false);
                     setTargetPinInput(''); setTargetPinError('');
+                    setTargetPinVerified(false); // キャンセル後は再認証が必要
                     // 入力値をリセット
                     const init = {};
                     MENUS.forEach(m => {
@@ -3499,8 +3502,8 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
               </>
             ) : (
               <>
-                {/* PINがある場合はPIN入力、なければ直接編集 */}
-                {hasPin && !targetPinInput.length ? (
+                {/* PINがある場合はPIN認証が必要 */}
+                {hasPin && !targetPinVerified ? (
                   <div style={{marginTop:10}}>
                     <div style={{fontSize:12, color:'#c62828', fontWeight:700, marginBottom:6}}>
                       🔐 編集するには保護者PINコードが必要です
@@ -3512,18 +3515,20 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
                         onChange={e => { setTargetPinInput(e.target.value.replace(/\D/g,'')); setTargetPinError(''); }}
                         placeholder="4桁のPIN"
                         style={{width:110, padding:'6px 10px', fontSize:15, borderRadius:8,
-                          border:'1.5px solid #e8eaf6', textAlign:'center', letterSpacing:4}}
+                          border:`1.5px solid ${targetPinError ? '#c62828' : '#e8eaf6'}`,
+                          textAlign:'center', letterSpacing:4}}
                       />
                       <button className="pin-set-btn" onClick={() => {
-                        if (targetPinInput !== getPin()) { setTargetPinError('PINが違います'); return; }
-                        setTargetEditMode(true); setTargetSaved(false);
+                        if (targetPinInput.length !== 4) { setTargetPinError('4桁のPINを入力してください'); return; }
+                        if (targetPinInput !== getPin()) { setTargetPinError('PINが違います'); setTargetPinInput(''); return; }
+                        setTargetPinVerified(true); setTargetPinError(''); setTargetPinInput('');
                       }}>確認</button>
                     </div>
                     {targetPinError && <div style={{fontSize:12, color:'#c62828', marginTop:4}}>{targetPinError}</div>}
                   </div>
                 ) : (
                   <button className="pin-set-btn" style={{marginTop:10}}
-                    onClick={() => { setTargetEditMode(true); setTargetSaved(false); setTargetPinInput(''); }}>
+                    onClick={() => { setTargetEditMode(true); setTargetSaved(false); }}>
                     目標を編集する
                   </button>
                 )}
