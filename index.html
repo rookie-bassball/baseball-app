@@ -988,7 +988,7 @@
       .bottom-nav {
         display: flex;
         position: fixed; bottom: 0; left: 0; right: 0;
-        height: calc(58px + env(safe-area-inset-bottom));
+        height: calc(68px + env(safe-area-inset-bottom));
         padding-bottom: env(safe-area-inset-bottom);
         background: linear-gradient(180deg, #1a237e 0%, #283593 100%);
         z-index: 200;
@@ -996,14 +996,15 @@
       }
       .bottom-nav-item {
         flex: 1; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; gap: 3px;
+        align-items: center; justify-content: center; gap: 4px;
         cursor: pointer; position: relative;
-        color: rgba(255,255,255,0.5); font-size: 19px;
+        color: rgba(255,255,255,0.5); font-size: 22px;
         transition: color 0.15s;
         -webkit-tap-highlight-color: transparent;
+        min-height: 68px;
       }
       .bottom-nav-item.active { color: #ffd54f; }
-      .bottom-nav-item-label { font-size: 9px; font-weight: 700; letter-spacing: 0.3px; }
+      .bottom-nav-item-label { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
       .bottom-nav-badge {
         position: absolute; top: 6px; right: calc(50% - 18px);
         background: #ff5252; color: white; border-radius: 50%;
@@ -1012,7 +1013,7 @@
       }
 
       /* mainのbottom余白（ボトムナビ分） */
-      .main { padding-bottom: calc(58px + env(safe-area-inset-bottom) + 16px); }
+      .main { padding-bottom: calc(68px + env(safe-area-inset-bottom) + 16px); }
 
       /* スタンプバナー（白カード統一） */
       .mobile-stamp-banner {
@@ -2875,7 +2876,7 @@ function App() {
     setInputVal('');
     setModal(menu);
     setTimeout(() => inputRef.current?.focus(), 80);
-    playSound('menu_select.mp3', 0.6);
+    playSound('menu_select.mp3', 0.35);
   }
 
   // バッジ通知キュー処理
@@ -3292,7 +3293,7 @@ function App() {
             <div
               key={n.id}
               className={`nav-item ${tab === n.id ? 'active' : ''}`}
-              onClick={() => { playSound('menu_select.mp3', 0.6); setTab(n.id); }}
+              onClick={() => { playSound('menu_select.mp3', 0.35); setTab(n.id); }}
             >
               <span className="nav-icon"><i className={`fa-solid ${n.icon}`} /></span>
               <span><Furi t={n.labelRuby} /></span>
@@ -3315,7 +3316,7 @@ function App() {
           <div
             key={n.id}
             className={`bottom-nav-item ${tab === n.id ? 'active' : ''}`}
-            onClick={() => { playSound('menu_select.mp3', 0.6); setTab(n.id); }}
+            onClick={() => { playSound('menu_select.mp3', 0.35); setTab(n.id); }}
           >
             <i className={`fa-solid ${n.icon}`} />
             <span className="bottom-nav-item-label">{n.labelStr}</span>
@@ -3818,7 +3819,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
       )}
 
       {/* ③ プロフィール */}
-      <div className="mobile-profile-card" onClick={() => { playSound('menu_select.mp3', 0.6); onNavigate('profile'); }}>
+      <div className="mobile-profile-card" onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('profile'); }}>
         <div className="mobile-profile-avatar">🏆</div>
         <div className="mobile-profile-info">
           <div className="mobile-profile-level">Lv.{profileLevel} · {profileTitle}</div>
@@ -3835,7 +3836,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
           marginBottom:10, boxShadow:'0 2px 12px rgba(0,0,0,0.08)',
           border:'1.5px solid #e8eaf6', display:'flex', alignItems:'center',
           gap:12, cursor:'pointer', textAlign:'left', WebkitTapHighlightColor:'transparent'}}
-        onClick={() => { playSound('menu_select.mp3', 0.6); setSettingsOpen(true); }}
+        onClick={() => { playSound('menu_select.mp3', 0.35); setSettingsOpen(true); }}
       >
         <div style={{width:46, height:46, borderRadius:14, flexShrink:0,
           background:'linear-gradient(135deg,#37474f,#607d8b)',
@@ -4426,7 +4427,7 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
 
   function toggleLevel(lv) {
     const isOpening = !openLevels.has(lv);
-    if (isOpening) playSound('menu_select.mp3', 0.6); // 開くときだけ鳴らす
+    if (isOpening) playSound('menu_select.mp3', 0.35); // 開くときだけ鳴らす
     setOpenLevels(prev => {
       const next = new Set(prev);
       next.has(lv) ? next.delete(lv) : next.add(lv);
@@ -5744,7 +5745,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
     if (view === 'list') {
       return (
         <>
-          <button onClick={()=>{ playSound('menu_select.mp3', 0.6); onBackToTop(); }}
+          <button onClick={()=>{ playSound('menu_select.mp3', 0.35); onBackToTop(); }}
             style={{display:'flex', alignItems:'center', gap:8, background:'none', border:'1.5px solid #9fa8da',
                     borderRadius:10, padding:'8px 16px', cursor:'pointer', color:'#3f51b5',
                     fontWeight:'bold', fontSize:13, marginBottom:16}}>
@@ -5753,7 +5754,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
           <div style={{display:'flex', gap:6, marginBottom:16}}>
             {diffConfig.map(d=>(
               <button key={d.key}
-                onClick={()=>{ playSound('menu_select.mp3', 0.6); onDiffFilterChange(d.key); setView('list'); }}
+                onClick={()=>{ playSound('menu_select.mp3', 0.35); onDiffFilterChange(d.key); setView('list'); }}
                 style={{flex:1, padding:'8px 4px', border:`2px solid ${diffFilter===d.key?d.color:'#e0e0e0'}`,
                         borderRadius:10, fontWeight:'bold', fontSize:12, cursor:'pointer',
                         background: diffFilter===d.key ? d.bg : 'white',
@@ -5766,7 +5767,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
             const cleared = state === 'cleared';
             const locked = state === 'locked';
             return (
-              <div key={sec.key} onClick={()=>{ if(!locked) { playSound('menu_select.mp3', 0.6); openSection(sec); } }}
+              <div key={sec.key} onClick={()=>{ if(!locked) { playSound('menu_select.mp3', 0.35); openSection(sec); } }}
                 style={{background: cleared ? '#e8f5e9' : locked ? '#f5f5f5' : 'white',
                         borderRadius:14, marginBottom:10, padding:'14px 18px',
                         border:`1.5px solid ${cleared ? dc.color+'66' : locked ? '#e0e0e0' : dc.color+'33'}`,
@@ -5791,7 +5792,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       const cleared = progress[activeSec.key] === 'cleared';
       return (
         <div>
-          <button onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('list'); }}
+          <button onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('list'); }}
             style={{background:'none', border:'1.5px solid #9fa8da', borderRadius:20, padding:'6px 16px',
                     color:'#3f51b5', fontWeight:'bold', fontSize:13, cursor:'pointer', marginBottom:14}}>
             ＜ もどる
@@ -5817,7 +5818,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       return (
         <div>
           <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:16}}>
-            <button onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('reading'); }}
+            <button onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('reading'); }}
               style={{background:'none', border:'1.5px solid #9fa8da', borderRadius:20, padding:'6px 14px',
                       color:'#3f51b5', fontWeight:'bold', fontSize:12, cursor:'pointer'}}>
               ＜ もどる
@@ -6159,7 +6160,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
           <div style={{display:'flex', flexDirection:'column', gap:16, marginTop:8}}>
             {/* 覚えようカード */}
             <button
-              onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('kiso'); }}
+              onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('kiso'); }}
               style={{
                 background:'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
                 border:'none', borderRadius:20, padding:'28px 24px',
@@ -6189,7 +6190,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
             {/* テストカード */}
             <button
-              onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('test'); }}
+              onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('test'); }}
               style={{
                 background:'linear-gradient(135deg, #e65100 0%, #ff8f00 100%)',
                 border:'none', borderRadius:20, padding:'28px 24px',
@@ -6216,7 +6217,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
             </button>
             {/* 宿題カード */}
             <button
-              onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('homework'); }}
+              onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('homework'); }}
               style={{
                 background: homeworkDoneToday
                   ? 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)'
@@ -6259,7 +6260,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       {view === 'test' && (
         <>
           <button
-            onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('top'); }}
+            onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('top'); }}
             style={{display:'flex', alignItems:'center', gap:8, background:'none', border:'1.5px solid #9fa8da',
                     borderRadius:10, padding:'8px 16px', cursor:'pointer', color:'#3f51b5',
                     fontWeight:'bold', fontSize:13, marginBottom:16}}
@@ -6274,7 +6275,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       {view === 'homework' && (
         <>
           <button
-            onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('top'); }}
+            onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('top'); }}
             style={{display:'flex', alignItems:'center', gap:8, background:'none', border:'1.5px solid #9fa8da',
                     borderRadius:10, padding:'8px 16px', cursor:'pointer', color:'#3f51b5',
                     fontWeight:'bold', fontSize:13, marginBottom:16}}
