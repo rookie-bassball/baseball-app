@@ -5744,11 +5744,11 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
     if (view === 'list') {
       return (
         <>
-          <button onClick={onBackToTop}
+          <button onClick={()=>{ playSound('menu_select.mp3', 0.6); onBackToTop(); }}
             style={{display:'flex', alignItems:'center', gap:8, background:'none', border:'1.5px solid #9fa8da',
                     borderRadius:10, padding:'8px 16px', cursor:'pointer', color:'#3f51b5',
                     fontWeight:'bold', fontSize:13, marginBottom:16}}>
-            <i className="fa-solid fa-chevron-left" /> <Furi t="{戻|もど}る" />
+            <i className="fa-solid fa-chevron-left" /> もどる
           </button>
           <div style={{display:'flex', gap:6, marginBottom:16}}>
             {diffConfig.map(d=>(
@@ -5791,7 +5791,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       const cleared = progress[activeSec.key] === 'cleared';
       return (
         <div>
-          <button onClick={()=>setView('list')}
+          <button onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('list'); }}
             style={{background:'none', border:'1.5px solid #9fa8da', borderRadius:20, padding:'6px 16px',
                     color:'#3f51b5', fontWeight:'bold', fontSize:13, cursor:'pointer', marginBottom:14}}>
             ＜ もどる
@@ -5817,7 +5817,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       return (
         <div>
           <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:16}}>
-            <button onClick={()=>setView('reading')}
+            <button onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('reading'); }}
               style={{background:'none', border:'1.5px solid #9fa8da', borderRadius:20, padding:'6px 14px',
                       color:'#3f51b5', fontWeight:'bold', fontSize:12, cursor:'pointer'}}>
               ＜ もどる
@@ -6259,12 +6259,12 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       {view === 'test' && (
         <>
           <button
-            onClick={()=>setView('top')}
+            onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('top'); }}
             style={{display:'flex', alignItems:'center', gap:8, background:'none', border:'1.5px solid #9fa8da',
                     borderRadius:10, padding:'8px 16px', cursor:'pointer', color:'#3f51b5',
                     fontWeight:'bold', fontSize:13, marginBottom:16}}
           >
-            <i className="fa-solid fa-chevron-left" /> <Furi t="{戻|もど}る" />
+            <i className="fa-solid fa-chevron-left" /> もどる
           </button>
           <TestSection doneTodayList={doneTodayList} />
         </>
@@ -6274,12 +6274,12 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       {view === 'homework' && (
         <>
           <button
-            onClick={()=>setView('top')}
+            onClick={()=>{ playSound('menu_select.mp3', 0.6); setView('top'); }}
             style={{display:'flex', alignItems:'center', gap:8, background:'none', border:'1.5px solid #9fa8da',
                     borderRadius:10, padding:'8px 16px', cursor:'pointer', color:'#3f51b5',
                     fontWeight:'bold', fontSize:13, marginBottom:16}}
           >
-            <i className="fa-solid fa-chevron-left" /> <Furi t="{戻|もど}る" />
+            <i className="fa-solid fa-chevron-left" /> もどる
           </button>
 
           <div style={{background:'white', borderRadius:20, padding:'28px 24px', border:'1.5px solid #c8e6c9', boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
