@@ -1,0 +1,11 @@
+# sw.js は絶対にキャッシュさせない（更新が即反映されるように）
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# manifest.json も最新を常に返す
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache"

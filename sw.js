@@ -1,5 +1,5 @@
 // Service Worker for ROOKIE BASEBALL
-const CACHE_NAME = 'rookie-baseball-v1';
+const CACHE_NAME = 'rookie-baseball-v2';
 
 // キャッシュするファイル一覧
 const ASSETS = [

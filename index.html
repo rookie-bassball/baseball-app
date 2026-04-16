@@ -1255,11 +1255,35 @@ const TARGETS_STORAGE_KEY = 'baseball_app_targets';
 function getDailyTargets()        { try { return JSON.parse(localStorage.getItem(TARGETS_STORAGE_KEY) || '{}'); } catch { return {}; } }
 function saveDailyTargets(obj)    { localStorage.setItem(TARGETS_STORAGE_KEY, JSON.stringify(obj)); }
 
-// 効果音ユーティリティ（isSoundEnabled を毎回参照するので常に最新状態を反映）
+// 効果音プリロードキャッシュ（起動時にデコード済みAudioを保持）
+const _audioCache = {};
+const SOUND_FILES = ['hanko.mp3','get_card.mp3','menu_select.mp3','quiz_correct.mp3','quiz_question.mp3','quiz_wrong.mp3','upgrade.mp3'];
+function _preloadSounds() {
+  SOUND_FILES.forEach(file => {
+    try {
+      const a = new Audio('sounds/' + file);
+      a.load();
+      _audioCache[file] = a;
+    } catch(e) {}
+  });
+}
+// DOMロード後にプリロード開始
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _preloadSounds);
+} else {
+  _preloadSounds();
+}
+
+// 効果音ユーティリティ（キャッシュ済みAudioをcloneして即再生）
 function playSound(file, volume) {
   if (!isSoundEnabled()) return;
   try {
-    const a = new Audio('sounds/' + file);
+    let a;
+    if (_audioCache[file]) {
+      a = _audioCache[file].cloneNode(); // デコード済みをクローン → ラグなし
+    } else {
+      a = new Audio('sounds/' + file);
+    }
     if (volume !== undefined) a.volume = volume;
     a.play();
   } catch(e) {}
@@ -6517,10 +6541,12 @@ window.addEventListener('load', () => {
     img.src = 'images/' + name + '.png';
   });
 
-  // 効果音：fetchでService Workerキャッシュに乗せる
+  // 効果音：fetchでService Workerキャッシュに乗せる（_preloadSoundsとは別にSWキャッシュを確実に埋める）
   sounds.forEach(name => {
     fetch('sounds/' + name).catch(() => {});
   });
+  // _audioCache を再プリロード（loadイベント後に確実に実行）
+  if (typeof _preloadSounds === 'function') _preloadSounds();
 });
 </script>
 </body>
