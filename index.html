@@ -4460,6 +4460,8 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
   const dateLabel = `${d.getMonth()+1}月${d.getDate()}日（${DAY_NAMES[d.getDay()]}）`;
   const ptPct = Math.min(100, Math.round(todayPoints / DAILY_POINT_CAP * 100));
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [cardIdx, setCardIdx] = React.useState(0);
+  const touchStartX = React.useRef(null);
 
   // 今日のターゲットメニュー（mainIconsより先に定義する必要あり）
   const rec = todayRec || {};
@@ -4566,8 +4568,169 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         })}
       </div>
 
-      {/* ─── ② TODAY ストリップ（3列）─── */}
-      <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:10}}>
+      {/* ─── ② カードカルーセル ─── */}
+      {(() => {
+        const cards = ownedCards || [];
+        const n = cards.length;
+        const getCardImg = (key) => `images/card_${key}.png`;
+
+        if (n === 0) {
+          return (
+            <div style={{
+              background:'linear-gradient(145deg,#f3e5f5,#ede7f6)',
+              borderRadius:18, padding:'14px 16px', marginBottom:10,
+              border:'1.5px solid rgba(142,36,170,0.18)',
+              display:'flex', flexDirection:'column', alignItems:'center', gap:8,
+              boxShadow:'0 2px 10px rgba(0,0,0,0.06)',
+            }}>
+              <i className="fa-solid fa-id-card" style={{fontSize:28, color:'#ce93d8'}} />
+              <div style={{fontSize:12, fontWeight:800, color:'#7b1fa2'}}>まだカードがないよ！</div>
+              <button
+                style={{
+                  background:'linear-gradient(135deg,#4a148c,#7b1fa2)',
+                  color:'white', borderRadius:10, padding:'6px 20px',
+                  border:'none', fontSize:12, fontWeight:800, cursor:'pointer',
+                  boxShadow:'0 2px 8px rgba(74,20,140,0.35)',
+                }}
+                onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToShop(); }}
+              >
+                お店でゲット！
+              </button>
+            </div>
+          );
+        }
+
+        const safeIdx = ((cardIdx % n) + n) % n;
+        const prevIdx = (safeIdx - 1 + n) % n;
+        const nextIdx = (safeIdx + 1) % n;
+
+        return (
+          <div style={{marginBottom:8}}>
+            {/* 3D carousel */}
+            <div
+              style={{
+                position:'relative', height:150,
+                perspective:'700px',
+                WebkitTapHighlightColor:'transparent',
+                userSelect:'none',
+              }}
+              onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
+              onTouchEnd={e => {
+                if (touchStartX.current == null) return;
+                const dx = e.changedTouches[0].clientX - touchStartX.current;
+                touchStartX.current = null;
+                if (dx < -45) setCardIdx((safeIdx + 1) % n);
+                else if (dx > 45) setCardIdx((safeIdx - 1 + n) % n);
+              }}
+            >
+              {/* 左奥カード（prev） */}
+              {n > 1 && (
+                <div style={{
+                  position:'absolute', top:'50%', left:'50%',
+                  transform:'translateX(calc(-50% - 90px)) translateY(-50%) rotateY(-28deg) scale(0.65)',
+                  transformOrigin:'center center',
+                  filter:'brightness(0.45)',
+                  zIndex:1, pointerEvents:'none',
+                  transition:'transform 0.3s ease, filter 0.3s ease',
+                }}>
+                  <img src={getCardImg(cards[prevIdx])} alt=""
+                    style={{width:82, height:115, objectFit:'cover', borderRadius:10,
+                      boxShadow:'0 4px 14px rgba(0,0,0,0.4)', display:'block'}}
+                    onError={e => { e.target.style.visibility='hidden'; }}
+                  />
+                </div>
+              )}
+
+              {/* 中央カード（current） */}
+              <div
+                style={{
+                  position:'absolute', top:'50%', left:'50%',
+                  transform:'translateX(-50%) translateY(-50%) scale(1)',
+                  transformOrigin:'center center',
+                  zIndex:3,
+                  cursor:'pointer',
+                  transition:'transform 0.3s ease',
+                }}
+                onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToMyCards(); }}
+              >
+                <img src={getCardImg(cards[safeIdx])} alt="マイカード"
+                  style={{
+                    width:104, height:146, objectFit:'cover', borderRadius:14,
+                    boxShadow:'0 8px 28px rgba(0,0,0,0.38)',
+                    border:'2px solid rgba(255,255,255,0.9)',
+                    display:'block',
+                  }}
+                  onError={e => {
+                    e.target.style.display='none';
+                    e.target.nextSibling.style.display='flex';
+                  }}
+                />
+                {/* 画像なしフォールバック */}
+                <div style={{
+                  display:'none', width:104, height:146, borderRadius:14,
+                  background:'linear-gradient(135deg,#4a148c,#7b1fa2)',
+                  alignItems:'center', justifyContent:'center', flexDirection:'column', gap:6,
+                  boxShadow:'0 8px 28px rgba(0,0,0,0.38)',
+                  border:'2px solid rgba(255,255,255,0.9)',
+                  color:'white', fontSize:11, fontWeight:800,
+                }}>
+                  <i className="fa-solid fa-id-card" style={{fontSize:24}} />
+                  <span>{cards[safeIdx]}</span>
+                </div>
+                {/* タップヒント */}
+                <div style={{
+                  position:'absolute', bottom:5, left:0, right:0,
+                  textAlign:'center', fontSize:9, color:'rgba(255,255,255,0.95)',
+                  fontWeight:800, textShadow:'0 1px 4px rgba(0,0,0,0.8)',
+                  pointerEvents:'none', letterSpacing:0.3,
+                }}>
+                  ▶ マイカードへ
+                </div>
+              </div>
+
+              {/* 右奥カード（next） */}
+              {n > 1 && (
+                <div style={{
+                  position:'absolute', top:'50%', left:'50%',
+                  transform:'translateX(calc(-50% + 90px)) translateY(-50%) rotateY(28deg) scale(0.65)',
+                  transformOrigin:'center center',
+                  filter:'brightness(0.45)',
+                  zIndex:1, pointerEvents:'none',
+                  transition:'transform 0.3s ease, filter 0.3s ease',
+                }}>
+                  <img src={getCardImg(cards[nextIdx])} alt=""
+                    style={{width:82, height:115, objectFit:'cover', borderRadius:10,
+                      boxShadow:'0 4px 14px rgba(0,0,0,0.4)', display:'block'}}
+                    onError={e => { e.target.style.visibility='hidden'; }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ドットインジケーター */}
+            {n > 1 && (
+              <div style={{
+                display:'flex', justifyContent:'center', gap:5, marginTop:2, marginBottom:2,
+              }}>
+                {(n <= 8 ? cards : cards.slice(0,8)).map((_, i) => (
+                  <div key={i} style={{
+                    width: i === safeIdx % 8 ? 16 : 5,
+                    height:5, borderRadius:999,
+                    background: i === safeIdx % 8 ? '#5c35ae' : 'rgba(0,0,0,0.15)',
+                    transition:'width 0.25s, background 0.25s',
+                    cursor:'pointer',
+                  }}
+                  onClick={() => setCardIdx(i)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ─── ③ TODAY ストリップ（2列）─── */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:8, marginBottom:8}}>
 
         {/* スタンプ */}
         {(() => {
@@ -4649,67 +4812,64 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
             </button>
           );
         })()}
+      </div>
 
-        {/* マイカード */}
+      {/* ─── ④ プロフィール＆設定（小アイコン2列）─── */}
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onReset={onReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={onSoundToggle} onNameSave={onNameSave} onTargetsChange={onTargetsChange} />}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+        {/* プロフィール */}
         <button
           style={{
-            background: (ownedCards||[]).length > 0 ? 'linear-gradient(145deg,#f3e5f5,#ede7f6)' : 'white',
-            border: (ownedCards||[]).length > 0
-              ? '1.5px solid rgba(142,36,170,0.25)' : '1.5px solid #e8eaf6',
-            borderRadius:16, padding:'10px 6px',
-            display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+            background:'linear-gradient(145deg,#e8eaf6,#f5f5ff)',
+            border:'1.5px solid rgba(26,35,126,0.15)',
+            borderRadius:14, padding:'8px 10px',
+            display:'flex', alignItems:'center', gap:8,
             cursor:'pointer', WebkitTapHighlightColor:'transparent',
             boxShadow:'0 2px 8px rgba(0,0,0,0.05)',
           }}
-          onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToMyCards(); }}
+          onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('profile'); }}
         >
-          <div style={{width:38, height:38, borderRadius:11, flexShrink:0,
-            background: (ownedCards||[]).length > 0
-              ? 'linear-gradient(135deg,#6a1b9a,#8e24aa)' : 'linear-gradient(135deg,#90a4ae,#78909c)',
-            display:'flex', alignItems:'center', justifyContent:'center'}}>
-            <i className="fa-solid fa-id-card" style={{fontSize:17, color:'white'}} />
+          <div style={{
+            width:32, height:32, borderRadius:9, flexShrink:0,
+            background:'linear-gradient(135deg,#1a237e,#3f51b5)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}>
+            <i className="fa-solid fa-user" style={{fontSize:14, color:'white'}} />
           </div>
-          <div style={{fontSize:11, fontWeight:800,
-            color: (ownedCards||[]).length > 0 ? '#6a1b9a' : '#555'}}>
-            マイカード
-          </div>
-          <div style={{fontSize:10, fontWeight:600,
-            color: (ownedCards||[]).length > 0 ? '#8e24aa' : '#aaa'}}>
-            {(ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚` : 'なし'}
+          <div style={{flex:1, minWidth:0, textAlign:'left'}}>
+            <div style={{fontSize:11, fontWeight:900, color:'#1a237e',
+              overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis'}}>
+              {playerName || '選手'}
+            </div>
+            <div style={{fontSize:10, color:'#7986cb', fontWeight:700}}>
+              Lv.{profileLevel} {profileTitle}
+            </div>
           </div>
         </button>
-      </div>
 
-      {/* ─── ③ プロフィール1行 + 設定ギア ─── */}
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onReset={onReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={onSoundToggle} onNameSave={onNameSave} onTargetsChange={onTargetsChange} />}
-      <div
-        style={{background:'white', borderRadius:16, padding:'10px 14px', marginBottom:6,
-          boxShadow:'0 1px 8px rgba(0,0,0,0.06)', border:'1.5px solid #e8eaf6',
-          display:'flex', alignItems:'center', gap:10, cursor:'pointer',
-          WebkitTapHighlightColor:'transparent'}}
-        onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('profile'); }}
-      >
-        <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
-          background:'linear-gradient(135deg,#1a237e,#3f51b5)',
-          display:'flex', alignItems:'center', justifyContent:'center'}}>
-          <i className="fa-solid fa-user" style={{fontSize:15, color:'white'}} />
-        </div>
-        <div style={{flex:1, minWidth:0}}>
-          <div style={{fontSize:12, fontWeight:900, color:'#1a237e',
-            overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis'}}>
-            {playerName || '選手'} &nbsp;·&nbsp; Lv.{profileLevel} {profileTitle}
-          </div>
-          <div style={{fontSize:10, color:'#888', marginTop:1}}>
-            🔥 {streak}日連続 &nbsp;·&nbsp; 🪙 {availablePoints}pt
-          </div>
-        </div>
+        {/* 設定 */}
         <button
-          style={{width:34, height:34, borderRadius:9, background:'#f5f5f5',
-            border:'none', display:'flex', alignItems:'center', justifyContent:'center',
-            cursor:'pointer', flexShrink:0, WebkitTapHighlightColor:'transparent'}}
-          onClick={e => { e.stopPropagation(); playSound('menu_select.mp3', 0.35); setSettingsOpen(true); }}
+          style={{
+            background:'linear-gradient(145deg,#f5f5f5,#fafafa)',
+            border:'1.5px solid rgba(0,0,0,0.08)',
+            borderRadius:14, padding:'8px 10px',
+            display:'flex', alignItems:'center', gap:8,
+            cursor:'pointer', WebkitTapHighlightColor:'transparent',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.05)',
+          }}
+          onClick={() => { playSound('menu_select.mp3', 0.35); setSettingsOpen(true); }}
         >
-          <i className="fa-solid fa-gear" style={{fontSize:15, color:'#607d8b'}} />
+          <div style={{
+            width:32, height:32, borderRadius:9, flexShrink:0,
+            background:'linear-gradient(135deg,#455a64,#607d8b)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}>
+            <i className="fa-solid fa-gear" style={{fontSize:14, color:'white'}} />
+          </div>
+          <div style={{flex:1, minWidth:0, textAlign:'left'}}>
+            <div style={{fontSize:11, fontWeight:900, color:'#37474f'}}>設定</div>
+            <div style={{fontSize:10, color:'#90a4ae', fontWeight:700}}>音・名前・目標</div>
+          </div>
         </button>
       </div>
     </>
