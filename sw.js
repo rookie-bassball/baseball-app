@@ -1,5 +1,5 @@
 // Service Worker for ROOKIE BASEBALL
-const CACHE_NAME = 'rookie-baseball-v4';
+const CACHE_NAME = 'rookie-baseball-v5';
 
 // ベースパスを動的に取得（Netlify: "/" / GitHub Pages: "/repo-name/"）
 const BASE = self.location.pathname.replace(/\/sw\.js$/, '');

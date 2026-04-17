@@ -1422,6 +1422,19 @@
   <div id="splash-sub">BASEBALL</div>
   <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
 </div>
+<!-- スプラッシュ安全タイムアウト（Reactが10秒以内に起動しない場合に強制フェードアウト） -->
+<script>
+(function() {
+  var TIMEOUT_MS = 10000;
+  setTimeout(function() {
+    var el = document.getElementById('splash');
+    if (el && !el.classList.contains('hide')) {
+      el.classList.add('hide');
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+    }
+  }, TIMEOUT_MS);
+})();
+</script>
 
 <script type="text/babel">
 const { useState, useRef } = React;
