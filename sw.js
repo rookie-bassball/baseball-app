@@ -1,13 +1,12 @@
 // Service Worker for ROOKIE BASEBALL
-const CACHE_NAME = 'rookie-baseball-v6';
+const CACHE_NAME = 'rookie-baseball-v7';
 
 // ベースパスを動的に取得（Netlify: "/" / GitHub Pages: "/repo-name/"）
 const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
 
 // キャッシュするファイル一覧（相対パスで定義）
+// ※ index.html / "/" はキャッシュしない → 常にネットワークから最新版を取得
 const ASSET_PATHS = [
-  '/',
-  '/index.html',
   // 画像
   '/images/tutorial_mascot.png',
   '/images/base_running.png',
@@ -107,18 +106,9 @@ self.addEventListener('fetch', event => {
   const isHTML = path === BASE + '/' || path === BASE + '/index.html' || path.endsWith('.html');
 
   if (isHTML) {
-    // index.html はネットワーク優先（常に最新を取得）
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
+    // index.html は常にネットワーク取得（キャッシュ保存しない → 常に最新版）
+    event.respondWith(fetch(event.request));
+    return;
   } else {
     // 画像・効果音などはキャッシュ優先
     event.respondWith(
