@@ -4801,19 +4801,21 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
           }}
           onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('profile'); }}
         >
-          <div style={{
-            width:52, height:52, borderRadius:13, flexShrink:0,
-            background:'linear-gradient(135deg,#1a237e,#3f51b5)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-          }}>
-            <i className="fa-solid fa-user" style={{fontSize:20, color:'white'}} />
+          <div style={iconWrapStyle(52)}>
+            <img src="images/home_icon_profile.png" alt="プロフィール" style={iconImgStyle}
+              onError={e => {
+                e.target.style.display='none';
+                e.target.nextSibling.style.display='flex';
+              }}
+            />
+            <div style={{display:'none', width:'100%', height:'100%',
+              background:'linear-gradient(135deg,#00acc1,#4dd0e1)',
+              alignItems:'center', justifyContent:'center'}}>
+              <i className="fa-solid fa-user" style={{fontSize:20, color:'white'}} />
+            </div>
           </div>
-          <div style={{fontSize:10, fontWeight:900, color:'#1a237e'}}>プロフィール</div>
-          <div style={{fontSize:9, fontWeight:700, color:'#7986cb',
-            overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis',
-            maxWidth:'100%', paddingLeft:4, paddingRight:4}}>
-            Lv.{profileLevel}
-          </div>
+          <div style={{fontSize:10, fontWeight:900, color:'#00838f'}}>プロフィール</div>
+          <div style={{fontSize:9, fontWeight:700, color:'#4dd0e1'}}>Lv.{profileLevel}</div>
         </button>
 
         {/* ─ 設定 ─ */}
@@ -4826,12 +4828,18 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
           }}
           onClick={() => { playSound('menu_select.mp3', 0.35); setSettingsOpen(true); }}
         >
-          <div style={{
-            width:52, height:52, borderRadius:13, flexShrink:0,
-            background:'linear-gradient(135deg,#455a64,#607d8b)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-          }}>
-            <i className="fa-solid fa-gear" style={{fontSize:20, color:'white'}} />
+          <div style={iconWrapStyle(52)}>
+            <img src="images/home_icon_settings.png" alt="設定" style={iconImgStyle}
+              onError={e => {
+                e.target.style.display='none';
+                e.target.nextSibling.style.display='flex';
+              }}
+            />
+            <div style={{display:'none', width:'100%', height:'100%',
+              background:'linear-gradient(135deg,#455a64,#607d8b)',
+              alignItems:'center', justifyContent:'center'}}>
+              <i className="fa-solid fa-gear" style={{fontSize:20, color:'white'}} />
+            </div>
           </div>
           <div style={{fontSize:10, fontWeight:900, color:'#37474f'}}>設定</div>
           <div style={{fontSize:9, fontWeight:700, color:'#90a4ae'}}>音・名前</div>
