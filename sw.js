@@ -1,8 +1,11 @@
 // Service Worker for ROOKIE BASEBALL
-const CACHE_NAME = 'rookie-baseball-v2';
+const CACHE_NAME = 'rookie-baseball-v4';
 
-// キャッシュするファイル一覧
-const ASSETS = [
+// ベースパスを動的に取得（Netlify: "/" / GitHub Pages: "/repo-name/"）
+const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
+
+// キャッシュするファイル一覧（相対パスで定義）
+const ASSET_PATHS = [
   '/',
   '/index.html',
   // 画像
@@ -57,6 +60,9 @@ const ASSETS = [
   '/images/card_lv50_meet.png',
   '/images/card_lv50_pitcher.png',
   '/images/card_lv50_speed.png',
+  // アイコン
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   // 効果音
   '/sounds/hanko.mp3',
   '/sounds/get_card.mp3',
@@ -67,12 +73,16 @@ const ASSETS = [
   '/sounds/upgrade.mp3',
 ];
 
+// ベースパスを付けた完全URLリストを生成
+const ASSETS = ASSET_PATHS.map(p => BASE + p);
+
 // インストール時：全アセットをキャッシュ
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(ASSETS))
+      .catch(() => {}) // 一部失敗しても続行
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -87,23 +97,41 @@ self.addEventListener('activate', event => {
   );
 });
 
-// フェッチ時：キャッシュ優先、なければネットワーク取得してキャッシュ
+// フェッチ処理
 self.addEventListener('fetch', event => {
-  // Chrome拡張やデータURLは無視
   if (!event.request.url.startsWith('http')) return;
 
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // 正常なレスポンスのみキャッシュ
-        if (!response || response.status !== 200 || response.type === 'opaque') {
+  const url = new URL(event.request.url);
+  const path = url.pathname;
+  const isHTML = path === BASE + '/' || path === BASE + '/index.html' || path.endsWith('.html');
+
+  if (isHTML) {
+    // index.html はネットワーク優先（常に最新を取得）
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
           return response;
-        }
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return response;
-      });
-    })
-  );
+        })
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    // 画像・効果音などはキャッシュ優先
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          if (!response || response.status !== 200 || response.type === 'opaque') {
+            return response;
+          }
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+  }
 });

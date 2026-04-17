@@ -2,7 +2,7 @@
   "name": "ROOKIE BASEBALL",
   "short_name": "ROOKIE",
   "description": "子ども向け野球練習記録アプリ",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f0f4ff",
