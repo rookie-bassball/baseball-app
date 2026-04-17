@@ -458,6 +458,25 @@
     .badge-notify-text-name  { font-size: 16px; font-weight: bold; }
     .badge-notify-text-bonus { font-size: 12px; color: #fff9c4; margin-top: 3px; }
 
+    /* ===== レベルアップ通知 ===== */
+    .level-up-notify {
+      position: fixed; top: 20px; right: 20px; z-index: 401;
+      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 60%, #42a5f5 100%);
+      color: white; border-radius: 20px; padding: 16px 22px;
+      box-shadow: 0 8px 40px rgba(13,71,161,0.6), 0 2px 10px rgba(0,0,0,0.2);
+      display: flex; align-items: center; gap: 14px;
+      animation: notifyPop 0.55s cubic-bezier(0.34,1.56,0.64,1);
+      max-width: 300px; overflow: hidden;
+    }
+    .level-up-notify::before {
+      content: ''; position: absolute;
+      top: -50%; left: -75%; width: 50%; height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transform: skewX(-20deg);
+      animation: badgeShimmer 0.8s ease 0.35s both;
+      pointer-events: none;
+    }
+
     /* ===== 宿題完了アニメーション ===== */
     .hw-complete-wrap { text-align: center; padding: 28px 16px; }
     .hw-svg-wrap {
@@ -515,7 +534,7 @@
     .profile-level { font-size: 13px; opacity: 0.8; }
     .profile-name  { font-size: 26px; font-weight: bold; margin: 4px 0 2px; }
     .profile-title { font-size: 15px; opacity: 0.85; }
-    .level-bar-wrap { background: rgba(255,255,255,0.25); border-radius: 8px; height: 10px; margin-top: 14px; overflow: hidden; width: 260px; }
+    .level-bar-wrap { background: rgba(255,255,255,0.25); border-radius: 8px; height: 10px; margin-top: 14px; overflow: hidden; width: 100%; }
     .level-bar      { height: 100%; background: #ffd54f; border-radius: 8px; transition: width 0.5s; }
     .level-bar-hint { font-size: 11px; opacity: 0.65; margin-top: 4px; }
     .profile-stats-row {
@@ -1314,6 +1333,11 @@ const TARGETS_STORAGE_KEY = 'baseball_app_targets';
 function getDailyTargets()        { try { return JSON.parse(localStorage.getItem(TARGETS_STORAGE_KEY) || '{}'); } catch { return {}; } }
 function saveDailyTargets(obj)    { localStorage.setItem(TARGETS_STORAGE_KEY, JSON.stringify(obj)); }
 
+// オンボーディング完了フラグ（リセット耐性あり）
+const ONBOARDING_KEY = 'baseball_app_onboarding_v1';
+function isOnboardingDone() { return !!localStorage.getItem(ONBOARDING_KEY); }
+function markOnboardingDone() { localStorage.setItem(ONBOARDING_KEY, '1'); }
+
 // 効果音プリロードキャッシュ（起動時にデコード済みAudioを保持）
 const _audioCache = {};
 const SOUND_FILES = ['hanko.mp3','get_card.mp3','menu_select.mp3','quiz_correct.mp3','quiz_question.mp3','quiz_wrong.mp3','upgrade.mp3'];
@@ -1393,6 +1417,11 @@ const STAT_RANKS   = ['G','F','E','D','C','B','A','S'];
 const STAT_RANK_COLOR = { G:'#aaa', F:'#888', E:'#607d8b', D:'#2196f3', C:'#4caf50', B:'#ff9800', A:'#f44336', S:'#9c27b0' };
 // 購入コスト（レベル別）
 const CARD_PURCHASE_COSTS = { 1:10, 5:30, 10:80, 15:200, 20:400, 25:700, 30:1200, 50:3000 };
+// プロフィールレベル解放条件（カード購入・難易度）
+// カードレベル解放に必要なプロフィールレベル（profileLevel = floor(stampDays/5)+1）
+// 目安: 15日→Lv4(lv10解放) / 30日→Lv7(lv20解放) / 60日→Lv13(lv50全解放)
+const CARD_LEVEL_UNLOCK = { 1:1, 5:2, 10:4, 15:5, 20:7, 25:9, 30:11, 50:13 };
+const KISO_HARD_UNLOCK_LEVEL = 5; // むずかしいはプロフィールLv.5以上で解放
 // 強化コスト（現在ランク→次ランク）: G→F, F→E, E→D, D→C, C→B, B→A, A→S
 const UPGRADE_COSTS = [25, 100, 250, 500, 750, 1000, 1500];
 
@@ -1647,34 +1676,34 @@ function _kisoPerfectDone(d) {
 // BADGES: reqFn(d) - d is full data
 const BADGES = [
   // ===== はじめの記念 =====
-  { id:'first',         name:'はじめの一歩',   nameRuby:'はじめの{一歩|いっぽ}',         emoji:'👟', bonus:10,  category:'はじめの記念',
+  { id:'first',         name:'はじめの一歩',   nameRuby:'はじめの{一歩|いっぽ}',         emoji:'👟', bonus:8,  category:'はじめの記念',
     cond:'初めて練習を記録', condRuby:'{初|はじ}めて{練習|れんしゅう}を{記録|きろく}',
     reqFn:d=>Object.values(d.totalStats||{}).reduce((a,b)=>a+b,0)>=1 },
   { id:'first_stamp',   name:'はじめてのハンコ', nameRuby:'はじめてのハンコ',             emoji:'🔴', bonus:5,   category:'はじめの記念',
     cond:'初めてスタンプを押す', condRuby:'{初|はじ}めてスタンプを{押|お}す',
     reqFn:d=>Object.keys(d.stamps||{}).length>=1 },
-  { id:'first_quiz',    name:'初テスト',        nameRuby:'{初|はじ}テスト',                emoji:'📝', bonus:10,  category:'はじめの記念',
+  { id:'first_quiz',    name:'初テスト',        nameRuby:'{初|はじ}テスト',                emoji:'📝', bonus:8,  category:'はじめの記念',
     cond:'初めてテストを完了', condRuby:'{初|はじ}めてテストを{完了|かんりょう}',
     reqFn:d=>_qdTotal(d)>=1 },
-  { id:'week1_user',    name:'1週間たった！',   nameRuby:'1{週間|しゅうかん}たった！',     emoji:'📆', bonus:30,  category:'はじめの記念',
+  { id:'week1_user',    name:'1週間たった！',   nameRuby:'1{週間|しゅうかん}たった！',     emoji:'📆', bonus:20,  category:'はじめの記念',
     cond:'利用開始から7日', condRuby:'{利用|りよう}{開始|かいし}から7{日|にち}',
     reqFn:d=>_daysSince(d)>=7 },
-  { id:'month1_user',   name:'1ヶ月継続！',     nameRuby:'1ヶ{月|つき}{継続|けいぞく}！', emoji:'🗓', bonus:100, category:'はじめの記念',
+  { id:'month1_user',   name:'1ヶ月継続！',     nameRuby:'1ヶ{月|つき}{継続|けいぞく}！', emoji:'🗓', bonus:60, category:'はじめの記念',
     cond:'利用開始から30日', condRuby:'{利用|りよう}{開始|かいし}から30{日|にち}',
     reqFn:d=>_daysSince(d)>=30 },
-  { id:'month3_user',   name:'3ヶ月のベテラン', nameRuby:'3ヶ{月|つき}のベテラン',        emoji:'🏆', bonus:300, category:'はじめの記念',
+  { id:'month3_user',   name:'3ヶ月のベテラン', nameRuby:'3ヶ{月|つき}のベテラン',        emoji:'🏆', bonus:150, category:'はじめの記念',
     cond:'利用開始から90日', condRuby:'{利用|りよう}{開始|かいし}から90{日|にち}',
     reqFn:d=>_daysSince(d)>=90 },
-  { id:'baseball_boy',  name:'野球少年',        nameRuby:'{野球|やきゅう}{少年|しょうねん}', emoji:'⚾', bonus:30, category:'はじめの記念',
+  { id:'baseball_boy',  name:'野球少年',        nameRuby:'{野球|やきゅう}{少年|しょうねん}', emoji:'⚾', bonus:15, category:'はじめの記念',
     cond:'素振りとシャドーを同じ日に記録', condRuby:'{素振|すぶ}りとシャドーを{同|おな}じ{日|ひ}に{記録|きろく}',
     reqFn:d=>Object.values(d.records||{}).some(r=>(r.swing||0)>0&&(r.shadow||0)>0) },
-  { id:'all_strength_day', name:'筋トレ三冠',   nameRuby:'{筋|きん}トレ{三冠|さんかん}',   emoji:'🥇', bonus:50, category:'はじめの記念',
+  { id:'all_strength_day', name:'筋トレ三冠',   nameRuby:'{筋|きん}トレ{三冠|さんかん}',   emoji:'🥇', bonus:25, category:'はじめの記念',
     cond:'腕立て・腹筋・背筋を同じ日に記録', condRuby:'{腕立|うでた}て・{腹筋|ふっきん}・{背筋|はいきん}を{同|おな}じ{日|ひ}に{記録|きろく}',
     reqFn:d=>Object.values(d.records||{}).some(r=>(r.pushup||0)>0&&(r.abs||0)>0&&(r.back||0)>0) },
-  { id:'all_baseball_day', name:'野球フル練習', nameRuby:'{野球|やきゅう}フル{練習|れんしゅう}', emoji:'🏟', bonus:80, category:'はじめの記念',
+  { id:'all_baseball_day', name:'野球フル練習', nameRuby:'{野球|やきゅう}フル{練習|れんしゅう}', emoji:'🏟', bonus:40, category:'はじめの記念',
     cond:'野球6種目を1日で記録', condRuby:'{野球|やきゅう}6{種目|しゅもく}を1{日|ひ}で{記録|きろく}',
     reqFn:d=>Object.values(d.records||{}).some(r=>['swing','shadow','pitching','tee_batting','toss_batting','wall_catch'].every(id=>(r[id]||0)>0)) },
-  { id:'all14_day',     name:'全種目制覇！',    nameRuby:'{全種目|ぜんしゅもく}{制覇|せいは}！', emoji:'🌟', bonus:200, category:'はじめの記念',
+  { id:'all14_day',     name:'全種目制覇！',    nameRuby:'{全種目|ぜんしゅもく}{制覇|せいは}！', emoji:'🌟', bonus:80, category:'はじめの記念',
     cond:'1日で全14種目を記録', condRuby:'1{日|ひ}で{全|ぜん}14{種目|しゅもく}を{記録|きろく}',
     reqFn:d=>Object.values(d.records||{}).some(r=>MENUS.every(m=>(r[m.id]||0)>0)) },
 
@@ -1682,25 +1711,25 @@ const BADGES = [
   { id:'swing_10',   name:'素振りスタート', nameRuby:'{素振|すぶ}りスタート', emoji:'🏏', bonus:5,   category:'素振り',
     cond:'素振り累計10回', condRuby:'{素振|すぶ}り{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=10 },
-  { id:'swing_50',   name:'素振り50回',   nameRuby:'{素振|すぶ}り50{回|かい}', emoji:'🏏', bonus:10,  category:'素振り',
+  { id:'swing_50',   name:'素振り50回',   nameRuby:'{素振|すぶ}り50{回|かい}', emoji:'🏏', bonus:8,  category:'素振り',
     cond:'素振り累計50回', condRuby:'{素振|すぶ}り{累計|るいけい}50{回|かい}', target:50, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=50 },
-  { id:'swing_100',  name:'素振り100回',  nameRuby:'{素振|すぶ}り100{回|かい}', emoji:'🏏', bonus:15, category:'素振り',
+  { id:'swing_100',  name:'素振り100回',  nameRuby:'{素振|すぶ}り100{回|かい}', emoji:'🏏', bonus:12, category:'素振り',
     cond:'素振り累計100回', condRuby:'{素振|すぶ}り{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=100 },
-  { id:'swing_300',  name:'素振り名人',   nameRuby:'{素振|すぶ}り{名人|めいじん}', emoji:'🏏', bonus:30, category:'素振り',
+  { id:'swing_300',  name:'素振り名人',   nameRuby:'{素振|すぶ}り{名人|めいじん}', emoji:'🏏', bonus:20, category:'素振り',
     cond:'素振り累計300回', condRuby:'{素振|すぶ}り{累計|るいけい}300{回|かい}', target:300, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=300 },
-  { id:'swing_500',  name:'素振り職人',   nameRuby:'{素振|すぶ}り{職人|しょくにん}', emoji:'🏏', bonus:50, category:'素振り',
+  { id:'swing_500',  name:'素振り職人',   nameRuby:'{素振|すぶ}り{職人|しょくにん}', emoji:'🏏', bonus:30, category:'素振り',
     cond:'素振り累計500回', condRuby:'{素振|すぶ}り{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=500 },
-  { id:'swing_1000', name:'素振り達人',   nameRuby:'{素振|すぶ}り{達人|たつじん}', emoji:'🏏', bonus:100, category:'素振り',
+  { id:'swing_1000', name:'素振り達人',   nameRuby:'{素振|すぶ}り{達人|たつじん}', emoji:'🏏', bonus:60, category:'素振り',
     cond:'素振り累計1,000回', condRuby:'{素振|すぶ}り{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=1000 },
-  { id:'swing_3000', name:'素振り鬼',     nameRuby:'{素振|すぶ}り{鬼|おに}', emoji:'🏏', bonus:250, category:'素振り',
+  { id:'swing_3000', name:'素振り鬼',     nameRuby:'{素振|すぶ}り{鬼|おに}', emoji:'🏏', bonus:120, category:'素振り',
     cond:'素振り累計3,000回', condRuby:'{素振|すぶ}り{累計|るいけい}3,000{回|かい}', target:3000, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=3000 },
-  { id:'swing_5000', name:'素振りレジェンド', nameRuby:'{素振|すぶ}りレジェンド', emoji:'🏏', bonus:500, category:'素振り',
+  { id:'swing_5000', name:'素振りレジェンド', nameRuby:'{素振|すぶ}りレジェンド', emoji:'🏏', bonus:250, category:'素振り',
     cond:'素振り累計5,000回', condRuby:'{素振|すぶ}り{累計|るいけい}5,000{回|かい}', target:5000, getVal:d=>d.totalStats?.swing||0,
     reqFn:d=>(d.totalStats?.swing||0)>=5000 },
 
@@ -1708,25 +1737,25 @@ const BADGES = [
   { id:'shadow_10',   name:'シャドースタート', nameRuby:'シャドースタート', emoji:'⚾', bonus:5,  category:'シャドーピッチング',
     cond:'シャドー累計10回', condRuby:'シャドー{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=10 },
-  { id:'shadow_50',   name:'シャドー50回',   nameRuby:'シャドー50{回|かい}', emoji:'⚾', bonus:10, category:'シャドーピッチング',
+  { id:'shadow_50',   name:'シャドー50回',   nameRuby:'シャドー50{回|かい}', emoji:'⚾', bonus:8, category:'シャドーピッチング',
     cond:'シャドー累計50回', condRuby:'シャドー{累計|るいけい}50{回|かい}', target:50, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=50 },
-  { id:'shadow_100',  name:'シャドー100回',  nameRuby:'シャドー100{回|かい}', emoji:'⚾', bonus:15, category:'シャドーピッチング',
+  { id:'shadow_100',  name:'シャドー100回',  nameRuby:'シャドー100{回|かい}', emoji:'⚾', bonus:12, category:'シャドーピッチング',
     cond:'シャドー累計100回', condRuby:'シャドー{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=100 },
-  { id:'shadow_300',  name:'シャドー名人',   nameRuby:'シャドー{名人|めいじん}', emoji:'⚾', bonus:30, category:'シャドーピッチング',
+  { id:'shadow_300',  name:'シャドー名人',   nameRuby:'シャドー{名人|めいじん}', emoji:'⚾', bonus:20, category:'シャドーピッチング',
     cond:'シャドー累計300回', condRuby:'シャドー{累計|るいけい}300{回|かい}', target:300, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=300 },
-  { id:'shadow_500',  name:'シャドー職人',   nameRuby:'シャドー{職人|しょくにん}', emoji:'⚾', bonus:50, category:'シャドーピッチング',
+  { id:'shadow_500',  name:'シャドー職人',   nameRuby:'シャドー{職人|しょくにん}', emoji:'⚾', bonus:30, category:'シャドーピッチング',
     cond:'シャドー累計500回', condRuby:'シャドー{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=500 },
-  { id:'shadow_1000', name:'シャドー達人',   nameRuby:'シャドー{達人|たつじん}', emoji:'⚾', bonus:100, category:'シャドーピッチング',
+  { id:'shadow_1000', name:'シャドー達人',   nameRuby:'シャドー{達人|たつじん}', emoji:'⚾', bonus:60, category:'シャドーピッチング',
     cond:'シャドー累計1,000回', condRuby:'シャドー{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=1000 },
-  { id:'shadow_3000', name:'シャドー鬼',     nameRuby:'シャドー{鬼|おに}', emoji:'⚾', bonus:250, category:'シャドーピッチング',
+  { id:'shadow_3000', name:'シャドー鬼',     nameRuby:'シャドー{鬼|おに}', emoji:'⚾', bonus:120, category:'シャドーピッチング',
     cond:'シャドー累計3,000回', condRuby:'シャドー{累計|るいけい}3,000{回|かい}', target:3000, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=3000 },
-  { id:'shadow_5000', name:'シャドーレジェンド', nameRuby:'シャドーレジェンド', emoji:'⚾', bonus:500, category:'シャドーピッチング',
+  { id:'shadow_5000', name:'シャドーレジェンド', nameRuby:'シャドーレジェンド', emoji:'⚾', bonus:250, category:'シャドーピッチング',
     cond:'シャドー累計5,000回', condRuby:'シャドー{累計|るいけい}5,000{回|かい}', target:5000, getVal:d=>d.totalStats?.shadow||0,
     reqFn:d=>(d.totalStats?.shadow||0)>=5000 },
 
@@ -1734,19 +1763,19 @@ const BADGES = [
   { id:'pitch_10',   name:'投球スタート',  nameRuby:'{投球|とうきゅう}スタート', emoji:'⚡', bonus:5,  category:'ピッチング',
     cond:'ピッチング累計10球', condRuby:'ピッチング{累計|るいけい}10{球|きゅう}', target:10, getVal:d=>d.totalStats?.pitching||0,
     reqFn:d=>(d.totalStats?.pitching||0)>=10 },
-  { id:'pitch_100',  name:'投球100球',    nameRuby:'{投球|とうきゅう}100{球|きゅう}', emoji:'⚡', bonus:20, category:'ピッチング',
+  { id:'pitch_100',  name:'投球100球',    nameRuby:'{投球|とうきゅう}100{球|きゅう}', emoji:'⚡', bonus:12, category:'ピッチング',
     cond:'ピッチング累計100球', condRuby:'ピッチング{累計|るいけい}100{球|きゅう}', target:100, getVal:d=>d.totalStats?.pitching||0,
     reqFn:d=>(d.totalStats?.pitching||0)>=100 },
-  { id:'pitch_300',  name:'投球名人',     nameRuby:'{投球|とうきゅう}{名人|めいじん}', emoji:'⚡', bonus:40, category:'ピッチング',
+  { id:'pitch_300',  name:'投球名人',     nameRuby:'{投球|とうきゅう}{名人|めいじん}', emoji:'⚡', bonus:25, category:'ピッチング',
     cond:'ピッチング累計300球', condRuby:'ピッチング{累計|るいけい}300{球|きゅう}', target:300, getVal:d=>d.totalStats?.pitching||0,
     reqFn:d=>(d.totalStats?.pitching||0)>=300 },
-  { id:'pitch_500',  name:'投球職人',     nameRuby:'{投球|とうきゅう}{職人|しょくにん}', emoji:'⚡', bonus:80, category:'ピッチング',
+  { id:'pitch_500',  name:'投球職人',     nameRuby:'{投球|とうきゅう}{職人|しょくにん}', emoji:'⚡', bonus:40, category:'ピッチング',
     cond:'ピッチング累計500球', condRuby:'ピッチング{累計|るいけい}500{球|きゅう}', target:500, getVal:d=>d.totalStats?.pitching||0,
     reqFn:d=>(d.totalStats?.pitching||0)>=500 },
-  { id:'pitch_1000', name:'エース候補',   nameRuby:'エース{候補|こうほ}', emoji:'⚡', bonus:150, category:'ピッチング',
+  { id:'pitch_1000', name:'エース候補',   nameRuby:'エース{候補|こうほ}', emoji:'⚡', bonus:70, category:'ピッチング',
     cond:'ピッチング累計1,000球', condRuby:'ピッチング{累計|るいけい}1,000{球|きゅう}', target:1000, getVal:d=>d.totalStats?.pitching||0,
     reqFn:d=>(d.totalStats?.pitching||0)>=1000 },
-  { id:'pitch_3000', name:'エース',       nameRuby:'エース', emoji:'⚡', bonus:400, category:'ピッチング',
+  { id:'pitch_3000', name:'エース',       nameRuby:'エース', emoji:'⚡', bonus:200, category:'ピッチング',
     cond:'ピッチング累計3,000球', condRuby:'ピッチング{累計|るいけい}3,000{球|きゅう}', target:3000, getVal:d=>d.totalStats?.pitching||0,
     reqFn:d=>(d.totalStats?.pitching||0)>=3000 },
 
@@ -1754,16 +1783,16 @@ const BADGES = [
   { id:'tee_10',   name:'ティースタート',nameRuby:'ティースタート', emoji:'🦇', bonus:5,  category:'ティーバッティング',
     cond:'ティーバッティング累計10回', condRuby:'ティーバッティング{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.tee_batting||0,
     reqFn:d=>(d.totalStats?.tee_batting||0)>=10 },
-  { id:'tee_100',  name:'ティー100回',  nameRuby:'ティー100{回|かい}', emoji:'🦇', bonus:20, category:'ティーバッティング',
+  { id:'tee_100',  name:'ティー100回',  nameRuby:'ティー100{回|かい}', emoji:'🦇', bonus:12, category:'ティーバッティング',
     cond:'ティーバッティング累計100回', condRuby:'ティーバッティング{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.tee_batting||0,
     reqFn:d=>(d.totalStats?.tee_batting||0)>=100 },
-  { id:'tee_300',  name:'ティー名人',   nameRuby:'ティー{名人|めいじん}', emoji:'🦇', bonus:40, category:'ティーバッティング',
+  { id:'tee_300',  name:'ティー名人',   nameRuby:'ティー{名人|めいじん}', emoji:'🦇', bonus:25, category:'ティーバッティング',
     cond:'ティーバッティング累計300回', condRuby:'ティーバッティング{累計|るいけい}300{回|かい}', target:300, getVal:d=>d.totalStats?.tee_batting||0,
     reqFn:d=>(d.totalStats?.tee_batting||0)>=300 },
-  { id:'tee_500',  name:'ティー職人',   nameRuby:'ティー{職人|しょくにん}', emoji:'🦇', bonus:80, category:'ティーバッティング',
+  { id:'tee_500',  name:'ティー職人',   nameRuby:'ティー{職人|しょくにん}', emoji:'🦇', bonus:40, category:'ティーバッティング',
     cond:'ティーバッティング累計500回', condRuby:'ティーバッティング{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.tee_batting||0,
     reqFn:d=>(d.totalStats?.tee_batting||0)>=500 },
-  { id:'tee_1000', name:'打撃の達人',   nameRuby:'{打撃|だげき}の{達人|たつじん}', emoji:'🦇', bonus:150, category:'ティーバッティング',
+  { id:'tee_1000', name:'打撃の達人',   nameRuby:'{打撃|だげき}の{達人|たつじん}', emoji:'🦇', bonus:70, category:'ティーバッティング',
     cond:'ティーバッティング累計1,000回', condRuby:'ティーバッティング{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.tee_batting||0,
     reqFn:d=>(d.totalStats?.tee_batting||0)>=1000 },
 
@@ -1771,13 +1800,13 @@ const BADGES = [
   { id:'toss_10',   name:'トスバットスタート', nameRuby:'トスバットスタート', emoji:'🎯', bonus:5,  category:'トスバッティング',
     cond:'トスバッティング累計10回', condRuby:'トスバッティング{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.toss_batting||0,
     reqFn:d=>(d.totalStats?.toss_batting||0)>=10 },
-  { id:'toss_100',  name:'トスバット100回',  nameRuby:'トスバット100{回|かい}', emoji:'🎯', bonus:20, category:'トスバッティング',
+  { id:'toss_100',  name:'トスバット100回',  nameRuby:'トスバット100{回|かい}', emoji:'🎯', bonus:12, category:'トスバッティング',
     cond:'トスバッティング累計100回', condRuby:'トスバッティング{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.toss_batting||0,
     reqFn:d=>(d.totalStats?.toss_batting||0)>=100 },
-  { id:'toss_300',  name:'トスバット名人',   nameRuby:'トスバット{名人|めいじん}', emoji:'🎯', bonus:40, category:'トスバッティング',
+  { id:'toss_300',  name:'トスバット名人',   nameRuby:'トスバット{名人|めいじん}', emoji:'🎯', bonus:25, category:'トスバッティング',
     cond:'トスバッティング累計300回', condRuby:'トスバッティング{累計|るいけい}300{回|かい}', target:300, getVal:d=>d.totalStats?.toss_batting||0,
     reqFn:d=>(d.totalStats?.toss_batting||0)>=300 },
-  { id:'toss_1000', name:'ミートの神',       nameRuby:'ミートの{神|かみ}', emoji:'🎯', bonus:200, category:'トスバッティング',
+  { id:'toss_1000', name:'ミートの神',       nameRuby:'ミートの{神|かみ}', emoji:'🎯', bonus:100, category:'トスバッティング',
     cond:'トスバッティング累計1,000回', condRuby:'トスバッティング{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.toss_batting||0,
     reqFn:d=>(d.totalStats?.toss_batting||0)>=1000 },
 
@@ -1785,13 +1814,13 @@ const BADGES = [
   { id:'wall_10',   name:'壁当てスタート', nameRuby:'{壁当|かべあ}てスタート', emoji:'🤜', bonus:5,  category:'壁当てキャッチボール',
     cond:'壁当て累計10球', condRuby:'{壁当|かべあ}て{累計|るいけい}10{球|きゅう}', target:10, getVal:d=>d.totalStats?.wall_catch||0,
     reqFn:d=>(d.totalStats?.wall_catch||0)>=10 },
-  { id:'wall_100',  name:'壁当て100球',  nameRuby:'{壁当|かべあ}て100{球|きゅう}', emoji:'🤜', bonus:20, category:'壁当てキャッチボール',
+  { id:'wall_100',  name:'壁当て100球',  nameRuby:'{壁当|かべあ}て100{球|きゅう}', emoji:'🤜', bonus:12, category:'壁当てキャッチボール',
     cond:'壁当て累計100球', condRuby:'{壁当|かべあ}て{累計|るいけい}100{球|きゅう}', target:100, getVal:d=>d.totalStats?.wall_catch||0,
     reqFn:d=>(d.totalStats?.wall_catch||0)>=100 },
-  { id:'wall_300',  name:'壁当て名人',   nameRuby:'{壁当|かべあ}て{名人|めいじん}', emoji:'🤜', bonus:40, category:'壁当てキャッチボール',
+  { id:'wall_300',  name:'壁当て名人',   nameRuby:'{壁当|かべあ}て{名人|めいじん}', emoji:'🤜', bonus:25, category:'壁当てキャッチボール',
     cond:'壁当て累計300球', condRuby:'{壁当|かべあ}て{累計|るいけい}300{球|きゅう}', target:300, getVal:d=>d.totalStats?.wall_catch||0,
     reqFn:d=>(d.totalStats?.wall_catch||0)>=300 },
-  { id:'wall_1000', name:'守備の達人',   nameRuby:'{守備|しゅび}の{達人|たつじん}', emoji:'🤜', bonus:200, category:'壁当てキャッチボール',
+  { id:'wall_1000', name:'守備の達人',   nameRuby:'{守備|しゅび}の{達人|たつじん}', emoji:'🤜', bonus:100, category:'壁当てキャッチボール',
     cond:'壁当て累計1,000球', condRuby:'{壁当|かべあ}て{累計|るいけい}1,000{球|きゅう}', target:1000, getVal:d=>d.totalStats?.wall_catch||0,
     reqFn:d=>(d.totalStats?.wall_catch||0)>=1000 },
 
@@ -1799,25 +1828,25 @@ const BADGES = [
   { id:'squat_10',   name:'スクワットスタート', nameRuby:'スクワットスタート', emoji:'🦵', bonus:5,  category:'スクワット',
     cond:'スクワット累計10回', condRuby:'スクワット{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=10 },
-  { id:'squat_50',   name:'スクワット50回',   nameRuby:'スクワット50{回|かい}', emoji:'🦵', bonus:10, category:'スクワット',
+  { id:'squat_50',   name:'スクワット50回',   nameRuby:'スクワット50{回|かい}', emoji:'🦵', bonus:8, category:'スクワット',
     cond:'スクワット累計50回', condRuby:'スクワット{累計|るいけい}50{回|かい}', target:50, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=50 },
-  { id:'squat_100',  name:'スクワット100回',  nameRuby:'スクワット100{回|かい}', emoji:'🦵', bonus:15, category:'スクワット',
+  { id:'squat_100',  name:'スクワット100回',  nameRuby:'スクワット100{回|かい}', emoji:'🦵', bonus:12, category:'スクワット',
     cond:'スクワット累計100回', condRuby:'スクワット{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=100 },
-  { id:'squat_200',  name:'スクワット名人',   nameRuby:'スクワット{名人|めいじん}', emoji:'🦵', bonus:25, category:'スクワット',
+  { id:'squat_200',  name:'スクワット名人',   nameRuby:'スクワット{名人|めいじん}', emoji:'🦵', bonus:18, category:'スクワット',
     cond:'スクワット累計200回', condRuby:'スクワット{累計|るいけい}200{回|かい}', target:200, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=200 },
-  { id:'squat_500',  name:'スクワット職人',   nameRuby:'スクワット{職人|しょくにん}', emoji:'🦵', bonus:60, category:'スクワット',
+  { id:'squat_500',  name:'スクワット職人',   nameRuby:'スクワット{職人|しょくにん}', emoji:'🦵', bonus:35, category:'スクワット',
     cond:'スクワット累計500回', condRuby:'スクワット{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=500 },
-  { id:'squat_1000', name:'スクワット達人',   nameRuby:'スクワット{達人|たつじん}', emoji:'🦵', bonus:120, category:'スクワット',
+  { id:'squat_1000', name:'スクワット達人',   nameRuby:'スクワット{達人|たつじん}', emoji:'🦵', bonus:70, category:'スクワット',
     cond:'スクワット累計1,000回', condRuby:'スクワット{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=1000 },
-  { id:'squat_2000', name:'スクワット鬼',     nameRuby:'スクワット{鬼|おに}', emoji:'🦵', bonus:250, category:'スクワット',
+  { id:'squat_2000', name:'スクワット鬼',     nameRuby:'スクワット{鬼|おに}', emoji:'🦵', bonus:120, category:'スクワット',
     cond:'スクワット累計2,000回', condRuby:'スクワット{累計|るいけい}2,000{回|かい}', target:2000, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=2000 },
-  { id:'squat_3000', name:'下半身の鉄人',     nameRuby:'{下半身|かはんしん}の{鉄人|てつじん}', emoji:'🦵', bonus:400, category:'スクワット',
+  { id:'squat_3000', name:'下半身の鉄人',     nameRuby:'{下半身|かはんしん}の{鉄人|てつじん}', emoji:'🦵', bonus:200, category:'スクワット',
     cond:'スクワット累計3,000回', condRuby:'スクワット{累計|るいけい}3,000{回|かい}', target:3000, getVal:d=>d.totalStats?.squat||0,
     reqFn:d=>(d.totalStats?.squat||0)>=3000 },
 
@@ -1825,22 +1854,22 @@ const BADGES = [
   { id:'run_5',   name:'ランナー見習い',  nameRuby:'ランナー{見習|みなら}い', emoji:'🏃', bonus:5,  category:'ランニング',
     cond:'ランニング累計5分', condRuby:'ランニング{累計|るいけい}5{分|ふん}', target:5, getVal:d=>d.totalStats?.run||0,
     reqFn:d=>(d.totalStats?.run||0)>=5 },
-  { id:'run_15',  name:'ランニング15分',  nameRuby:'ランニング15{分|ふん}', emoji:'🏃', bonus:10, category:'ランニング',
+  { id:'run_15',  name:'ランニング15分',  nameRuby:'ランニング15{分|ふん}', emoji:'🏃', bonus:8, category:'ランニング',
     cond:'ランニング累計15分', condRuby:'ランニング{累計|るいけい}15{分|ふん}', target:15, getVal:d=>d.totalStats?.run||0,
     reqFn:d=>(d.totalStats?.run||0)>=15 },
-  { id:'run_30',  name:'ランニング名人',  nameRuby:'ランニング{名人|めいじん}', emoji:'🏃', bonus:20, category:'ランニング',
+  { id:'run_30',  name:'ランニング名人',  nameRuby:'ランニング{名人|めいじん}', emoji:'🏃', bonus:15, category:'ランニング',
     cond:'ランニング累計30分', condRuby:'ランニング{累計|るいけい}30{分|ふん}', target:30, getVal:d=>d.totalStats?.run||0,
     reqFn:d=>(d.totalStats?.run||0)>=30 },
-  { id:'run_60',  name:'中距離ランナー',  nameRuby:'{中距離|ちゅうきょり}ランナー', emoji:'🏃', bonus:40, category:'ランニング',
+  { id:'run_60',  name:'中距離ランナー',  nameRuby:'{中距離|ちゅうきょり}ランナー', emoji:'🏃', bonus:25, category:'ランニング',
     cond:'ランニング累計60分', condRuby:'ランニング{累計|るいけい}60{分|ふん}', target:60, getVal:d=>d.totalStats?.run||0,
     reqFn:d=>(d.totalStats?.run||0)>=60 },
-  { id:'run_120', name:'長距離ランナー',  nameRuby:'{長距離|ちょうきょり}ランナー', emoji:'🏃', bonus:80, category:'ランニング',
+  { id:'run_120', name:'長距離ランナー',  nameRuby:'{長距離|ちょうきょり}ランナー', emoji:'🏃', bonus:50, category:'ランニング',
     cond:'ランニング累計120分', condRuby:'ランニング{累計|るいけい}120{分|ふん}', target:120, getVal:d=>d.totalStats?.run||0,
     reqFn:d=>(d.totalStats?.run||0)>=120 },
-  { id:'run_300', name:'マラソン野郎',    nameRuby:'マラソン{野郎|やろう}', emoji:'🏃', bonus:200, category:'ランニング',
+  { id:'run_300', name:'マラソン野郎',    nameRuby:'マラソン{野郎|やろう}', emoji:'🏃', bonus:100, category:'ランニング',
     cond:'ランニング累計300分', condRuby:'ランニング{累計|るいけい}300{分|ふん}', target:300, getVal:d=>d.totalStats?.run||0,
     reqFn:d=>(d.totalStats?.run||0)>=300 },
-  { id:'run_600', name:'走りの鬼',        nameRuby:'{走|はし}りの{鬼|おに}', emoji:'🏃', bonus:500, category:'ランニング',
+  { id:'run_600', name:'走りの鬼',        nameRuby:'{走|はし}りの{鬼|おに}', emoji:'🏃', bonus:250, category:'ランニング',
     cond:'ランニング累計600分', condRuby:'ランニング{累計|るいけい}600{分|ふん}', target:600, getVal:d=>d.totalStats?.run||0,
     reqFn:d=>(d.totalStats?.run||0)>=600 },
 
@@ -1848,16 +1877,16 @@ const BADGES = [
   { id:'dash_5',   name:'ダッシュスタート', nameRuby:'ダッシュスタート', emoji:'💨', bonus:5,  category:'ダッシュ',
     cond:'30mダッシュ累計5本', condRuby:'30mダッシュ{累計|るいけい}5{本|ほん}', target:5, getVal:d=>d.totalStats?.dash||0,
     reqFn:d=>(d.totalStats?.dash||0)>=5 },
-  { id:'dash_20',  name:'ダッシュ20本',    nameRuby:'ダッシュ20{本|ほん}', emoji:'💨', bonus:15, category:'ダッシュ',
+  { id:'dash_20',  name:'ダッシュ20本',    nameRuby:'ダッシュ20{本|ほん}', emoji:'💨', bonus:10, category:'ダッシュ',
     cond:'30mダッシュ累計20本', condRuby:'30mダッシュ{累計|るいけい}20{本|ほん}', target:20, getVal:d=>d.totalStats?.dash||0,
     reqFn:d=>(d.totalStats?.dash||0)>=20 },
-  { id:'dash_50',  name:'快速',            nameRuby:'{快速|かいそく}', emoji:'💨', bonus:40, category:'ダッシュ',
+  { id:'dash_50',  name:'快速',            nameRuby:'{快速|かいそく}', emoji:'💨', bonus:25, category:'ダッシュ',
     cond:'30mダッシュ累計50本', condRuby:'30mダッシュ{累計|るいけい}50{本|ほん}', target:50, getVal:d=>d.totalStats?.dash||0,
     reqFn:d=>(d.totalStats?.dash||0)>=50 },
-  { id:'dash_100', name:'韋駄天',          nameRuby:'{韋駄天|いだてん}', emoji:'💨', bonus:100, category:'ダッシュ',
+  { id:'dash_100', name:'韋駄天',          nameRuby:'{韋駄天|いだてん}', emoji:'💨', bonus:50, category:'ダッシュ',
     cond:'30mダッシュ累計100本', condRuby:'30mダッシュ{累計|るいけい}100{本|ほん}', target:100, getVal:d=>d.totalStats?.dash||0,
     reqFn:d=>(d.totalStats?.dash||0)>=100 },
-  { id:'dash_200', name:'俊足の申し子',    nameRuby:'{俊足|しゅんそく}の{申|もう}し{子|こ}', emoji:'💨', bonus:250, category:'ダッシュ',
+  { id:'dash_200', name:'俊足の申し子',    nameRuby:'{俊足|しゅんそく}の{申|もう}し{子|こ}', emoji:'💨', bonus:120, category:'ダッシュ',
     cond:'30mダッシュ累計200本', condRuby:'30mダッシュ{累計|るいけい}200{本|ほん}', target:200, getVal:d=>d.totalStats?.dash||0,
     reqFn:d=>(d.totalStats?.dash||0)>=200 },
 
@@ -1865,19 +1894,19 @@ const BADGES = [
   { id:'stretch_5',   name:'柔軟スタート',  nameRuby:'{柔軟|じゅうなん}スタート', emoji:'🧘', bonus:5,  category:'ストレッチング',
     cond:'ストレッチング累計5分', condRuby:'ストレッチング{累計|るいけい}5{分|ふん}', target:5, getVal:d=>d.totalStats?.stretch||0,
     reqFn:d=>(d.totalStats?.stretch||0)>=5 },
-  { id:'stretch_15',  name:'柔軟15分',      nameRuby:'{柔軟|じゅうなん}15{分|ふん}', emoji:'🧘', bonus:10, category:'ストレッチング',
+  { id:'stretch_15',  name:'柔軟15分',      nameRuby:'{柔軟|じゅうなん}15{分|ふん}', emoji:'🧘', bonus:8, category:'ストレッチング',
     cond:'ストレッチング累計15分', condRuby:'ストレッチング{累計|るいけい}15{分|ふん}', target:15, getVal:d=>d.totalStats?.stretch||0,
     reqFn:d=>(d.totalStats?.stretch||0)>=15 },
-  { id:'stretch_30',  name:'柔軟名人',      nameRuby:'{柔軟|じゅうなん}{名人|めいじん}', emoji:'🧘', bonus:20, category:'ストレッチング',
+  { id:'stretch_30',  name:'柔軟名人',      nameRuby:'{柔軟|じゅうなん}{名人|めいじん}', emoji:'🧘', bonus:15, category:'ストレッチング',
     cond:'ストレッチング累計30分', condRuby:'ストレッチング{累計|るいけい}30{分|ふん}', target:30, getVal:d=>d.totalStats?.stretch||0,
     reqFn:d=>(d.totalStats?.stretch||0)>=30 },
-  { id:'stretch_60',  name:'柔軟60分',      nameRuby:'{柔軟|じゅうなん}60{分|ふん}', emoji:'🧘', bonus:40, category:'ストレッチング',
+  { id:'stretch_60',  name:'柔軟60分',      nameRuby:'{柔軟|じゅうなん}60{分|ふん}', emoji:'🧘', bonus:25, category:'ストレッチング',
     cond:'ストレッチング累計60分', condRuby:'ストレッチング{累計|るいけい}60{分|ふん}', target:60, getVal:d=>d.totalStats?.stretch||0,
     reqFn:d=>(d.totalStats?.stretch||0)>=60 },
-  { id:'stretch_120', name:'柔軟職人',      nameRuby:'{柔軟|じゅうなん}{職人|しょくにん}', emoji:'🧘', bonus:80, category:'ストレッチング',
+  { id:'stretch_120', name:'柔軟職人',      nameRuby:'{柔軟|じゅうなん}{職人|しょくにん}', emoji:'🧘', bonus:40, category:'ストレッチング',
     cond:'ストレッチング累計120分', condRuby:'ストレッチング{累計|るいけい}120{分|ふん}', target:120, getVal:d=>d.totalStats?.stretch||0,
     reqFn:d=>(d.totalStats?.stretch||0)>=120 },
-  { id:'stretch_300', name:'柔軟の達人',    nameRuby:'{柔軟|じゅうなん}の{達人|たつじん}', emoji:'🧘', bonus:200, category:'ストレッチング',
+  { id:'stretch_300', name:'柔軟の達人',    nameRuby:'{柔軟|じゅうなん}の{達人|たつじん}', emoji:'🧘', bonus:100, category:'ストレッチング',
     cond:'ストレッチング累計300分', condRuby:'ストレッチング{累計|るいけい}300{分|ふん}', target:300, getVal:d=>d.totalStats?.stretch||0,
     reqFn:d=>(d.totalStats?.stretch||0)>=300 },
 
@@ -1885,22 +1914,22 @@ const BADGES = [
   { id:'rope_50',    name:'縄跳びスタート', nameRuby:'{縄跳|なわと}びスタート', emoji:'🪢', bonus:5,  category:'縄跳び',
     cond:'縄跳び累計50回', condRuby:'{縄跳|なわと}び{累計|るいけい}50{回|かい}', target:50, getVal:d=>d.totalStats?.jump_rope||0,
     reqFn:d=>(d.totalStats?.jump_rope||0)>=50 },
-  { id:'rope_200',   name:'縄跳び200回',   nameRuby:'{縄跳|なわと}び200{回|かい}', emoji:'🪢', bonus:15, category:'縄跳び',
+  { id:'rope_200',   name:'縄跳び200回',   nameRuby:'{縄跳|なわと}び200{回|かい}', emoji:'🪢', bonus:10, category:'縄跳び',
     cond:'縄跳び累計200回', condRuby:'{縄跳|なわと}び{累計|るいけい}200{回|かい}', target:200, getVal:d=>d.totalStats?.jump_rope||0,
     reqFn:d=>(d.totalStats?.jump_rope||0)>=200 },
-  { id:'rope_500',   name:'縄跳び名人',    nameRuby:'{縄跳|なわと}び{名人|めいじん}', emoji:'🪢', bonus:30, category:'縄跳び',
+  { id:'rope_500',   name:'縄跳び名人',    nameRuby:'{縄跳|なわと}び{名人|めいじん}', emoji:'🪢', bonus:20, category:'縄跳び',
     cond:'縄跳び累計500回', condRuby:'{縄跳|なわと}び{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.jump_rope||0,
     reqFn:d=>(d.totalStats?.jump_rope||0)>=500 },
-  { id:'rope_1000',  name:'縄跳び職人',    nameRuby:'{縄跳|なわと}び{職人|しょくにん}', emoji:'🪢', bonus:60, category:'縄跳び',
+  { id:'rope_1000',  name:'縄跳び職人',    nameRuby:'{縄跳|なわと}び{職人|しょくにん}', emoji:'🪢', bonus:35, category:'縄跳び',
     cond:'縄跳び累計1,000回', condRuby:'{縄跳|なわと}び{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.jump_rope||0,
     reqFn:d=>(d.totalStats?.jump_rope||0)>=1000 },
-  { id:'rope_3000',  name:'縄跳び達人',    nameRuby:'{縄跳|なわと}び{達人|たつじん}', emoji:'🪢', bonus:150, category:'縄跳び',
+  { id:'rope_3000',  name:'縄跳び達人',    nameRuby:'{縄跳|なわと}び{達人|たつじん}', emoji:'🪢', bonus:70, category:'縄跳び',
     cond:'縄跳び累計3,000回', condRuby:'{縄跳|なわと}び{累計|るいけい}3,000{回|かい}', target:3000, getVal:d=>d.totalStats?.jump_rope||0,
     reqFn:d=>(d.totalStats?.jump_rope||0)>=3000 },
-  { id:'rope_5000',  name:'縄跳び鬼',      nameRuby:'{縄跳|なわと}び{鬼|おに}', emoji:'🪢', bonus:300, category:'縄跳び',
+  { id:'rope_5000',  name:'縄跳び鬼',      nameRuby:'{縄跳|なわと}び{鬼|おに}', emoji:'🪢', bonus:150, category:'縄跳び',
     cond:'縄跳び累計5,000回', condRuby:'{縄跳|なわと}び{累計|るいけい}5,000{回|かい}', target:5000, getVal:d=>d.totalStats?.jump_rope||0,
     reqFn:d=>(d.totalStats?.jump_rope||0)>=5000 },
-  { id:'rope_10000', name:'縄跳びレジェンド', nameRuby:'{縄跳|なわと}びレジェンド', emoji:'🪢', bonus:600, category:'縄跳び',
+  { id:'rope_10000', name:'縄跳びレジェンド', nameRuby:'{縄跳|なわと}びレジェンド', emoji:'🪢', bonus:250, category:'縄跳び',
     cond:'縄跳び累計10,000回', condRuby:'{縄跳|なわと}び{累計|るいけい}10,000{回|かい}', target:10000, getVal:d=>d.totalStats?.jump_rope||0,
     reqFn:d=>(d.totalStats?.jump_rope||0)>=10000 },
 
@@ -1908,22 +1937,22 @@ const BADGES = [
   { id:'pushup_10',   name:'腕立てスタート', nameRuby:'{腕立|うでた}てスタート', emoji:'💪', bonus:5,  category:'腕立て伏せ',
     cond:'腕立て累計10回', condRuby:'{腕立|うでた}て{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.pushup||0,
     reqFn:d=>(d.totalStats?.pushup||0)>=10 },
-  { id:'pushup_30',   name:'腕立て30回',    nameRuby:'{腕立|うでた}て30{回|かい}', emoji:'💪', bonus:10, category:'腕立て伏せ',
+  { id:'pushup_30',   name:'腕立て30回',    nameRuby:'{腕立|うでた}て30{回|かい}', emoji:'💪', bonus:8, category:'腕立て伏せ',
     cond:'腕立て累計30回', condRuby:'{腕立|うでた}て{累計|るいけい}30{回|かい}', target:30, getVal:d=>d.totalStats?.pushup||0,
     reqFn:d=>(d.totalStats?.pushup||0)>=30 },
-  { id:'pushup_100',  name:'腕立て名人',    nameRuby:'{腕立|うでた}て{名人|めいじん}', emoji:'💪', bonus:25, category:'腕立て伏せ',
+  { id:'pushup_100',  name:'腕立て名人',    nameRuby:'{腕立|うでた}て{名人|めいじん}', emoji:'💪', bonus:15, category:'腕立て伏せ',
     cond:'腕立て累計100回', condRuby:'{腕立|うでた}て{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.pushup||0,
     reqFn:d=>(d.totalStats?.pushup||0)>=100 },
-  { id:'pushup_300',  name:'腕立て職人',    nameRuby:'{腕立|うでた}て{職人|しょくにん}', emoji:'💪', bonus:60, category:'腕立て伏せ',
+  { id:'pushup_300',  name:'腕立て職人',    nameRuby:'{腕立|うでた}て{職人|しょくにん}', emoji:'💪', bonus:35, category:'腕立て伏せ',
     cond:'腕立て累計300回', condRuby:'{腕立|うでた}て{累計|るいけい}300{回|かい}', target:300, getVal:d=>d.totalStats?.pushup||0,
     reqFn:d=>(d.totalStats?.pushup||0)>=300 },
-  { id:'pushup_500',  name:'腕立て達人',    nameRuby:'{腕立|うでた}て{達人|たつじん}', emoji:'💪', bonus:120, category:'腕立て伏せ',
+  { id:'pushup_500',  name:'腕立て達人',    nameRuby:'{腕立|うでた}て{達人|たつじん}', emoji:'💪', bonus:60, category:'腕立て伏せ',
     cond:'腕立て累計500回', condRuby:'{腕立|うでた}て{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.pushup||0,
     reqFn:d=>(d.totalStats?.pushup||0)>=500 },
-  { id:'pushup_1000', name:'腕立て鬼',      nameRuby:'{腕立|うでた}て{鬼|おに}', emoji:'💪', bonus:250, category:'腕立て伏せ',
+  { id:'pushup_1000', name:'腕立て鬼',      nameRuby:'{腕立|うでた}て{鬼|おに}', emoji:'💪', bonus:120, category:'腕立て伏せ',
     cond:'腕立て累計1,000回', condRuby:'{腕立|うでた}て{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.pushup||0,
     reqFn:d=>(d.totalStats?.pushup||0)>=1000 },
-  { id:'pushup_3000', name:'上半身の鉄人',  nameRuby:'{上半身|じょうはんしん}の{鉄人|てつじん}', emoji:'💪', bonus:500, category:'腕立て伏せ',
+  { id:'pushup_3000', name:'上半身の鉄人',  nameRuby:'{上半身|じょうはんしん}の{鉄人|てつじん}', emoji:'💪', bonus:250, category:'腕立て伏せ',
     cond:'腕立て累計3,000回', condRuby:'{腕立|うでた}て{累計|るいけい}3,000{回|かい}', target:3000, getVal:d=>d.totalStats?.pushup||0,
     reqFn:d=>(d.totalStats?.pushup||0)>=3000 },
 
@@ -1931,19 +1960,19 @@ const BADGES = [
   { id:'abs_10',   name:'腹筋スタート', nameRuby:'{腹筋|ふっきん}スタート', emoji:'🔥', bonus:5,  category:'腹筋',
     cond:'腹筋累計10回', condRuby:'{腹筋|ふっきん}{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.abs||0,
     reqFn:d=>(d.totalStats?.abs||0)>=10 },
-  { id:'abs_30',   name:'腹筋30回',    nameRuby:'{腹筋|ふっきん}30{回|かい}', emoji:'🔥', bonus:10, category:'腹筋',
+  { id:'abs_30',   name:'腹筋30回',    nameRuby:'{腹筋|ふっきん}30{回|かい}', emoji:'🔥', bonus:8, category:'腹筋',
     cond:'腹筋累計30回', condRuby:'{腹筋|ふっきん}{累計|るいけい}30{回|かい}', target:30, getVal:d=>d.totalStats?.abs||0,
     reqFn:d=>(d.totalStats?.abs||0)>=30 },
-  { id:'abs_100',  name:'腹筋名人',    nameRuby:'{腹筋|ふっきん}{名人|めいじん}', emoji:'🔥', bonus:25, category:'腹筋',
+  { id:'abs_100',  name:'腹筋名人',    nameRuby:'{腹筋|ふっきん}{名人|めいじん}', emoji:'🔥', bonus:15, category:'腹筋',
     cond:'腹筋累計100回', condRuby:'{腹筋|ふっきん}{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.abs||0,
     reqFn:d=>(d.totalStats?.abs||0)>=100 },
-  { id:'abs_300',  name:'腹筋職人',    nameRuby:'{腹筋|ふっきん}{職人|しょくにん}', emoji:'🔥', bonus:60, category:'腹筋',
+  { id:'abs_300',  name:'腹筋職人',    nameRuby:'{腹筋|ふっきん}{職人|しょくにん}', emoji:'🔥', bonus:35, category:'腹筋',
     cond:'腹筋累計300回', condRuby:'{腹筋|ふっきん}{累計|るいけい}300{回|かい}', target:300, getVal:d=>d.totalStats?.abs||0,
     reqFn:d=>(d.totalStats?.abs||0)>=300 },
-  { id:'abs_500',  name:'腹筋達人',    nameRuby:'{腹筋|ふっきん}{達人|たつじん}', emoji:'🔥', bonus:120, category:'腹筋',
+  { id:'abs_500',  name:'腹筋達人',    nameRuby:'{腹筋|ふっきん}{達人|たつじん}', emoji:'🔥', bonus:60, category:'腹筋',
     cond:'腹筋累計500回', condRuby:'{腹筋|ふっきん}{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.abs||0,
     reqFn:d=>(d.totalStats?.abs||0)>=500 },
-  { id:'abs_1000', name:'体幹の鬼',    nameRuby:'{体幹|たいかん}の{鬼|おに}', emoji:'🔥', bonus:300, category:'腹筋',
+  { id:'abs_1000', name:'体幹の鬼',    nameRuby:'{体幹|たいかん}の{鬼|おに}', emoji:'🔥', bonus:150, category:'腹筋',
     cond:'腹筋累計1,000回', condRuby:'{腹筋|ふっきん}{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.abs||0,
     reqFn:d=>(d.totalStats?.abs||0)>=1000 },
 
@@ -1951,60 +1980,60 @@ const BADGES = [
   { id:'back_10',   name:'背筋スタート', nameRuby:'{背筋|はいきん}スタート', emoji:'🏋️', bonus:5,  category:'背筋',
     cond:'背筋累計10回', condRuby:'{背筋|はいきん}{累計|るいけい}10{回|かい}', target:10, getVal:d=>d.totalStats?.back||0,
     reqFn:d=>(d.totalStats?.back||0)>=10 },
-  { id:'back_30',   name:'背筋30回',    nameRuby:'{背筋|はいきん}30{回|かい}', emoji:'🏋️', bonus:10, category:'背筋',
+  { id:'back_30',   name:'背筋30回',    nameRuby:'{背筋|はいきん}30{回|かい}', emoji:'🏋️', bonus:8, category:'背筋',
     cond:'背筋累計30回', condRuby:'{背筋|はいきん}{累計|るいけい}30{回|かい}', target:30, getVal:d=>d.totalStats?.back||0,
     reqFn:d=>(d.totalStats?.back||0)>=30 },
-  { id:'back_100',  name:'背筋名人',    nameRuby:'{背筋|はいきん}{名人|めいじん}', emoji:'🏋️', bonus:25, category:'背筋',
+  { id:'back_100',  name:'背筋名人',    nameRuby:'{背筋|はいきん}{名人|めいじん}', emoji:'🏋️', bonus:15, category:'背筋',
     cond:'背筋累計100回', condRuby:'{背筋|はいきん}{累計|るいけい}100{回|かい}', target:100, getVal:d=>d.totalStats?.back||0,
     reqFn:d=>(d.totalStats?.back||0)>=100 },
-  { id:'back_300',  name:'背筋職人',    nameRuby:'{背筋|はいきん}{職人|しょくにん}', emoji:'🏋️', bonus:60, category:'背筋',
+  { id:'back_300',  name:'背筋職人',    nameRuby:'{背筋|はいきん}{職人|しょくにん}', emoji:'🏋️', bonus:35, category:'背筋',
     cond:'背筋累計300回', condRuby:'{背筋|はいきん}{累計|るいけい}300{回|かい}', target:300, getVal:d=>d.totalStats?.back||0,
     reqFn:d=>(d.totalStats?.back||0)>=300 },
-  { id:'back_500',  name:'背筋達人',    nameRuby:'{背筋|はいきん}{達人|たつじん}', emoji:'🏋️', bonus:120, category:'背筋',
+  { id:'back_500',  name:'背筋達人',    nameRuby:'{背筋|はいきん}{達人|たつじん}', emoji:'🏋️', bonus:60, category:'背筋',
     cond:'背筋累計500回', condRuby:'{背筋|はいきん}{累計|るいけい}500{回|かい}', target:500, getVal:d=>d.totalStats?.back||0,
     reqFn:d=>(d.totalStats?.back||0)>=500 },
-  { id:'back_1000', name:'背中の鬼',    nameRuby:'{背中|せなか}の{鬼|おに}', emoji:'🏋️', bonus:300, category:'背筋',
+  { id:'back_1000', name:'背中の鬼',    nameRuby:'{背中|せなか}の{鬼|おに}', emoji:'🏋️', bonus:150, category:'背筋',
     cond:'背筋累計1,000回', condRuby:'{背筋|はいきん}{累計|るいけい}1,000{回|かい}', target:1000, getVal:d=>d.totalStats?.back||0,
     reqFn:d=>(d.totalStats?.back||0)>=1000 },
 
   // ===== バランス・複合 =====
-  { id:'day2menus',  name:'2種目クリア',   nameRuby:'2{種目|しゅもく}クリア', emoji:'✌️', bonus:10, category:'バランス・複合',
+  { id:'day2menus',  name:'2種目クリア',   nameRuby:'2{種目|しゅもく}クリア', emoji:'✌️', bonus:8, category:'バランス・複合',
     cond:'1日で2種目以上記録', condRuby:'1{日|ひ}で2{種目|しゅもく}{以上|いじょう}{記録|きろく}',
     reqFn:d=>_maxDayMenus(d)>=2 },
-  { id:'day3menus',  name:'3種目クリア',   nameRuby:'3{種目|しゅもく}クリア', emoji:'🤟', bonus:20, category:'バランス・複合',
+  { id:'day3menus',  name:'3種目クリア',   nameRuby:'3{種目|しゅもく}クリア', emoji:'🤟', bonus:15, category:'バランス・複合',
     cond:'1日で3種目以上記録', condRuby:'1{日|ひ}で3{種目|しゅもく}{以上|いじょう}{記録|きろく}',
     reqFn:d=>_maxDayMenus(d)>=3 },
-  { id:'day5menus',  name:'5種目クリア',   nameRuby:'5{種目|しゅもく}クリア', emoji:'🖐', bonus:40, category:'バランス・複合',
+  { id:'day5menus',  name:'5種目クリア',   nameRuby:'5{種目|しゅもく}クリア', emoji:'🖐', bonus:25, category:'バランス・複合',
     cond:'1日で5種目以上記録', condRuby:'1{日|ひ}で5{種目|しゅもく}{以上|いじょう}{記録|きろく}',
     reqFn:d=>_maxDayMenus(d)>=5 },
-  { id:'day7menus',  name:'7種目クリア',   nameRuby:'7{種目|しゅもく}クリア', emoji:'💫', bonus:80, category:'バランス・複合',
+  { id:'day7menus',  name:'7種目クリア',   nameRuby:'7{種目|しゅもく}クリア', emoji:'💫', bonus:40, category:'バランス・複合',
     cond:'1日で7種目以上記録', condRuby:'1{日|ひ}で7{種目|しゅもく}{以上|いじょう}{記録|きろく}',
     reqFn:d=>_maxDayMenus(d)>=7 },
-  { id:'day10menus', name:'10種目クリア',  nameRuby:'10{種目|しゅもく}クリア', emoji:'🌠', bonus:150, category:'バランス・複合',
+  { id:'day10menus', name:'10種目クリア',  nameRuby:'10{種目|しゅもく}クリア', emoji:'🌠', bonus:70, category:'バランス・複合',
     cond:'1日で10種目以上記録', condRuby:'1{日|ひ}で10{種目|しゅもく}{以上|いじょう}{記録|きろく}',
     reqFn:d=>_maxDayMenus(d)>=10 },
-  { id:'var10types', name:'10種目チャレンジャー', nameRuby:'10{種目|しゅもく}チャレンジャー', emoji:'🎖', bonus:80, category:'バランス・複合',
+  { id:'var10types', name:'10種目チャレンジャー', nameRuby:'10{種目|しゅもく}チャレンジャー', emoji:'🎖', bonus:40, category:'バランス・複合',
     cond:'累計で10種目以上に記録あり', condRuby:'{累計|るいけい}で10{種目|しゅもく}{以上|いじょう}に{記録|きろく}あり',
     reqFn:d=>MENUS.filter(m=>(d.totalStats?.[m.id]||0)>0).length>=10 },
-  { id:'var14types', name:'全種目制覇者',  nameRuby:'{全種目|ぜんしゅもく}{制覇|せいは}{者|しゃ}', emoji:'🏅', bonus:200, category:'バランス・複合',
+  { id:'var14types', name:'全種目制覇者',  nameRuby:'{全種目|ぜんしゅもく}{制覇|せいは}{者|しゃ}', emoji:'🏅', bonus:100, category:'バランス・複合',
     cond:'全14種目に記録あり', condRuby:'{全|ぜん}14{種目|しゅもく}に{記録|きろく}あり',
     reqFn:d=>MENUS.every(m=>(d.totalStats?.[m.id]||0)>0) },
-  { id:'days30total', name:'30日練習達成', nameRuby:'30{日|にち}{練習|れんしゅう}{達成|たっせい}', emoji:'📘', bonus:100, category:'バランス・複合',
+  { id:'days30total', name:'30日練習達成', nameRuby:'30{日|にち}{練習|れんしゅう}{達成|たっせい}', emoji:'📘', bonus:60, category:'バランス・複合',
     cond:'累計30日以上練習', condRuby:'{累計|るいけい}30{日|にち}{以上|いじょう}{練習|れんしゅう}',
     reqFn:d=>_practiceDays(d)>=30 },
-  { id:'days50total', name:'50日練習達成', nameRuby:'50{日|にち}{練習|れんしゅう}{達成|たっせい}', emoji:'📗', bonus:200, category:'バランス・複合',
+  { id:'days50total', name:'50日練習達成', nameRuby:'50{日|にち}{練習|れんしゅう}{達成|たっせい}', emoji:'📗', bonus:100, category:'バランス・複合',
     cond:'累計50日以上練習', condRuby:'{累計|るいけい}50{日|にち}{以上|いじょう}{練習|れんしゅう}',
     reqFn:d=>_practiceDays(d)>=50 },
-  { id:'days100total', name:'100日練習達成', nameRuby:'100{日|にち}{練習|れんしゅう}{達成|たっせい}', emoji:'📕', bonus:500, category:'バランス・複合',
+  { id:'days100total', name:'100日練習達成', nameRuby:'100{日|にち}{練習|れんしゅう}{達成|たっせい}', emoji:'📕', bonus:250, category:'バランス・複合',
     cond:'累計100日以上練習', condRuby:'{累計|るいけい}100{日|にち}{以上|いじょう}{練習|れんしゅう}',
     reqFn:d=>_practiceDays(d)>=100 },
-  { id:'cap_day1',  name:'100pt達成！',   nameRuby:'100pt{達成|たっせい}！', emoji:'💯', bonus:20, category:'バランス・複合',
+  { id:'cap_day1',  name:'100pt達成！',   nameRuby:'100pt{達成|たっせい}！', emoji:'💯', bonus:12, category:'バランス・複合',
     cond:'1日の上限100ptを達成', condRuby:'1{日|ひ}の{上限|じょうげん}100ptを{達成|たっせい}',
     reqFn:d=>_maxDayPt(d,d.records,d.quizBonus) },
-  { id:'cap_day5',  name:'5日連続100pt',  nameRuby:'5{日|にち}{連続|れんぞく}100pt', emoji:'🔟', bonus:100, category:'バランス・複合',
+  { id:'cap_day5',  name:'5日連続100pt',  nameRuby:'5{日|にち}{連続|れんぞく}100pt', emoji:'🔟', bonus:60, category:'バランス・複合',
     cond:'5日以上で100ptキャップ達成', condRuby:'5{日|にち}{以上|いじょう}で100pt{達成|たっせい}',
     reqFn:d=>_capDayCount(d)>=5 },
-  { id:'baseball_strength', name:'文武両道', nameRuby:'{文武両道|ぶんぶりょうどう}', emoji:'🌈', bonus:300, category:'バランス・複合',
+  { id:'baseball_strength', name:'文武両道', nameRuby:'{文武両道|ぶんぶりょうどう}', emoji:'🌈', bonus:150, category:'バランス・複合',
     cond:'練習と学習を同じ日に15日連続で行う', condRuby:'{練習|れんしゅう}と{学習|がくしゅう}を{同|おな}じ{日|ひ}に15{日|にち}{連続|れんぞく}で{行|おこな}う',
     reqFn:d=>{
       const pDays=new Set(Object.entries(d.records||{}).filter(([,r])=>Object.values(r).some(v=>v>0)).map(([dt])=>dt));
@@ -2015,195 +2044,195 @@ const BADGES = [
     }},
 
   // ===== 継続 =====
-  { id:'streak2',  name:'2日連続',     nameRuby:'2{日連続|にちれんぞく}',         emoji:'🌱', bonus:10,  category:'継続', reqFn:d=>d.streak>=2,
+  { id:'streak2',  name:'2日連続',     nameRuby:'2{日連続|にちれんぞく}',         emoji:'🌱', bonus:8,  category:'継続', reqFn:d=>d.streak>=2,
     cond:'2日連続で練習', condRuby:'2{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak3',  name:'3日連続',     nameRuby:'3{日連続|にちれんぞく}',         emoji:'📅', bonus:20,  category:'継続', reqFn:d=>d.streak>=3,
+  { id:'streak3',  name:'3日連続',     nameRuby:'3{日連続|にちれんぞく}',         emoji:'📅', bonus:15,  category:'継続', reqFn:d=>d.streak>=3,
     cond:'3日連続で練習', condRuby:'3{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak5',  name:'5日連続',     nameRuby:'5{日連続|にちれんぞく}',         emoji:'🔥', bonus:35,  category:'継続', reqFn:d=>d.streak>=5,
+  { id:'streak5',  name:'5日連続',     nameRuby:'5{日連続|にちれんぞく}',         emoji:'🔥', bonus:25,  category:'継続', reqFn:d=>d.streak>=5,
     cond:'5日連続で練習', condRuby:'5{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak7',  name:'1週間連続',   nameRuby:'1{週間連続|しゅうかんれんぞく}', emoji:'⭐', bonus:60,  category:'継続', reqFn:d=>d.streak>=7,
+  { id:'streak7',  name:'1週間連続',   nameRuby:'1{週間連続|しゅうかんれんぞく}', emoji:'⭐', bonus:40,  category:'継続', reqFn:d=>d.streak>=7,
     cond:'7日連続で練習', condRuby:'7{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak10', name:'10日連続',    nameRuby:'10{日連続|にちれんぞく}',        emoji:'💎', bonus:100, category:'継続', reqFn:d=>d.streak>=10,
+  { id:'streak10', name:'10日連続',    nameRuby:'10{日連続|にちれんぞく}',        emoji:'💎', bonus:60, category:'継続', reqFn:d=>d.streak>=10,
     cond:'10日連続で練習', condRuby:'10{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak14', name:'2週間連続',   nameRuby:'2{週間連続|しゅうかんれんぞく}', emoji:'🌙', bonus:150, category:'継続', reqFn:d=>d.streak>=14,
+  { id:'streak14', name:'2週間連続',   nameRuby:'2{週間連続|しゅうかんれんぞく}', emoji:'🌙', bonus:80, category:'継続', reqFn:d=>d.streak>=14,
     cond:'14日連続で練習', condRuby:'14{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak21', name:'3週間連続',   nameRuby:'3{週間連続|しゅうかんれんぞく}', emoji:'🌟', bonus:200, category:'継続', reqFn:d=>d.streak>=21,
+  { id:'streak21', name:'3週間連続',   nameRuby:'3{週間連続|しゅうかんれんぞく}', emoji:'🌟', bonus:100, category:'継続', reqFn:d=>d.streak>=21,
     cond:'21日連続で練習', condRuby:'21{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak30', name:'1ヶ月鉄人',   nameRuby:'1ヶ{月|つき}{鉄人|てつじん}',   emoji:'🦾', bonus:350, category:'継続', reqFn:d=>d.streak>=30,
+  { id:'streak30', name:'1ヶ月鉄人',   nameRuby:'1ヶ{月|つき}{鉄人|てつじん}',   emoji:'🦾', bonus:150, category:'継続', reqFn:d=>d.streak>=30,
     cond:'30日連続で練習', condRuby:'30{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak50', name:'50日の猛者',  nameRuby:'50{日|にち}の{猛者|もさ}',       emoji:'👑', bonus:600, category:'継続', reqFn:d=>d.streak>=50,
+  { id:'streak50', name:'50日の猛者',  nameRuby:'50{日|にち}の{猛者|もさ}',       emoji:'👑', bonus:250, category:'継続', reqFn:d=>d.streak>=50,
     cond:'50日連続で練習', condRuby:'50{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak100',name:'100日伝説',   nameRuby:'100{日|にち}{伝説|でんせつ}',    emoji:'🏆', bonus:1500, category:'継続', reqFn:d=>d.streak>=100,
+  { id:'streak100',name:'100日伝説',   nameRuby:'100{日|にち}{伝説|でんせつ}',    emoji:'🏆', bonus:500, category:'継続', reqFn:d=>d.streak>=100,
     cond:'100日連続で練習', condRuby:'100{日連続|にちれんぞく}で{練習|れんしゅう}' },
-  { id:'streak365',name:'365日の覇者', nameRuby:'365{日|にち}の{覇者|はしゃ}',   emoji:'🌈', bonus:5000, category:'継続', reqFn:d=>d.streak>=365,
+  { id:'streak365',name:'365日の覇者', nameRuby:'365{日|にち}の{覇者|はしゃ}',   emoji:'🌈', bonus:1500, category:'継続', reqFn:d=>d.streak>=365,
     cond:'365日連続で練習', condRuby:'365{日連続|にちれんぞく}で{練習|れんしゅう}' },
 
   // ===== 学習・テスト =====
-  { id:'quiz_easy1',   name:'やさしいクリア',   nameRuby:'やさしいクリア', emoji:'🟢', bonus:10, category:'学習・テスト',
+  { id:'quiz_easy1',   name:'やさしいクリア',   nameRuby:'やさしいクリア', emoji:'🟢', bonus:8, category:'学習・テスト',
     cond:'やさしいを1回クリア', condRuby:'やさしいを1{回|かい}クリア', reqFn:d=>_qdDiff(d,'easy')>=1 },
-  { id:'quiz_normal1', name:'ふつうクリア',      nameRuby:'ふつうクリア',  emoji:'🟡', bonus:15, category:'学習・テスト',
+  { id:'quiz_normal1', name:'ふつうクリア',      nameRuby:'ふつうクリア',  emoji:'🟡', bonus:10, category:'学習・テスト',
     cond:'ふつうを1回クリア', condRuby:'ふつうを1{回|かい}クリア', reqFn:d=>_qdDiff(d,'normal')>=1 },
-  { id:'quiz_hard1',   name:'むずかしいクリア',  nameRuby:'むずかしいクリア', emoji:'🔴', bonus:20, category:'学習・テスト',
+  { id:'quiz_hard1',   name:'むずかしいクリア',  nameRuby:'むずかしいクリア', emoji:'🔴', bonus:15, category:'学習・テスト',
     cond:'むずかしいを1回クリア', condRuby:'むずかしいを1{回|かい}クリア', reqFn:d=>_qdDiff(d,'hard')>=1 },
-  { id:'quiz_easy3',   name:'やさしい3回',       nameRuby:'やさしい3{回|かい}', emoji:'🟢', bonus:20, category:'学習・テスト',
+  { id:'quiz_easy3',   name:'やさしい3回',       nameRuby:'やさしい3{回|かい}', emoji:'🟢', bonus:15, category:'学習・テスト',
     cond:'やさしいを3回クリア', condRuby:'やさしいを3{回|かい}クリア', target:3, getVal:d=>_qdDiff(d,'easy'),
     reqFn:d=>_qdDiff(d,'easy')>=3 },
-  { id:'quiz_normal3', name:'ふつう3回',          nameRuby:'ふつう3{回|かい}', emoji:'🟡', bonus:30, category:'学習・テスト',
+  { id:'quiz_normal3', name:'ふつう3回',          nameRuby:'ふつう3{回|かい}', emoji:'🟡', bonus:20, category:'学習・テスト',
     cond:'ふつうを3回クリア', condRuby:'ふつうを3{回|かい}クリア', target:3, getVal:d=>_qdDiff(d,'normal'),
     reqFn:d=>_qdDiff(d,'normal')>=3 },
-  { id:'quiz_hard3',   name:'むずかしい3回',      nameRuby:'むずかしい3{回|かい}', emoji:'🔴', bonus:50, category:'学習・テスト',
+  { id:'quiz_hard3',   name:'むずかしい3回',      nameRuby:'むずかしい3{回|かい}', emoji:'🔴', bonus:30, category:'学習・テスト',
     cond:'むずかしいを3回クリア', condRuby:'むずかしいを3{回|かい}クリア', target:3, getVal:d=>_qdDiff(d,'hard'),
     reqFn:d=>_qdDiff(d,'hard')>=3 },
-  { id:'quiz_easy10',  name:'やさしい10回',       nameRuby:'やさしい10{回|かい}', emoji:'🟢', bonus:50, category:'学習・テスト',
+  { id:'quiz_easy10',  name:'やさしい10回',       nameRuby:'やさしい10{回|かい}', emoji:'🟢', bonus:30, category:'学習・テスト',
     cond:'やさしいを10回クリア', condRuby:'やさしいを10{回|かい}クリア', target:10, getVal:d=>_qdDiff(d,'easy'),
     reqFn:d=>_qdDiff(d,'easy')>=10 },
-  { id:'quiz_normal10', name:'ふつう10回',        nameRuby:'ふつう10{回|かい}', emoji:'🟡', bonus:80, category:'学習・テスト',
+  { id:'quiz_normal10', name:'ふつう10回',        nameRuby:'ふつう10{回|かい}', emoji:'🟡', bonus:50, category:'学習・テスト',
     cond:'ふつうを10回クリア', condRuby:'ふつうを10{回|かい}クリア', target:10, getVal:d=>_qdDiff(d,'normal'),
     reqFn:d=>_qdDiff(d,'normal')>=10 },
-  { id:'quiz_hard10',  name:'むずかしい10回',     nameRuby:'むずかしい10{回|かい}', emoji:'🔴', bonus:120, category:'学習・テスト',
+  { id:'quiz_hard10',  name:'むずかしい10回',     nameRuby:'むずかしい10{回|かい}', emoji:'🔴', bonus:70, category:'学習・テスト',
     cond:'むずかしいを10回クリア', condRuby:'むずかしいを10{回|かい}クリア', target:10, getVal:d=>_qdDiff(d,'hard'),
     reqFn:d=>_qdDiff(d,'hard')>=10 },
-  { id:'quiz_easy_perf', name:'やさしい満点！',   nameRuby:'やさしい{満点|まんてん}！', emoji:'🥇', bonus:30, category:'学習・テスト',
+  { id:'quiz_easy_perf', name:'やさしい満点！',   nameRuby:'やさしい{満点|まんてん}！', emoji:'🥇', bonus:20, category:'学習・テスト',
     cond:'やさしいで満点を取る', condRuby:'やさしいで{満点|まんてん}を{取|と}る', reqFn:d=>_qdPerfect(d,'easy')>=1 },
-  { id:'quiz_normal_perf', name:'ふつう満点！',   nameRuby:'ふつう{満点|まんてん}！', emoji:'🥇', bonus:60, category:'学習・テスト',
+  { id:'quiz_normal_perf', name:'ふつう満点！',   nameRuby:'ふつう{満点|まんてん}！', emoji:'🥇', bonus:35, category:'学習・テスト',
     cond:'ふつうで満点を取る', condRuby:'ふつうで{満点|まんてん}を{取|と}る', reqFn:d=>_qdPerfect(d,'normal')>=1 },
-  { id:'quiz_hard_perf', name:'むずかしい満点！', nameRuby:'むずかしい{満点|まんてん}！', emoji:'🏆', bonus:100, category:'学習・テスト',
+  { id:'quiz_hard_perf', name:'むずかしい満点！', nameRuby:'むずかしい{満点|まんてん}！', emoji:'🏆', bonus:60, category:'学習・テスト',
     cond:'むずかしいで満点を取る', condRuby:'むずかしいで{満点|まんてん}を{取|と}る', reqFn:d=>_qdPerfect(d,'hard')>=1 },
-  { id:'quiz_hard3perf', name:'むずかしい満点3回',nameRuby:'むずかしい{満点|まんてん}3{回|かい}', emoji:'👑', bonus:300, category:'学習・テスト',
+  { id:'quiz_hard3perf', name:'むずかしい満点3回',nameRuby:'むずかしい{満点|まんてん}3{回|かい}', emoji:'👑', bonus:150, category:'学習・テスト',
     cond:'むずかしいで満点を3回', condRuby:'むずかしいで{満点|まんてん}を3{回|かい}', target:3, getVal:d=>_qdPerfect(d,'hard'),
     reqFn:d=>_qdPerfect(d,'hard')>=3 },
-  { id:'quiz_total5',  name:'テスト5回',          nameRuby:'テスト5{回|かい}', emoji:'📝', bonus:20, category:'学習・テスト',
+  { id:'quiz_total5',  name:'テスト5回',          nameRuby:'テスト5{回|かい}', emoji:'📝', bonus:15, category:'学習・テスト',
     cond:'テスト合計5回クリア', condRuby:'テスト{合計|ごうけい}5{回|かい}クリア', target:5, getVal:d=>_qdTotal(d),
     reqFn:d=>_qdTotal(d)>=5 },
-  { id:'quiz_total20', name:'テスト20回',         nameRuby:'テスト20{回|かい}', emoji:'📝', bonus:60, category:'学習・テスト',
+  { id:'quiz_total20', name:'テスト20回',         nameRuby:'テスト20{回|かい}', emoji:'📝', bonus:35, category:'学習・テスト',
     cond:'テスト合計20回クリア', condRuby:'テスト{合計|ごうけい}20{回|かい}クリア', target:20, getVal:d=>_qdTotal(d),
     reqFn:d=>_qdTotal(d)>=20 },
-  { id:'quiz_total50', name:'テスト50回',         nameRuby:'テスト50{回|かい}', emoji:'📚', bonus:150, category:'学習・テスト',
+  { id:'quiz_total50', name:'テスト50回',         nameRuby:'テスト50{回|かい}', emoji:'📚', bonus:80, category:'学習・テスト',
     cond:'テスト合計50回クリア', condRuby:'テスト{合計|ごうけい}50{回|かい}クリア', target:50, getVal:d=>_qdTotal(d),
     reqFn:d=>_qdTotal(d)>=50 },
-  { id:'quiz_total100',name:'テスト100回',        nameRuby:'テスト100{回|かい}', emoji:'📚', bonus:400, category:'学習・テスト',
+  { id:'quiz_total100',name:'テスト100回',        nameRuby:'テスト100{回|かい}', emoji:'📚', bonus:200, category:'学習・テスト',
     cond:'テスト合計100回クリア', condRuby:'テスト{合計|ごうけい}100{回|かい}クリア', target:100, getVal:d=>_qdTotal(d),
     reqFn:d=>_qdTotal(d)>=100 },
-  { id:'quiz_streak3', name:'3日連続テスト',      nameRuby:'3{日連続|にちれんぞく}テスト', emoji:'📖', bonus:50, category:'学習・テスト',
+  { id:'quiz_streak3', name:'3日連続テスト',      nameRuby:'3{日連続|にちれんぞく}テスト', emoji:'📖', bonus:30, category:'学習・テスト',
     cond:'3日連続でテストをクリア', condRuby:'3{日連続|にちれんぞく}でテストをクリア', reqFn:d=>_qdStreak(d)>=3 },
-  { id:'quiz_streak7', name:'7日連続テスト',      nameRuby:'7{日連続|にちれんぞく}テスト', emoji:'📖', bonus:150, category:'学習・テスト',
+  { id:'quiz_streak7', name:'7日連続テスト',      nameRuby:'7{日連続|にちれんぞく}テスト', emoji:'📖', bonus:70, category:'学習・テスト',
     cond:'7日連続でテストをクリア', condRuby:'7{日連続|にちれんぞく}でテストをクリア', reqFn:d=>_qdStreak(d)>=7 },
-  { id:'quiz_all3diff',name:'3難易度制覇',        nameRuby:'3{難易度|なんいど}{制覇|せいは}', emoji:'🌈', bonus:80, category:'学習・テスト',
+  { id:'quiz_all3diff',name:'3難易度制覇',        nameRuby:'3{難易度|なんいど}{制覇|せいは}', emoji:'🌈', bonus:50, category:'学習・テスト',
     cond:'3種類すべての難易度をクリア', condRuby:'3{種類|しゅるい}すべての{難易度|なんいど}をクリア',
     reqFn:d=>_qdDiff(d,'easy')>=1&&_qdDiff(d,'normal')>=1&&_qdDiff(d,'hard')>=1 },
 
   // ===== 宿題 =====
-  { id:'hw_first', name:'はじめての宿題', nameRuby:'はじめての{宿題|しゅくだい}', emoji:'📚', bonus:10,  category:'宿題',
+  { id:'hw_first', name:'はじめての宿題', nameRuby:'はじめての{宿題|しゅくだい}', emoji:'📚', bonus:8,  category:'宿題',
     cond:'宿題を1回完了', condRuby:'{宿題|しゅくだい}を1{回|かい}{完了|かんりょう}',
     reqFn:d=>_hwCount(d)>=1 },
-  { id:'hw_5',  name:'宿題5回',  nameRuby:'{宿題|しゅくだい}5{回|かい}',  emoji:'📚', bonus:30,  category:'宿題',
+  { id:'hw_5',  name:'宿題5回',  nameRuby:'{宿題|しゅくだい}5{回|かい}',  emoji:'📚', bonus:20,  category:'宿題',
     cond:'宿題を5回完了',  condRuby:'{宿題|しゅくだい}を5{回|かい}{完了|かんりょう}',  target:5,  getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=5 },
-  { id:'hw_10', name:'宿題10回', nameRuby:'{宿題|しゅくだい}10{回|かい}', emoji:'📖', bonus:60,  category:'宿題',
+  { id:'hw_10', name:'宿題10回', nameRuby:'{宿題|しゅくだい}10{回|かい}', emoji:'📖', bonus:35,  category:'宿題',
     cond:'宿題を10回完了', condRuby:'{宿題|しゅくだい}を10{回|かい}{完了|かんりょう}', target:10, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=10 },
-  { id:'hw_15', name:'宿題15回', nameRuby:'{宿題|しゅくだい}15{回|かい}', emoji:'📗', bonus:100, category:'宿題',
+  { id:'hw_15', name:'宿題15回', nameRuby:'{宿題|しゅくだい}15{回|かい}', emoji:'📗', bonus:60, category:'宿題',
     cond:'宿題を15回完了', condRuby:'{宿題|しゅくだい}を15{回|かい}{完了|かんりょう}', target:15, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=15 },
-  { id:'hw_20', name:'宿題20回', nameRuby:'{宿題|しゅくだい}20{回|かい}', emoji:'📗', bonus:150, category:'宿題',
+  { id:'hw_20', name:'宿題20回', nameRuby:'{宿題|しゅくだい}20{回|かい}', emoji:'📗', bonus:80, category:'宿題',
     cond:'宿題を20回完了', condRuby:'{宿題|しゅくだい}を20{回|かい}{完了|かんりょう}', target:20, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=20 },
-  { id:'hw_25', name:'宿題25回', nameRuby:'{宿題|しゅくだい}25{回|かい}', emoji:'📘', bonus:200, category:'宿題',
+  { id:'hw_25', name:'宿題25回', nameRuby:'{宿題|しゅくだい}25{回|かい}', emoji:'📘', bonus:100, category:'宿題',
     cond:'宿題を25回完了', condRuby:'{宿題|しゅくだい}を25{回|かい}{完了|かんりょう}', target:25, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=25 },
-  { id:'hw_30', name:'宿題30回', nameRuby:'{宿題|しゅくだい}30{回|かい}', emoji:'📘', bonus:300, category:'宿題',
+  { id:'hw_30', name:'宿題30回', nameRuby:'{宿題|しゅくだい}30{回|かい}', emoji:'📘', bonus:150, category:'宿題',
     cond:'宿題を30回完了', condRuby:'{宿題|しゅくだい}を30{回|かい}{完了|かんりょう}', target:30, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=30 },
-  { id:'hw_35', name:'宿題35回', nameRuby:'{宿題|しゅくだい}35{回|かい}', emoji:'🥈', bonus:400, category:'宿題',
+  { id:'hw_35', name:'宿題35回', nameRuby:'{宿題|しゅくだい}35{回|かい}', emoji:'🥈', bonus:200, category:'宿題',
     cond:'宿題を35回完了', condRuby:'{宿題|しゅくだい}を35{回|かい}{完了|かんりょう}', target:35, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=35 },
-  { id:'hw_40', name:'宿題40回', nameRuby:'{宿題|しゅくだい}40{回|かい}', emoji:'🥈', bonus:500, category:'宿題',
+  { id:'hw_40', name:'宿題40回', nameRuby:'{宿題|しゅくだい}40{回|かい}', emoji:'🥈', bonus:250, category:'宿題',
     cond:'宿題を40回完了', condRuby:'{宿題|しゅくだい}を40{回|かい}{完了|かんりょう}', target:40, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=40 },
-  { id:'hw_45', name:'宿題45回', nameRuby:'{宿題|しゅくだい}45{回|かい}', emoji:'🥇', bonus:700, category:'宿題',
+  { id:'hw_45', name:'宿題45回', nameRuby:'{宿題|しゅくだい}45{回|かい}', emoji:'🥇', bonus:350, category:'宿題',
     cond:'宿題を45回完了', condRuby:'{宿題|しゅくだい}を45{回|かい}{完了|かんりょう}', target:45, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=45 },
-  { id:'hw_50', name:'宿題50回', nameRuby:'{宿題|しゅくだい}50{回|かい}', emoji:'🏆', bonus:1000, category:'宿題',
+  { id:'hw_50', name:'宿題50回', nameRuby:'{宿題|しゅくだい}50{回|かい}', emoji:'🏆', bonus:500, category:'宿題',
     cond:'宿題を50回完了', condRuby:'{宿題|しゅくだい}を50{回|かい}{完了|かんりょう}', target:50, getVal:d=>_hwCount(d), reqFn:d=>_hwCount(d)>=50 },
 
   // ===== 覚えよう =====
-  { id:'kiso_first',         name:'はじめてクリア！',         emoji:'📖', bonus:20,  category:'覚えよう',
+  { id:'kiso_first',         name:'はじめてクリア！',         emoji:'📖', bonus:15,  category:'覚えよう',
     cond:'覚えようの小テストをはじめてクリア', reqFn: d=>_kisoCleared(d)>=1 },
-  { id:'kiso_normal_debut',  name:'ふつうデビュー！',          emoji:'🟡', bonus:30,  category:'覚えよう',
+  { id:'kiso_normal_debut',  name:'ふつうデビュー！',          emoji:'🟡', bonus:20,  category:'覚えよう',
     cond:'ふつうの小テストをはじめてクリア',
     reqFn: d=>Object.keys((d.kisoProgress||{}).normal||{}).length >= 1 },
-  { id:'kiso_hard_debut',    name:'むずかしいデビュー！',      emoji:'🔴', bonus:50,  category:'覚えよう',
+  { id:'kiso_hard_debut',    name:'むずかしいデビュー！',      emoji:'🔴', bonus:30,  category:'覚えよう',
     cond:'むずかしいの小テストをはじめてクリア',
     reqFn: d=>Object.keys((d.kisoProgress||{}).hard||{}).length >= 1 },
-  { id:'kiso_3',          name:'3セクションクリア',       emoji:'📚', bonus:50,  category:'覚えよう',
+  { id:'kiso_3',          name:'3セクションクリア',       emoji:'📚', bonus:30,  category:'覚えよう',
     cond:'合計3セクションクリア', reqFn: d=>_kisoCleared(d)>=3 },
-  { id:'kiso_5',          name:'5セクションクリア',       emoji:'🎓', bonus:100, category:'覚えよう',
+  { id:'kiso_5',          name:'5セクションクリア',       emoji:'🎓', bonus:60, category:'覚えよう',
     cond:'合計5セクションクリア', reqFn: d=>_kisoCleared(d)>=5 },
-  { id:'kiso_10',         name:'10セクションクリア',      emoji:'🏅', bonus:200, category:'覚えよう',
+  { id:'kiso_10',         name:'10セクションクリア',      emoji:'🏅', bonus:100, category:'覚えよう',
     cond:'合計10セクションクリア', reqFn: d=>_kisoCleared(d)>=10 },
-  { id:'kiso_20',         name:'20セクションクリア',      emoji:'🏆', bonus:400, category:'覚えよう',
+  { id:'kiso_20',         name:'20セクションクリア',      emoji:'🏆', bonus:200, category:'覚えよう',
     cond:'合計20セクションクリア', reqFn: d=>_kisoCleared(d)>=20 },
-  { id:'kiso_all_easy',   name:'やさしい全クリア！',      emoji:'⭐', bonus:200, category:'覚えよう',
+  { id:'kiso_all_easy',   name:'やさしい全クリア！',      emoji:'⭐', bonus:100, category:'覚えよう',
     cond:'やさしいの全セクションをクリア', reqFn: d=>_kisoAllEasy(d) },
-  { id:'kiso_all_normal', name:'ふつう全クリア！',        emoji:'🌟', bonus:400, category:'覚えよう',
+  { id:'kiso_all_normal', name:'ふつう全クリア！',        emoji:'🌟', bonus:200, category:'覚えよう',
     cond:'ふつうの全セクションをクリア', reqFn: d=>_kisoAllNormal(d) },
-  { id:'kiso_all_hard',   name:'むずかしい全クリア！',    emoji:'💎', bonus:800, category:'覚えよう',
+  { id:'kiso_all_hard',   name:'むずかしい全クリア！',    emoji:'💎', bonus:400, category:'覚えよう',
     cond:'むずかしいの全セクションをクリア', reqFn: d=>_kisoAllHard(d) },
-  { id:'kiso_perfect',    name:'かんぺき！',              emoji:'💯', bonus:80,  category:'覚えよう',
+  { id:'kiso_perfect',    name:'かんぺき！',              emoji:'💯', bonus:40,  category:'覚えよう',
     cond:'小テストで全問正解（1回）', reqFn: d=>_kisoPerfectDone(d)>=1 },
-  { id:'kiso_perfect3',   name:'パーフェクト3回！',       emoji:'🌈', bonus:200, category:'覚えよう',
+  { id:'kiso_perfect3',   name:'パーフェクト3回！',       emoji:'🌈', bonus:100, category:'覚えよう',
     cond:'小テストで全問正解を3回達成', reqFn: d=>_kisoPerfectDone(d)>=3 },
 
   // ===== カードコレクション =====
-  { id:'card_1',    name:'カードゲット！',  nameRuby:'カードゲット！', emoji:'🃏', bonus:15, category:'カードコレクション',
+  { id:'card_1',    name:'カードゲット！',  nameRuby:'カードゲット！', emoji:'🃏', bonus:10, category:'カードコレクション',
     cond:'カードを1枚入手', condRuby:'カードを1{枚|まい}{入手|にゅうしゅ}', target:1, getVal:d=>(d.ownedCards||[]).length,
     reqFn:d=>(d.ownedCards||[]).length>=1 },
-  { id:'card_5',    name:'カード5枚',       nameRuby:'カード5{枚|まい}', emoji:'🃏', bonus:30, category:'カードコレクション',
+  { id:'card_5',    name:'カード5枚',       nameRuby:'カード5{枚|まい}', emoji:'🃏', bonus:20, category:'カードコレクション',
     cond:'カードを5枚入手', condRuby:'カードを5{枚|まい}{入手|にゅうしゅ}', target:5, getVal:d=>(d.ownedCards||[]).length,
     reqFn:d=>(d.ownedCards||[]).length>=5 },
-  { id:'card_10',   name:'カード10枚',      nameRuby:'カード10{枚|まい}', emoji:'🃏', bonus:60, category:'カードコレクション',
+  { id:'card_10',   name:'カード10枚',      nameRuby:'カード10{枚|まい}', emoji:'🃏', bonus:35, category:'カードコレクション',
     cond:'カードを10枚入手', condRuby:'カードを10{枚|まい}{入手|にゅうしゅ}', target:10, getVal:d=>(d.ownedCards||[]).length,
     reqFn:d=>(d.ownedCards||[]).length>=10 },
-  { id:'card_20',   name:'カード20枚',      nameRuby:'カード20{枚|まい}', emoji:'🃏', bonus:150, category:'カードコレクション',
+  { id:'card_20',   name:'カード20枚',      nameRuby:'カード20{枚|まい}', emoji:'🃏', bonus:80, category:'カードコレクション',
     cond:'カードを20枚入手', condRuby:'カードを20{枚|まい}{入手|にゅうしゅ}', target:20, getVal:d=>(d.ownedCards||[]).length,
     reqFn:d=>(d.ownedCards||[]).length>=20 },
-  { id:'card_40',   name:'全カードコンプリート！', nameRuby:'{全|ぜん}カードコンプリート！', emoji:'✨', bonus:2000, category:'カードコレクション',
+  { id:'card_40',   name:'全カードコンプリート！', nameRuby:'{全|ぜん}カードコンプリート！', emoji:'✨', bonus:800, category:'カードコレクション',
     cond:'全40枚入手', condRuby:'{全|ぜん}40{枚|まい}{入手|にゅうしゅ}', target:40, getVal:d=>(d.ownedCards||[]).length,
     reqFn:d=>(d.ownedCards||[]).length>=40 },
-  { id:'lv1_comp',  name:'Lv1コンプ',       nameRuby:'Lv1コンプ', emoji:'🥉', bonus:50, category:'カードコレクション',
+  { id:'lv1_comp',  name:'Lv1コンプ',       nameRuby:'Lv1コンプ', emoji:'🥉', bonus:30, category:'カードコレクション',
     cond:'Lv1カード5種をすべて入手', condRuby:'Lv1カード5{種|しゅ}をすべて{入手|にゅうしゅ}',
     reqFn:d=>CARD_TYPES.every(t=>(d.ownedCards||[]).includes(cardKey(1,t.id))) },
-  { id:'lv5_comp',  name:'Lv5コンプ',       nameRuby:'Lv5コンプ', emoji:'🥈', bonus:100, category:'カードコレクション',
+  { id:'lv5_comp',  name:'Lv5コンプ',       nameRuby:'Lv5コンプ', emoji:'🥈', bonus:60, category:'カードコレクション',
     cond:'Lv5カード5種をすべて入手', condRuby:'Lv5カード5{種|しゅ}をすべて{入手|にゅうしゅ}',
     reqFn:d=>CARD_TYPES.every(t=>(d.ownedCards||[]).includes(cardKey(5,t.id))) },
-  { id:'lv10_comp', name:'Lv10コンプ',      nameRuby:'Lv10コンプ', emoji:'🥇', bonus:200, category:'カードコレクション',
+  { id:'lv10_comp', name:'Lv10コンプ',      nameRuby:'Lv10コンプ', emoji:'🥇', bonus:100, category:'カードコレクション',
     cond:'Lv10カード5種をすべて入手', condRuby:'Lv10カード5{種|しゅ}をすべて{入手|にゅうしゅ}',
     reqFn:d=>CARD_TYPES.every(t=>(d.ownedCards||[]).includes(cardKey(10,t.id))) },
-  { id:'card_lv30', name:'Lv30カードゲット', nameRuby:'Lv30カードゲット', emoji:'🌈', bonus:300, category:'カードコレクション',
+  { id:'card_lv30', name:'Lv30カードゲット', nameRuby:'Lv30カードゲット', emoji:'🌈', bonus:150, category:'カードコレクション',
     cond:'Lv30のカードを入手', condRuby:'Lv30のカードを{入手|にゅうしゅ}',
     reqFn:d=>CARD_TYPES.some(t=>(d.ownedCards||[]).includes(cardKey(30,t.id))) },
-  { id:'card_lv50', name:'Lv50カードゲット', nameRuby:'Lv50カードゲット', emoji:'👑', bonus:1000, category:'カードコレクション',
+  { id:'card_lv50', name:'Lv50カードゲット', nameRuby:'Lv50カードゲット', emoji:'👑', bonus:400, category:'カードコレクション',
     cond:'Lv50のカードを入手', condRuby:'Lv50のカードを{入手|にゅうしゅ}',
     reqFn:d=>CARD_TYPES.some(t=>(d.ownedCards||[]).includes(cardKey(50,t.id))) },
 
   // ===== 能力強化 =====
-  { id:'upg1',   name:'初強化！',       nameRuby:'{初|はじ}{強化|きょうか}！', emoji:'⬆️', bonus:10, category:'能力強化',
+  { id:'upg1',   name:'初強化！',       nameRuby:'{初|はじ}{強化|きょうか}！', emoji:'⬆️', bonus:8, category:'能力強化',
     cond:'初めて能力を強化', condRuby:'{初|はじ}めて{能力|のうりょく}を{強化|きょうか}', reqFn:d=>_upgradeCount(d)>=1 },
-  { id:'upg5',   name:'強化5回',        nameRuby:'{強化|きょうか}5{回|かい}', emoji:'⬆️', bonus:25, category:'能力強化',
+  { id:'upg5',   name:'強化5回',        nameRuby:'{強化|きょうか}5{回|かい}', emoji:'⬆️', bonus:15, category:'能力強化',
     cond:'累計5回強化', condRuby:'{累計|るいけい}5{回|かい}{強化|きょうか}', target:5, getVal:d=>_upgradeCount(d),
     reqFn:d=>_upgradeCount(d)>=5 },
-  { id:'upg15',  name:'強化15回',       nameRuby:'{強化|きょうか}15{回|かい}', emoji:'⬆️', bonus:60, category:'能力強化',
+  { id:'upg15',  name:'強化15回',       nameRuby:'{強化|きょうか}15{回|かい}', emoji:'⬆️', bonus:35, category:'能力強化',
     cond:'累計15回強化', condRuby:'{累計|るいけい}15{回|かい}{強化|きょうか}', target:15, getVal:d=>_upgradeCount(d),
     reqFn:d=>_upgradeCount(d)>=15 },
-  { id:'upg30',  name:'強化30回',       nameRuby:'{強化|きょうか}30{回|かい}', emoji:'💠', bonus:120, category:'能力強化',
+  { id:'upg30',  name:'強化30回',       nameRuby:'{強化|きょうか}30{回|かい}', emoji:'💠', bonus:60, category:'能力強化',
     cond:'累計30回強化', condRuby:'{累計|るいけい}30{回|かい}{強化|きょうか}', target:30, getVal:d=>_upgradeCount(d),
     reqFn:d=>_upgradeCount(d)>=30 },
-  { id:'upg50',  name:'強化の達人',     nameRuby:'{強化|きょうか}の{達人|たつじん}', emoji:'💠', bonus:250, category:'能力強化',
+  { id:'upg50',  name:'強化の達人',     nameRuby:'{強化|きょうか}の{達人|たつじん}', emoji:'💠', bonus:100, category:'能力強化',
     cond:'累計50回強化', condRuby:'{累計|るいけい}50{回|かい}{強化|きょうか}', target:50, getVal:d=>_upgradeCount(d),
     reqFn:d=>_upgradeCount(d)>=50 },
-  { id:'rank_s1', name:'Sランク初達成', nameRuby:'Sランク{初|はじ}{達成|たっせい}', emoji:'💜', bonus:100, category:'能力強化',
+  { id:'rank_s1', name:'Sランク初達成', nameRuby:'Sランク{初|はじ}{達成|たっせい}', emoji:'💜', bonus:50, category:'能力強化',
     cond:'1つの能力をSランクに', condRuby:'1つの{能力|のうりょく}をSランクに', reqFn:d=>_sRankCount(d)>=1 },
-  { id:'rank_s5', name:'Sランク5個',    nameRuby:'Sランク5{個|こ}', emoji:'💜', bonus:300, category:'能力強化',
+  { id:'rank_s5', name:'Sランク5個',    nameRuby:'Sランク5{個|こ}', emoji:'💜', bonus:120, category:'能力強化',
     cond:'Sランクを5個達成', condRuby:'Sランクを5{個|こ}{達成|たっせい}', target:5, getVal:d=>_sRankCount(d),
     reqFn:d=>_sRankCount(d)>=5 },
-  { id:'rank_s10',name:'Sランク10個',   nameRuby:'Sランク10{個|こ}', emoji:'💜', bonus:600, category:'能力強化',
+  { id:'rank_s10',name:'Sランク10個',   nameRuby:'Sランク10{個|こ}', emoji:'💜', bonus:250, category:'能力強化',
     cond:'Sランクを10個達成', condRuby:'Sランクを10{個|こ}{達成|たっせい}', target:10, getVal:d=>_sRankCount(d),
     reqFn:d=>_sRankCount(d)>=10 },
-  { id:'full_upg1',name:'フル強化カード1枚', nameRuby:'フル{強化|きょうか}カード1{枚|まい}', emoji:'🌟', bonus:500, category:'能力強化',
+  { id:'full_upg1',name:'フル強化カード1枚', nameRuby:'フル{強化|きょうか}カード1{枚|まい}', emoji:'🌟', bonus:200, category:'能力強化',
     cond:'1枚のカードを全能力Sランクに', condRuby:'1{枚|まい}のカードを{全|ぜん}{能力|のうりょく}Sランクに', target:1, getVal:d=>_fullUpgradeCount(d),
     reqFn:d=>_fullUpgradeCount(d)>=1 },
-  { id:'full_upg3',name:'フル強化カード3枚', nameRuby:'フル{強化|きょうか}カード3{枚|まい}', emoji:'💫', bonus:1500, category:'能力強化',
+  { id:'full_upg3',name:'フル強化カード3枚', nameRuby:'フル{強化|きょうか}カード3{枚|まい}', emoji:'💫', bonus:600, category:'能力強化',
     cond:'3枚のカードを全能力Sランクに', condRuby:'3{枚|まい}のカードを{全|ぜん}{能力|のうりょく}Sランクに', target:3, getVal:d=>_fullUpgradeCount(d),
     reqFn:d=>_fullUpgradeCount(d)>=3 },
 
@@ -2211,39 +2240,39 @@ const BADGES = [
   { id:'pts_200',   name:'200pt達成',    nameRuby:'200pt{達成|たっせい}', emoji:'💰', bonus:5,   category:'獲得ポイント',
     cond:'累計ポイント200pt', condRuby:'{累計|るいけい}ポイント200pt', target:200, getVal:d=>calcPracticeScore(d.records,d.quizBonus),
     reqFn:d=>calcPracticeScore(d.records,d.quizBonus)>=200 },
-  { id:'pts_500',   name:'500pt達成',    nameRuby:'500pt{達成|たっせい}', emoji:'💰', bonus:30,  category:'獲得ポイント',
+  { id:'pts_500',   name:'500pt達成',    nameRuby:'500pt{達成|たっせい}', emoji:'💰', bonus:20,  category:'獲得ポイント',
     cond:'累計ポイント500pt', condRuby:'{累計|るいけい}ポイント500pt', target:500, getVal:d=>calcPracticeScore(d.records,d.quizBonus),
     reqFn:d=>calcPracticeScore(d.records,d.quizBonus)>=500 },
-  { id:'pts_1000',  name:'1,000pt達成',  nameRuby:'1,000pt{達成|たっせい}', emoji:'💎', bonus:60,  category:'獲得ポイント',
+  { id:'pts_1000',  name:'1,000pt達成',  nameRuby:'1,000pt{達成|たっせい}', emoji:'💎', bonus:35,  category:'獲得ポイント',
     cond:'累計ポイント1,000pt', condRuby:'{累計|るいけい}ポイント1,000pt', target:1000, getVal:d=>calcPracticeScore(d.records,d.quizBonus),
     reqFn:d=>calcPracticeScore(d.records,d.quizBonus)>=1000 },
-  { id:'pts_3000',  name:'3,000pt達成',  nameRuby:'3,000pt{達成|たっせい}', emoji:'💎', bonus:150, category:'獲得ポイント',
+  { id:'pts_3000',  name:'3,000pt達成',  nameRuby:'3,000pt{達成|たっせい}', emoji:'💎', bonus:80, category:'獲得ポイント',
     cond:'累計ポイント3,000pt', condRuby:'{累計|るいけい}ポイント3,000pt', target:3000, getVal:d=>calcPracticeScore(d.records,d.quizBonus),
     reqFn:d=>calcPracticeScore(d.records,d.quizBonus)>=3000 },
-  { id:'pts_5000',  name:'5,000pt達成',  nameRuby:'5,000pt{達成|たっせい}', emoji:'💎', bonus:300, category:'獲得ポイント',
+  { id:'pts_5000',  name:'5,000pt達成',  nameRuby:'5,000pt{達成|たっせい}', emoji:'💎', bonus:150, category:'獲得ポイント',
     cond:'累計ポイント5,000pt', condRuby:'{累計|るいけい}ポイント5,000pt', target:5000, getVal:d=>calcPracticeScore(d.records,d.quizBonus),
     reqFn:d=>calcPracticeScore(d.records,d.quizBonus)>=5000 },
-  { id:'pts_10000', name:'1万pt達成！',  nameRuby:'1{万|まん}pt{達成|たっせい}！', emoji:'👑', bonus:1000, category:'獲得ポイント',
+  { id:'pts_10000', name:'1万pt達成！',  nameRuby:'1{万|まん}pt{達成|たっせい}！', emoji:'👑', bonus:400, category:'獲得ポイント',
     cond:'累計ポイント10,000pt', condRuby:'{累計|るいけい}ポイント10,000pt', target:10000, getVal:d=>calcPracticeScore(d.records,d.quizBonus),
     reqFn:d=>calcPracticeScore(d.records,d.quizBonus)>=10000 },
-  { id:'pts_30000', name:'3万pt達成！',  nameRuby:'3{万|まん}pt{達成|たっせい}！', emoji:'🌈', bonus:3000, category:'獲得ポイント',
+  { id:'pts_30000', name:'3万pt達成！',  nameRuby:'3{万|まん}pt{達成|たっせい}！', emoji:'🌈', bonus:1200, category:'獲得ポイント',
     cond:'累計ポイント30,000pt', condRuby:'{累計|るいけい}ポイント30,000pt', target:30000, getVal:d=>calcPracticeScore(d.records,d.quizBonus),
     reqFn:d=>calcPracticeScore(d.records,d.quizBonus)>=30000 },
 
   // ===== スペシャル =====
-  { id:'badges10',  name:'バッジ10個！',  nameRuby:'バッジ10{個|こ}！', emoji:'🎖', bonus:50,  category:'スペシャル',
+  { id:'badges10',  name:'バッジ10個！',  nameRuby:'バッジ10{個|こ}！', emoji:'🎖', bonus:30,  category:'スペシャル',
     cond:'バッジを10個受け取り', condRuby:'バッジを10{個|こ}{受取|うけと}り', target:10, getVal:d=>(d.claimedBadges||[]).length,
     reqFn:d=>(d.claimedBadges||[]).length>=10 },
-  { id:'badges30',  name:'バッジ30個！',  nameRuby:'バッジ30{個|こ}！', emoji:'🎖', bonus:150, category:'スペシャル',
+  { id:'badges30',  name:'バッジ30個！',  nameRuby:'バッジ30{個|こ}！', emoji:'🎖', bonus:80, category:'スペシャル',
     cond:'バッジを30個受け取り', condRuby:'バッジを30{個|こ}{受取|うけと}り', target:30, getVal:d=>(d.claimedBadges||[]).length,
     reqFn:d=>(d.claimedBadges||[]).length>=30 },
-  { id:'badges60',  name:'バッジ60個！',  nameRuby:'バッジ60{個|こ}！', emoji:'🏅', bonus:400, category:'スペシャル',
+  { id:'badges60',  name:'バッジ60個！',  nameRuby:'バッジ60{個|こ}！', emoji:'🏅', bonus:200, category:'スペシャル',
     cond:'バッジを60個受け取り', condRuby:'バッジを60{個|こ}{受取|うけと}り', target:60, getVal:d=>(d.claimedBadges||[]).length,
     reqFn:d=>(d.claimedBadges||[]).length>=60 },
-  { id:'badges100', name:'バッジ100個！', nameRuby:'バッジ100{個|こ}！', emoji:'🏆', bonus:1000, category:'スペシャル',
+  { id:'badges100', name:'バッジ100個！', nameRuby:'バッジ100{個|こ}！', emoji:'🏆', bonus:400, category:'スペシャル',
     cond:'バッジを100個受け取り', condRuby:'バッジを100{個|こ}{受取|うけと}り', target:100, getVal:d=>(d.claimedBadges||[]).length,
     reqFn:d=>(d.claimedBadges||[]).length>=100 },
-  { id:'legend',    name:'伝説の野球少年', nameRuby:'{伝説|でんせつ}の{野球|やきゅう}{少年|しょうねん}', emoji:'🌟', bonus:5000, category:'スペシャル',
+  { id:'legend',    name:'伝説の野球少年', nameRuby:'{伝説|でんせつ}の{野球|やきゅう}{少年|しょうねん}', emoji:'🌟', bonus:1500, category:'スペシャル',
     cond:'バッジを150個以上受け取り', condRuby:'バッジを150{個|こ}{以上|いじょう}{受取|うけと}り', target:150, getVal:d=>(d.claimedBadges||[]).length,
     reqFn:d=>(d.claimedBadges||[]).length>=150 },
 ];
@@ -2881,6 +2910,312 @@ function playHankoSound() {
   playSound('hanko.mp3', 1.0);
 }
 
+// ===== オンボーディング推奨メニュー定義 =====
+// grade: low(1-2年) / mid(3-4年) / high(5-6年) / jhs(中学生)
+// exp:   beginner / some / used
+const ONBOARDING_RECS = {
+  low_beginner:  { swing:10, pushup:5,  squat:5  },
+  low_some:      { swing:15, pushup:10, squat:10, abs:5 },
+  low_used:      { swing:20, pushup:15, squat:15, abs:10 },
+  mid_beginner:  { swing:15, shadow:10, squat:10, pushup:5 },
+  mid_some:      { swing:20, shadow:15, squat:15, pushup:10 },
+  mid_used:      { swing:30, shadow:20, squat:20, pushup:15, jump_rope:50 },
+  high_beginner: { swing:20, shadow:15, squat:15, pushup:10, run:10 },
+  high_some:     { swing:30, shadow:20, squat:20, pushup:15, run:15 },
+  high_used:     { swing:50, shadow:30, squat:30, pushup:25, run:20, jump_rope:100 },
+  jhs_beginner:  { swing:30, shadow:20, squat:20, pushup:15, run:15 },
+  jhs_some:      { swing:50, shadow:30, squat:30, pushup:25, run:20, abs:20 },
+  jhs_used:      { swing:80, shadow:50, squat:50, pushup:40, run:30, abs:30, back:30 },
+};
+
+// ===== オンボーディングモーダル =====
+function OnboardingModal({ onComplete }) {
+  const [step, setStep] = React.useState(0);
+  const [name, setName] = React.useState('');
+  const [grade, setGrade] = React.useState(''); // low / mid / high / jhs
+  const [exp, setExp]   = React.useState('');   // beginner / some / used
+
+  const gradeOptions = [
+    { id: 'low',  label: '1〜2年生', emoji: '⭐' },
+    { id: 'mid',  label: '3〜4年生', emoji: '🌟' },
+    { id: 'high', label: '5〜6年生', emoji: '💫' },
+    { id: 'jhs',  label: '中学生',   emoji: '🔥' },
+  ];
+  const expOptions = [
+    { id: 'beginner', label: 'はじめたばかり', emoji: '🌱', sub: 'まだあまり慣れていない' },
+    { id: 'some',     label: '少し経験あり',   emoji: '⚾', sub: '練習したことがある' },
+    { id: 'used',     label: 'もう慣れてる',   emoji: '🏆', sub: 'バリバリ練習している' },
+  ];
+
+  const recKey = grade && exp ? `${grade}_${exp}` : null;
+  const recTargets = recKey ? (ONBOARDING_RECS[recKey] || {}) : {};
+
+  const menuLabels = {
+    swing: { label: '素振り', unit: '回', emoji: '⚾' },
+    shadow: { label: 'シャドーピッチング', unit: '回', emoji: '🤾' },
+    squat:  { label: 'スクワット', unit: '回', emoji: '🦵' },
+    pushup: { label: '腕立て伏せ', unit: '回', emoji: '💪' },
+    abs:    { label: '腹筋', unit: '回', emoji: '🏋️' },
+    back:   { label: '背筋', unit: '回', emoji: '🔙' },
+    run:    { label: 'ランニング', unit: '分', emoji: '🏃' },
+    jump_rope: { label: '縄跳び', unit: '回', emoji: '🪢' },
+    stretch:   { label: 'ストレッチング', unit: '分', emoji: '🤸' },
+  };
+
+  function handleComplete() {
+    onComplete({ name: name.trim(), targets: recTargets });
+  }
+
+  const overlayStyle = {
+    position: 'fixed', inset: 0, background: 'rgba(10,20,60,0.85)',
+    zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '16px',
+  };
+  const cardStyle = {
+    background: 'white', borderRadius: 24, padding: '28px 24px 24px',
+    maxWidth: 420, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
+    position: 'relative', maxHeight: '90vh', overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18,
+  };
+  const mascotStyle = {
+    width: 80, height: 80, borderRadius: '50%',
+    border: '3px solid #e8eaf6', objectFit: 'cover',
+  };
+  const btnPrimary = {
+    background: 'linear-gradient(135deg,#1a237e,#3f51b5)',
+    color: 'white', border: 'none', borderRadius: 14,
+    padding: '14px 28px', fontSize: 16, fontWeight: 800,
+    cursor: 'pointer', width: '100%', letterSpacing: 0.5,
+    WebkitTapHighlightColor: 'transparent',
+  };
+  const btnSecondary = {
+    background: 'none', color: '#888', border: 'none',
+    padding: '8px', fontSize: 13, cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+  };
+  const selBtn = (active) => ({
+    background: active ? 'linear-gradient(135deg,#1a237e,#3f51b5)' : '#f0f4ff',
+    color: active ? 'white' : '#333',
+    border: active ? '2px solid #1a237e' : '2px solid #e0e0e0',
+    borderRadius: 14, padding: '12px 14px',
+    fontSize: 14, fontWeight: active ? 800 : 600,
+    cursor: 'pointer', width: '100%', textAlign: 'left',
+    display: 'flex', alignItems: 'center', gap: 10,
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'all 0.15s',
+  });
+
+  // ドット進捗インジケーター（4ステップ）
+  const totalSteps = 4;
+  const dots = Array.from({ length: totalSteps }, (_, i) => (
+    <div key={i} style={{
+      width: i === step ? 20 : 8, height: 8, borderRadius: 4,
+      background: i <= step ? '#1a237e' : '#ddd',
+      transition: 'all 0.25s',
+    }} />
+  ));
+
+  return (
+    <div style={overlayStyle}>
+      <div style={cardStyle}>
+        {/* ドット進捗 */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{dots}</div>
+
+        {/* ===== STEP 0: ようこそ ===== */}
+        {step === 0 && (
+          <>
+            <img src="icons/icon-192.png" alt="ROOKIE" style={mascotStyle} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#1a237e', marginBottom: 6 }}>
+                ようこそ！ ROOKIE ⚾
+              </div>
+              <div style={{ fontSize: 14, color: '#555', lineHeight: 1.7 }}>
+                このアプリは野球の練習を<br />
+                毎日コツコツ記録できるよ！<br />
+                まず、かんたんな質問に<br />
+                こたえてね😊
+              </div>
+            </div>
+            <button style={btnPrimary} onClick={() => { playSound('menu_select.mp3', 0.35); setStep(1); }}>
+              はじめる！🎉
+            </button>
+          </>
+        )}
+
+        {/* ===== STEP 1: なまえ ===== */}
+        {step === 1 && (
+          <>
+            <img src="icons/icon-192.png" alt="ROOKIE" style={{...mascotStyle, width:60, height:60}} />
+            <div style={{ textAlign: 'center', width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#1a237e', marginBottom: 4 }}>
+                なまえを おしえてね！
+              </div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 14 }}>
+                あだなでも OK だよ
+              </div>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="たとえば「たろう」"
+                maxLength={12}
+                autoFocus
+                style={{
+                  width: '100%', padding: '12px 16px', fontSize: 17,
+                  border: '2px solid #c5cae9', borderRadius: 12,
+                  outline: 'none', textAlign: 'center', fontWeight: 700,
+                  color: '#1a237e',
+                }}
+              />
+            </div>
+            <button
+              style={{ ...btnPrimary, opacity: name.trim() ? 1 : 0.45 }}
+              disabled={!name.trim()}
+              onClick={() => { playSound('menu_select.mp3', 0.35); setStep(2); }}
+            >
+              つぎへ →
+            </button>
+            <button style={btnSecondary} onClick={() => { playSound('menu_select.mp3', 0.35); setName(''); setStep(2); }}>
+              なまえはあとで入力する
+            </button>
+          </>
+        )}
+
+        {/* ===== STEP 2: 学年 ===== */}
+        {step === 2 && (
+          <>
+            <img src="icons/icon-192.png" alt="ROOKIE" style={{...mascotStyle, width:60, height:60}} />
+            <div style={{ textAlign: 'center', width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#1a237e', marginBottom: 4 }}>
+                何年生？
+              </div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 14 }}>
+                学年に合った練習を提案するよ
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {gradeOptions.map(g => (
+                  <button
+                    key={g.id}
+                    style={selBtn(grade === g.id)}
+                    onClick={() => { playSound('menu_select.mp3', 0.35); setGrade(g.id); }}
+                  >
+                    <span style={{ fontSize: 22 }}>{g.emoji}</span>
+                    <span>{g.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              style={{ ...btnPrimary, opacity: grade ? 1 : 0.45 }}
+              disabled={!grade}
+              onClick={() => { playSound('menu_select.mp3', 0.35); setStep(3); }}
+            >
+              つぎへ →
+            </button>
+            <button style={btnSecondary} onClick={() => { playSound('menu_select.mp3', 0.35); setStep(1); }}>
+              ← もどる
+            </button>
+          </>
+        )}
+
+        {/* ===== STEP 3: 経験 ===== */}
+        {step === 3 && (
+          <>
+            <img src="icons/icon-192.png" alt="ROOKIE" style={{...mascotStyle, width:60, height:60}} />
+            <div style={{ textAlign: 'center', width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#1a237e', marginBottom: 4 }}>
+                野球の練習は<br />どのくらい慣れてる？
+              </div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 14 }}>
+                正直に選んでね！
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {expOptions.map(e => (
+                  <button
+                    key={e.id}
+                    style={selBtn(exp === e.id)}
+                    onClick={() => { playSound('menu_select.mp3', 0.35); setExp(e.id); }}
+                  >
+                    <span style={{ fontSize: 22 }}>{e.emoji}</span>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{e.label}</div>
+                      <div style={{ fontSize: 12, opacity: 0.75, marginTop: 1 }}>{e.sub}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              style={{ ...btnPrimary, opacity: exp ? 1 : 0.45 }}
+              disabled={!exp}
+              onClick={() => { playSound('menu_select.mp3', 0.35); setStep(4); }}
+            >
+              つぎへ →
+            </button>
+            <button style={btnSecondary} onClick={() => { playSound('menu_select.mp3', 0.35); setStep(2); }}>
+              ← もどる
+            </button>
+          </>
+        )}
+
+        {/* ===== STEP 4: おすすめメニュー ===== */}
+        {step === 4 && (
+          <>
+            <img src="icons/icon-192.png" alt="ROOKIE" style={{...mascotStyle, width:60, height:60}} />
+            <div style={{ textAlign: 'center', width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#1a237e', marginBottom: 6 }}>
+                {name.trim() ? `${name.trim()}の` : ''}おすすめ<br />練習メニューはこれだ！
+              </div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 14 }}>
+                毎日の目標として設定するよ。<br />あとで設定で変えられるよ！
+              </div>
+              <div style={{
+                background: '#f0f4ff', borderRadius: 14,
+                padding: '14px 16px', textAlign: 'left',
+                display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                {Object.entries(recTargets).map(([id, count]) => {
+                  const m = menuLabels[id];
+                  if (!m) return null;
+                  return (
+                    <div key={id} style={{
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'white', borderRadius: 10,
+                      padding: '10px 14px',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 20 }}>{m.emoji}</span>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: '#1a237e' }}>{m.label}</span>
+                      </div>
+                      <span style={{
+                        fontWeight: 900, fontSize: 18, color: '#ff6f00',
+                        background: '#fff3e0', borderRadius: 8, padding: '2px 10px',
+                      }}>
+                        {count}{m.unit}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <button
+              style={{ ...btnPrimary, background: 'linear-gradient(135deg,#e65100,#ff6f00)', fontSize: 17 }}
+              onClick={() => { playSound('upgrade.mp3'); handleComplete(); }}
+            >
+              このメニューで<br />はじめる！🚀
+            </button>
+            <button style={btnSecondary} onClick={() => { playSound('menu_select.mp3', 0.35); setStep(3); }}>
+              ← もどる
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ===== メインアプリ =====
 function App() {
   // スプラッシュ画面をフェードアウトして除去（React初回レンダー後）
@@ -2899,6 +3234,7 @@ function App() {
   const [hankoAnim, setHankoAnim]   = useState(false); // スタンプ帳のハンコアニメ
   const [badgeQueue, setBadgeQueue]   = useState([]);   // バッジ通知キュー
   const [badgeNotify, setBadgeNotify] = useState(null); // 現在表示中のバッジ通知
+  const [levelUpNotify, setLevelUpNotify] = useState(null); // レベルアップ通知 { level, title }
   const badgeTimerRef = useRef(null);
   const inputRef = useRef(null);
   const [pinModal, setPinModal] = useState(null); // { num, menu } | null
@@ -2909,6 +3245,8 @@ function App() {
   const [soundOn,       setSoundOn]       = useState(isSoundEnabled);
   const [playerName,    setPlayerNameSt]  = useState(getPlayerName);
   const [dailyTargets,  setDailyTargetsSt]= useState(getDailyTargets);
+  // オンボーディング
+  const [onboardingDone, setOnboardingDone] = useState(isOnboardingDone);
 
   const today = todayStr();
   const todayRec = data.records[today] || {};
@@ -2936,6 +3274,19 @@ function App() {
   function handleTargetsChange(newTargets) {
     saveDailyTargets(newTargets);
     setDailyTargetsSt(newTargets);
+  }
+  function handleOnboardingComplete({ name, targets }) {
+    if (name) {
+      savePlayerName(name);
+      setPlayerNameSt(name);
+    }
+    if (targets && Object.keys(targets).length > 0) {
+      saveDailyTargets(targets);
+      setDailyTargetsSt(targets);
+    }
+    markOnboardingDone();
+    setOnboardingDone(true);
+    playSound('upgrade.mp3');
   }
 
   function openModal(menu) {
@@ -3091,6 +3442,9 @@ function App() {
     updateData(empty);
     savePlayerName('');
     setPlayerNameSt('');
+    // オンボーディングもリセット → また最初から案内する
+    localStorage.removeItem(ONBOARDING_KEY);
+    setOnboardingDone(false);
     setTab('practice');
   }
 
@@ -3141,10 +3495,32 @@ function App() {
   // ホームタブ用追加データ
   const quizDoneToday   = ((data.quizDone || {})[today] || []).length > 0;
   const ownedCardsCount = (data.ownedCards || []).length;
-  const _homeStampCount = Object.values(data.records || {}).reduce((sum, rec) => sum + Object.values(rec).filter(v => v > 0).length, 0);
-  const profileLevel    = Math.floor(_homeStampCount / 10) + 1;
-  const _TITLES = [[0,'野球少年'],[5,'練習生'],[20,'一塁手'],[50,'スターター'],[100,'レギュラー'],[200,'主力選手'],[500,'キャプテン']];
-  const profileTitle    = [..._TITLES].reverse().find(([min]) => _homeStampCount >= min)?.[1] || '野球少年';
+  // レベル計算：スタンプ日数ベース（1日練習してスタンプ押す = 1pt）
+  // → 種類・回数に関係なく、毎日コツコツやった人が平等に成長できる設計
+  const _stampDays   = Object.keys(data.stamps || {}).filter(k => data.stamps[k]).length;
+  const profileLevel = Math.floor(_stampDays / 5) + 1; // 5日ごとに1レベルアップ
+  const _TITLES = [[0,'野球少年'],[5,'練習生'],[15,'一塁手'],[30,'スターター'],[60,'レギュラー'],[100,'主力選手'],[200,'キャプテン']];
+  const profileTitle    = [..._TITLES].reverse().find(([min]) => _stampDays >= min)?.[1] || '野球少年';
+  const _nextTitle      = _TITLES.find(([min]) => min > _stampDays);
+  const _curTitle       = [..._TITLES].reverse().find(([min]) => _stampDays >= min) || _TITLES[0];
+  const profileProgress = _nextTitle
+    ? { pct: Math.round((_stampDays - _curTitle[0]) / (_nextTitle[0] - _curTitle[0]) * 100),
+        remaining: _nextTitle[0] - _stampDays, nextName: _nextTitle[1] }
+    : { pct: 100, remaining: 0, nextName: null }; // キャプテン到達済み
+
+  // レベルアップ検出（練習を記録するたびにprofileLevelが変わったか確認）
+  React.useEffect(() => {
+    const stored = parseInt(localStorage.getItem('baseball_app_last_level') || '1');
+    if (profileLevel > stored) {
+      setLevelUpNotify({ level: profileLevel, title: profileTitle });
+      localStorage.setItem('baseball_app_last_level', String(profileLevel));
+      playSound('upgrade.mp3');
+      const t = setTimeout(() => setLevelUpNotify(null), 4000);
+      return () => clearTimeout(t);
+    } else {
+      localStorage.setItem('baseball_app_last_level', String(profileLevel));
+    }
+  }, [profileLevel]);
 
   function handleQuizComplete(earnedPts, difficulty, isPerfect) {
     const currentBonus = (data.quizBonus || {})[today] || 0;
@@ -3214,6 +3590,11 @@ function App() {
 
   return (
     <div className="app">
+      {/* オンボーディング（初回起動時のみ）*/}
+      {!onboardingDone && (
+        <OnboardingModal onComplete={handleOnboardingComplete} />
+      )}
+
       {/* バッジ獲得通知 */}
       {badgeNotify && (
         <div className="badge-notify">
@@ -3230,6 +3611,18 @@ function App() {
               color:'white', flexShrink:0, alignSelf:'flex-start',
             }}>+{badgeQueue.length}</div>
           )}
+        </div>
+      )}
+
+      {/* レベルアップ通知 */}
+      {levelUpNotify && (
+        <div className="level-up-notify">
+          <div style={{fontSize:38, animation:'emojiPop 0.65s cubic-bezier(0.34,1.56,0.64,1) 0.2s both'}}>⬆️</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:11, opacity:0.9, fontWeight:'bold', letterSpacing:'0.04em'}}>レベルアップ！</div>
+            <div style={{fontSize:20, fontWeight:'bold'}}>Lv.{levelUpNotify.level}</div>
+            <div style={{fontSize:12, color:'#b3e5fc', marginTop:2}}>「{levelUpNotify.title}」になった！</div>
+          </div>
         </div>
       )}
 
@@ -3396,11 +3789,11 @@ function App() {
       {/* メインコンテンツ */}
       <main className="main">
         <div className="content">
-          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} />}
+          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} />}
-          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} />}
+          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
-          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} />}
+          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
           {tab === 'profile' && <ProfileTab data={data} streak={data.streak} totalStats={data.totalStats} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} />}
         </div>
@@ -3774,7 +4167,7 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
 }
 
 // ===== ホームタブ（モバイル専用トップ画面）=====
-function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange }) {
+function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, profileProgress, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange }) {
   const d = new Date(today);
   const DAY_NAMES = ['日','月','火','水','木','金','土'];
   const dateLabel = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${DAY_NAMES[d.getDay()]}）`;
@@ -3891,6 +4284,19 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
           <div className="mobile-profile-level">Lv.{profileLevel} · {profileTitle}</div>
           <div className="mobile-profile-title">{playerName || '選手'}</div>
           <div className="mobile-profile-stats">🔥 {streak}日連続 &nbsp;·&nbsp; 🪙 {availablePoints}pt 所持</div>
+          {/* 次のタイトルまでの進捗バー */}
+          <div style={{marginTop:6}}>
+            <div style={{background:'#e8eaf6', borderRadius:4, height:5, overflow:'hidden', marginBottom:3}}>
+              <div style={{height:'100%', width: profileProgress.pct + '%',
+                background:'linear-gradient(90deg,#5c6bc0,#42a5f5)',
+                borderRadius:4, transition:'width 0.5s ease'}} />
+            </div>
+            <div style={{fontSize:10, color:'#888', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
+              {profileProgress.nextName
+                ? `「${profileProgress.nextName}」まであと ${profileProgress.remaining} 日`
+                : '🏆 最高ランク達成！'}
+            </div>
+          </div>
         </div>
         <i className="fa-solid fa-chevron-right" style={{color:'#bbb', fontSize:13}} />
       </div>
@@ -4472,7 +4878,7 @@ function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoint
   );
 }
 
-function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today }) {
+function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays }) {
   const totalCards = CARD_LEVELS.length * CARD_TYPES.length;
   const ownedCount = CARD_LEVELS.reduce((sum, lv) =>
     sum + CARD_TYPES.filter(t => isCardOwned(lv, t.id)).length, 0);
@@ -4567,32 +4973,73 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
         );
       })()}
 
+      {/* コツコツ応援バナー（ロックされたカードがある場合のみ表示）*/}
+      {CARD_LEVELS.some(lv => (profileLevel || 1) < (CARD_LEVEL_UNLOCK[lv] || 1) && !CARD_TYPES.every(t => isCardOwned(lv, t.id))) && (
+        <div style={{
+          background: 'linear-gradient(135deg,#fff8e1,#fff3e0)',
+          border: '1.5px solid #ffe082',
+          borderRadius: 14, padding: '12px 16px',
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          marginBottom: 4,
+        }}>
+          <span style={{fontSize: 22, flexShrink: 0}}>🌱</span>
+          <div style={{fontSize: 13, color: '#5d4037', lineHeight: 1.65}}>
+            <div style={{fontWeight: 800, marginBottom: 3, color: '#e65100'}}>毎日コツコツが一番の近道！</div>
+            <div>1日にたくさんやらなくても大丈夫。<br />
+            <strong>毎日スタンプを1回押すだけ</strong>でレベルが上がり、<br />
+            強いカードが少しずつ解放されるよ⚾</div>
+            <div style={{marginTop:6, fontSize:12, color:'#8d6e63'}}>
+              📅 目安：15日→レベル10 / 30日→レベル20 / 60日→全開放
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* レベルグループ（8レベル × 5タイプ） */}
       {CARD_LEVELS.map(lv => {
-        const cost    = CARD_PURCHASE_COSTS[lv] || 0;
-        const lvInfo  = getLevelInfo(lv);
-        const allOwned = CARD_TYPES.every(t => isCardOwned(lv, t.id));
-        const isOpen  = openLevels.has(lv);
+        const cost      = CARD_PURCHASE_COSTS[lv] || 0;
+        const lvInfo    = getLevelInfo(lv);
+        const allOwned  = CARD_TYPES.every(t => isCardOwned(lv, t.id));
+        const isOpen    = openLevels.has(lv);
+        const reqLevel  = CARD_LEVEL_UNLOCK[lv] || 1;
+        const isLocked  = (profileLevel || 1) < reqLevel && !allOwned;
+        // ロック解除まで何日必要か（1日1スタンプ換算）
+        const daysNeeded = isLocked ? Math.max(0, (reqLevel - 1) * 5 - (stampDays || 0)) : 0;
         return (
-          <div key={lv} className="level-row">
+          <div key={lv} className="level-row" style={{opacity: isLocked ? 0.72 : 1}}>
             <div
               className="level-row-head"
-              style={{background: lvInfo.bg, borderLeft: `4px solid ${lvInfo.color}`, cursor:'pointer', userSelect:'none'}}
-              onClick={() => toggleLevel(lv)}
+              style={{background: isLocked ? '#e8e8e8' : lvInfo.bg,
+                borderLeft: `4px solid ${isLocked ? '#bdbdbd' : lvInfo.color}`,
+                cursor: isLocked ? 'default' : 'pointer', userSelect:'none',
+                flexDirection: 'column', alignItems: 'stretch', gap: 0}}
+              onClick={() => { if (!isLocked) toggleLevel(lv); }}
             >
-              <span className="lrh-left" style={{color: lvInfo.color, textShadow:'0 1px 3px rgba(0,0,0,0.4)'}}>
-                レベル{lv}
-                <span style={{display:'inline-flex', alignItems:'center', letterSpacing:0, margin:'0 2px'}}>{renderLvStars(lv, 'sm')}</span>
-                {lvInfo.label}
-              </span>
-              <span className="lrh-right">
-                <span className="lrh-cost" style={{background:'rgba(0,0,0,0.28)', borderRadius:8, padding:'2px 9px',
-                  fontSize:12, color:'white', fontWeight:700,
-                  textShadow:'0 1px 2px rgba(0,0,0,0.5)'}}>
-                  {allOwned ? '✅ コンプリート' : `🪙 ${cost} pt`}
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <span className="lrh-left" style={{color: isLocked ? '#757575' : lvInfo.color, textShadow: isLocked ? 'none' : '0 1px 3px rgba(0,0,0,0.4)'}}>
+                  {isLocked ? '🔒' : ''} レベル{lv}
+                  <span style={{display:'inline-flex', alignItems:'center', letterSpacing:0, margin:'0 2px'}}>{renderLvStars(lv, 'sm')}</span>
+                  {lvInfo.label}
                 </span>
-                <i className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`} style={{fontSize:11, color: lvInfo.color, opacity:0.85, textShadow:'0 1px 3px rgba(0,0,0,0.4)'}} />
-              </span>
+                <span className="lrh-right">
+                  <span className="lrh-cost" style={{background: isLocked ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.28)',
+                    borderRadius:8, padding:'2px 9px', fontSize:12,
+                    color: isLocked ? '#757575' : 'white', fontWeight:700,
+                    textShadow: isLocked ? 'none' : '0 1px 2px rgba(0,0,0,0.5)'}}>
+                    {isLocked ? `あと${daysNeeded}日` : allOwned ? '✅ コンプリート' : `🪙 ${cost} pt`}
+                  </span>
+                  {!isLocked && <i className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`} style={{fontSize:11, color: lvInfo.color, opacity:0.85, textShadow:'0 1px 3px rgba(0,0,0,0.4)'}} />}
+                </span>
+              </div>
+              {isLocked && (
+                <div style={{
+                  fontSize: 11, color: '#888', paddingTop: 5,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}>
+                  <span>🌱</span>
+                  <span>毎日スタンプを押すだけでOK！あと<strong style={{color:'#e65100'}}>{daysNeeded}日</strong>コツコツ続ければ解放されるよ</span>
+                </div>
+              )}
             </div>
             {isOpen && (
               <div className="level-cards-row">
@@ -4929,15 +5376,30 @@ function CutoffDiagram() {
 }
 
 // ===== 学習タブ =====
-function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete }) {
+function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel }) {
   const [view, setView] = React.useState('top'); // 'top' | 'kiso' | 'test' | 'homework'
   // diffFilterをQuizTabレベルで管理（KisoSection remount時もリセットしない）
   const [kisoDiffFilter, setKisoDiffFilter] = React.useState('easy');
+  // KisoSectionの内部ビュー状態をQuizTabレベルで管理（ヘッダーの「もどる」で制御するため）
+  const [kisoView, setKisoView] = React.useState('list'); // 'list'|'reading'|'quiz'|'result'
   const homeworkDoneToday = (homeworkBonus[today] || 0) > 0;
+
+  // ヘッダーの「もどる」ボタン処理（文脈に応じて適切な画面に戻る）
+  function handleBack() {
+    playSound('menu_select.mp3', 0.35);
+    if (view === 'kiso') {
+      if (kisoView === 'list')   { setView('top'); }
+      else if (kisoView === 'reading') { setKisoView('list'); }
+      else if (kisoView === 'quiz')    { setKisoView('reading'); }
+      else if (kisoView === 'result')  { setKisoView('list'); }
+    } else {
+      setView('top');
+    }
+  }
 
   // --- 基礎 sub-tab ---
   // React.useMemo で安定した関数参照を保持 → QuizTab再レンダー時にremountしない
-  const KisoSection = React.useMemo(() => function KisoSection({ onBackToTop, kisoProgress, kisoBonusLog, onKisoComplete, diffFilter, onDiffFilterChange }) {
+  const KisoSection = React.useMemo(() => function KisoSection({ kisoProgress, kisoBonusLog, onKisoComplete, diffFilter, onDiffFilterChange, kisoView, onKisoViewChange, profileLevel }) {
     const diffConfig = [
       { key:'easy',   label:'やさしい', emoji:'🟢', color:'#2e7d32', bg:'#e8f5e9' },
       { key:'normal', label:'ふつう',    emoji:'🟡', color:'#e65100', bg:'#fff3e0' },
@@ -5720,7 +6182,9 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       ],
     };
 
-    const [view, setView] = React.useState('list'); // 'list' | 'reading' | 'quiz' | 'result'
+    // view/setView はQuizTabから props経由で受け取る（kisoView / onKisoViewChange）
+    const view = kisoView;
+    const setView = onKisoViewChange;
     const [activeSec, setActiveSec] = React.useState(null);
     const [qIdx, setQIdx] = React.useState(0);
     const [selected, setSelected] = React.useState(null);
@@ -5811,22 +6275,29 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
     if (view === 'list') {
       return (
         <>
-          <button onClick={()=>{ playSound('menu_select.mp3', 0.35); onBackToTop(); }}
-            style={{display:'inline-flex', alignItems:'center', gap:6, background:'none', border:'1.5px solid #9fa8da',
-                    borderRadius:20, padding:'7px 16px', cursor:'pointer', color:'#3f51b5',
-                    fontWeight:'bold', fontSize:13, marginBottom:16, alignSelf:'flex-start'}}>
-            <i className="fa-solid fa-chevron-left" style={{fontSize:11}} /> もどる
-          </button>
           <div style={{display:'flex', gap:6, marginBottom:16}}>
-            {diffConfig.map(d=>(
-              <button key={d.key}
-                onClick={()=>{ playSound('menu_select.mp3', 0.35); onDiffFilterChange(d.key); setView('list'); }}
-                style={{flex:1, padding:'8px 4px', border:`2px solid ${diffFilter===d.key?d.color:'#e0e0e0'}`,
-                        borderRadius:10, fontWeight:'bold', fontSize:12, cursor:'pointer',
-                        background: diffFilter===d.key ? d.bg : 'white',
-                        color: diffFilter===d.key ? d.color : '#888', transition:'all 0.15s'}}
-              >{d.emoji} {d.label}</button>
-            ))}
+            {diffConfig.map(d=>{
+              const hardLocked = d.key === 'hard' && (profileLevel || 1) < KISO_HARD_UNLOCK_LEVEL;
+              return (
+                <button key={d.key}
+                  onClick={()=>{ if(hardLocked) return; playSound('menu_select.mp3', 0.35); onDiffFilterChange(d.key); onKisoViewChange('list'); }}
+                  style={{flex:1, padding:'8px 4px',
+                          border:`2px solid ${hardLocked ? '#e0e0e0' : diffFilter===d.key ? d.color : '#e0e0e0'}`,
+                          borderRadius:10, fontWeight:'bold', fontSize:12,
+                          cursor: hardLocked ? 'default' : 'pointer',
+                          background: hardLocked ? '#f5f5f5' : diffFilter===d.key ? d.bg : 'white',
+                          color: hardLocked ? '#bbb' : diffFilter===d.key ? d.color : '#888',
+                          transition:'all 0.15s', position:'relative'}}
+                >
+                  {hardLocked ? '🔒' : d.emoji} {d.label}
+                  {hardLocked && (
+                    <div style={{fontSize:9, color:'#bbb', fontWeight:'normal', marginTop:2}}>
+                      Lv.{KISO_HARD_UNLOCK_LEVEL}で解放
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
           {sections.map((sec, idx) => {
             const state = getSectionState(idx);
@@ -5858,12 +6329,6 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       const cleared = progress[activeSec.key] === 'cleared';
       return (
         <div>
-          <button onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('list'); }}
-            style={{display:'inline-flex', alignItems:'center', gap:6, background:'none', border:'1.5px solid #9fa8da',
-                    borderRadius:20, padding:'7px 16px', cursor:'pointer', color:'#3f51b5',
-                    fontWeight:'bold', fontSize:13, marginBottom:14, alignSelf:'flex-start'}}>
-            <i className="fa-solid fa-chevron-left" style={{fontSize:11}} /> もどる
-          </button>
           <div style={{fontWeight:'bold', fontSize:16, color:dc.color, marginBottom:12}}>
             <Furi t={activeSec.titleRuby} />
           </div>
@@ -5885,12 +6350,6 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       return (
         <div>
           <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:16}}>
-            <button onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('reading'); }}
-              style={{display:'inline-flex', alignItems:'center', gap:6, background:'none', border:'1.5px solid #9fa8da',
-                      borderRadius:20, padding:'7px 14px', cursor:'pointer', color:'#3f51b5',
-                      fontWeight:'bold', fontSize:12, flexShrink:0}}>
-              <i className="fa-solid fa-chevron-left" style={{fontSize:10}} /> もどる
-            </button>
             <div style={{flex:1, background:'#e0e0e0', borderRadius:10, height:8}}>
               <div style={{width:`${((qIdx+1)/total)*100}%`, background:dc.color, height:8, borderRadius:10, transition:'width 0.3s'}}/>
             </div>
@@ -6165,9 +6624,19 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       <div className="mobile-only">
         <div className="mobile-game-top" style={{marginBottom:10}}>
           <div className="mobile-hud">
-            <div style={{fontSize:15, fontWeight:800, color:'white', letterSpacing:1}}>
-              📚 <Furi t="{学習|がくしゅう}" />
-            </div>
+            {view !== 'top' ? (
+              <button onClick={handleBack}
+                style={{display:'inline-flex', alignItems:'center', gap:5,
+                  background:'rgba(255,255,255,0.15)', border:'1.5px solid rgba(255,255,255,0.4)',
+                  borderRadius:20, padding:'6px 14px', cursor:'pointer', color:'white',
+                  fontWeight:'bold', fontSize:13, WebkitTapHighlightColor:'transparent'}}>
+                <i className="fa-solid fa-chevron-left" style={{fontSize:11}} /> もどる
+              </button>
+            ) : (
+              <div style={{fontSize:15, fontWeight:800, color:'white', letterSpacing:1}}>
+                📚 <Furi t="{学習|がくしゅう}" />
+              </div>
+            )}
             <div style={{fontSize:12, color:'rgba(255,255,255,0.8)', fontWeight:600}}>
               {formatDate(today)}
             </div>
@@ -6321,20 +6790,12 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
       {/* 覚えようビュー */}
       {view === 'kiso' && (
-        <KisoSection onBackToTop={()=>setView('top')} kisoProgress={kisoProgress} kisoBonusLog={kisoBonusLog} onKisoComplete={onKisoComplete} diffFilter={kisoDiffFilter} onDiffFilterChange={setKisoDiffFilter} />
+        <KisoSection kisoProgress={kisoProgress} kisoBonusLog={kisoBonusLog} onKisoComplete={onKisoComplete} diffFilter={kisoDiffFilter} onDiffFilterChange={setKisoDiffFilter} kisoView={kisoView} onKisoViewChange={setKisoView} profileLevel={profileLevel} />
       )}
 
       {/* テストビュー */}
       {view === 'test' && (
         <>
-          <button
-            onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('top'); }}
-            style={{display:'inline-flex', alignItems:'center', gap:6, background:'none', border:'1.5px solid #9fa8da',
-                    borderRadius:20, padding:'7px 16px', cursor:'pointer', color:'#3f51b5',
-                    fontWeight:'bold', fontSize:13, marginBottom:16, alignSelf:'flex-start'}}
-          >
-            <i className="fa-solid fa-chevron-left" style={{fontSize:11}} /> もどる
-          </button>
           <TestSection doneTodayList={doneTodayList} />
         </>
       )}
@@ -6342,15 +6803,6 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       {/* 宿題ビュー */}
       {view === 'homework' && (
         <>
-          <button
-            onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('top'); }}
-            style={{display:'inline-flex', alignItems:'center', gap:6, background:'none', border:'1.5px solid #9fa8da',
-                    borderRadius:20, padding:'7px 16px', cursor:'pointer', color:'#3f51b5',
-                    fontWeight:'bold', fontSize:13, marginBottom:16, alignSelf:'flex-start'}}
-          >
-            <i className="fa-solid fa-chevron-left" style={{fontSize:11}} /> もどる
-          </button>
-
           <div style={{background:'white', borderRadius:20, padding:'28px 24px', border:'1.5px solid #c8e6c9', boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
             <div style={{display:'flex', alignItems:'center', gap:14, marginBottom:20}}>
               <div style={{fontSize:44}}>📚</div>
@@ -6438,14 +6890,16 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
 // ===== プロフィールタブ =====
 function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
-  const totalStampCount = Object.values(data.records)
-    .reduce((sum, rec) => sum + Object.values(rec).filter(v => v > 0).length, 0);
-  const totalDays = Object.keys(data.records)
+  const stampDays   = Object.keys(data.stamps || {}).filter(k => data.stamps[k]).length;
+  const totalDays   = Object.keys(data.records || {})
     .filter(k => Object.values(data.records[k]).some(v => v > 0)).length;
-  const level = Math.floor(totalStampCount / 10) + 1;
-  const levelPct = (totalStampCount % 10) / 10 * 100;
-  const titles = [[0,'野球少年'],[5,'練習生'],[20,'一塁手'],[50,'スターター'],[100,'レギュラー'],[200,'主力選手'],[500,'キャプテン']];
-  const title = [...titles].reverse().find(([min]) => totalStampCount >= min)?.[1] || '野球少年';
+  const level       = Math.floor(stampDays / 5) + 1;
+  const levelInCur  = stampDays % 5; // 現レベル内の進捗（0〜4）
+  const levelPct    = (levelInCur / 5) * 100;
+  const titles      = [[0,'野球少年'],[5,'練習生'],[15,'一塁手'],[30,'スターター'],[60,'レギュラー'],[100,'主力選手'],[200,'キャプテン']];
+  const title       = [...titles].reverse().find(([min]) => stampDays >= min)?.[1] || '野球少年';
+  const nextTitle   = titles.find(([min]) => min > stampDays);
+  const toNextTitle = nextTitle ? nextTitle[0] - stampDays : 0;
 
   const topMenus = MENUS
     .map(m => ({ ...m, val: totalStats[m.id] || 0 }))
@@ -6458,15 +6912,30 @@ function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
   return (
     <>
       <div className="page-header"><h2>プロフィール</h2></div>
-      <div className="profile-hero">
-        <div className="profile-avatar">⚾</div>
-        <div className="profile-info">
-          <div className="profile-level">Lv.{level}</div>
-          <div className="profile-name">{title}</div>
-          <div className="level-bar-wrap">
-            <div className="level-bar" style={{width:levelPct+'%'}} />
+      <div className="profile-hero" style={{flexDirection:'column', alignItems:'stretch', gap:0, padding:'24px 24px 20px'}}>
+        {/* レベル・称号 */}
+        <div style={{display:'flex', alignItems:'baseline', gap:10, marginBottom:4}}>
+          <span style={{fontSize:32, fontWeight:900, letterSpacing:1}}>Lv.{level}</span>
+          <span style={{fontSize:18, fontWeight:700, opacity:0.9}}>「{title}」</span>
+        </div>
+        {/* 進捗バー */}
+        <div style={{marginTop:10, marginBottom:6}}>
+          <div style={{background:'rgba(255,255,255,0.22)', borderRadius:8, height:12, overflow:'hidden', width:'100%'}}>
+            <div style={{height:'100%', width: levelPct+'%', background:'linear-gradient(90deg,#ffd54f,#ffb300)',
+              borderRadius:8, transition:'width 0.5s ease',
+              boxShadow:'0 1px 6px rgba(255,179,0,0.5)'}} />
           </div>
-          <div className="level-bar-hint">次のLvまで {10 - (totalStampCount % 10)} スタンプ</div>
+        </div>
+        {/* バー下テキスト */}
+        <div style={{display:'flex', justifyContent:'space-between', fontSize:12, opacity:0.75}}>
+          <span>このレベルで {levelInCur} / 5 日</span>
+          {nextTitle
+            ? <span>「{nextTitle[1]}」まであと {toNextTitle} 日</span>
+            : <span>🏆 最高ランク到達！</span>}
+        </div>
+        {/* スタンプ日数サマリー */}
+        <div style={{marginTop:12, fontSize:12, opacity:0.65, textAlign:'center'}}>
+          累計 {stampDays} 日練習してスタンプを押した
         </div>
       </div>
 
@@ -6474,7 +6943,7 @@ function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
         {[
           { num: totalDays,       label: '総練習日数' },
           { num: streak,          label: '現在の連続日数' },
-          { num: totalStampCount, label: '総スタンプ数' },
+          { num: stampDays,       label: '総スタンプ日数' },
         ].map(s => (
           <div key={s.label} className="stat-pill">
             <div className="stat-pill-num">{s.num}</div>
