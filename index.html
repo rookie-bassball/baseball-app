@@ -907,6 +907,12 @@
         box-shadow: 0 4px 18px rgba(26,35,126,0.28);
         margin-bottom: 14px;
       }
+      /* ホーム専用：バナー画像モード */
+      .mobile-game-top.home-banner {
+        padding: 0;
+        background: #0d1b4b;
+        overflow: hidden;
+      }
 
       /* HUDヘッダー */
       .mobile-hud {
@@ -4447,32 +4453,104 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
   return (
     <>
-      {/* ─── HUDバナー ─── */}
-      <div className="mobile-game-top">
-        <div className="mobile-hud">
-          <div className="mobile-hud-streak">
-            <span className="hud-fire">🔥</span>
-            <span className="hud-streak-num">{streak || 0}</span>
-            <span style={{fontSize:11, color:'rgba(255,255,255,0.75)', marginLeft:2}}>日連続</span>
-          </div>
-          <div style={{fontSize:14, fontWeight:900, color:'white', letterSpacing:1}}>⚾ ROOKIE</div>
-          <div className="mobile-hud-coins">
-            <span style={{fontSize:15}}>🪙</span>
-            <span className="hud-coins-num">{availablePoints || 0}</span>
-            <span className="hud-coins-label" style={{marginLeft:2}}>pt</span>
-          </div>
+      {/* ─── バナー画像 ─── */}
+      <div className="mobile-game-top home-banner">
+        <img
+          src="images/home_banner.png"
+          alt="ROOKIE BASEBALL"
+          style={{
+            width: '100%',
+            height: 168,
+            objectFit: 'cover',
+            objectPosition: 'right center',
+            display: 'block',
+          }}
+          onError={e => {
+            /* 画像なし時はグラデーション背景＋タイトルだけ表示 */
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+        {/* フォールバック（画像未配置時） */}
+        <div style={{
+          display: 'none',
+          height: 168,
+          background: 'linear-gradient(160deg,#1a237e 0%,#283593 55%,#1565c0 100%)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 6,
+        }}>
+          <div style={{fontSize:28, fontWeight:900, color:'white', letterSpacing:2}}>⚾ ROOKIE</div>
+          <div style={{fontSize:13, color:'rgba(255,255,255,0.6)', fontWeight:600}}>BASEBALL</div>
         </div>
-        <div style={{textAlign:'center', color:'rgba(255,255,255,0.75)', fontSize:12, marginTop:2}}>
-          {dateLabel} &nbsp;·&nbsp;
-          <span style={{color: ptPct>=100?'#ffd54f':'rgba(255,255,255,0.9)', fontWeight:700}}>
-            今日 {todayPoints}/{DAILY_POINT_CAP}pt
-          </span>
-        </div>
-        {/* 今日のポイントバー */}
-        <div style={{margin:'8px 0 2px', height:6, background:'rgba(255,255,255,0.2)', borderRadius:999, overflow:'hidden'}}>
-          <div style={{height:'100%', width:ptPct+'%',
-            background: ptPct>=100 ? '#ffd54f' : 'rgba(255,255,255,0.85)',
-            borderRadius:999, transition:'width 0.6s ease'}} />
+      </div>
+
+      {/* ─── ステータスストリップ ─── */}
+      <div style={{
+        background: 'white',
+        borderRadius: 18,
+        padding: '10px 14px',
+        marginBottom: 10,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+        border: '1px solid rgba(0,0,0,0.05)',
+      }}>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-around'}}>
+
+          {/* 🔥 連続日数 */}
+          <div style={{textAlign:'center', flex:1}}>
+            <div style={{fontSize:20, lineHeight:1, marginBottom:2}}>🔥</div>
+            <div style={{fontSize:18, fontWeight:900, color:'#e65100', lineHeight:1}}>{streak||0}</div>
+            <div style={{fontSize:9, color:'#bbb', fontWeight:700, marginTop:1}}>日連続</div>
+          </div>
+
+          <div style={{width:1, height:34, background:'#f0f0f0', flexShrink:0}} />
+
+          {/* 🪙 所持ポイント */}
+          <div style={{textAlign:'center', flex:1}}>
+            <div style={{fontSize:20, lineHeight:1, marginBottom:2}}>🪙</div>
+            <div style={{fontSize:18, fontWeight:900, color:'#f57f17', lineHeight:1}}>{availablePoints||0}</div>
+            <div style={{fontSize:9, color:'#bbb', fontWeight:700, marginTop:1}}>所持pt</div>
+          </div>
+
+          <div style={{width:1, height:34, background:'#f0f0f0', flexShrink:0}} />
+
+          {/* 📅 日付 */}
+          <div style={{textAlign:'center', flex:1}}>
+            <div style={{fontSize:15, fontWeight:900, color:'#333', lineHeight:1.1}}>
+              {d.getMonth()+1}/{d.getDate()}
+            </div>
+            <div style={{fontSize:12, fontWeight:700, color:'#666', lineHeight:1.1}}>
+              （{DAY_NAMES[d.getDay()]}）
+            </div>
+            <div style={{fontSize:9, color:'#bbb', fontWeight:700, marginTop:1}}>今日</div>
+          </div>
+
+          <div style={{width:1, height:34, background:'#f0f0f0', flexShrink:0}} />
+
+          {/* ⚡ 今日のpt */}
+          <div style={{textAlign:'center', flex:1}}>
+            <div style={{
+              fontSize:15, fontWeight:900, lineHeight:1.1,
+              color: ptPct >= 100 ? '#e65100' : '#1a237e',
+            }}>
+              {todayPoints}
+              <span style={{fontSize:10, fontWeight:700, color:'#bbb'}}>/{DAILY_POINT_CAP}</span>
+            </div>
+            <div style={{fontSize:9, color:'#bbb', fontWeight:700, marginTop:1, marginBottom:3}}>今日のpt</div>
+            {/* ミニ進捗バー */}
+            <div style={{
+              height: 4, background:'#e8eaf6', borderRadius:999,
+              overflow:'hidden', width:'80%', margin:'0 auto',
+            }}>
+              <div style={{
+                height:'100%', width: ptPct+'%',
+                background: ptPct>=100 ? 'linear-gradient(90deg,#ff6d00,#ffd54f)' : 'linear-gradient(90deg,#1a237e,#5c6bc0)',
+                borderRadius:999, transition:'width 0.6s ease',
+              }} />
+            </div>
+          </div>
+
         </div>
       </div>
 
