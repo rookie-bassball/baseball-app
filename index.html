@@ -901,7 +901,7 @@
       /* ゲームスタイルトップ（HUD＋週カレンダー） */
       .mobile-game-top {
         margin: 0 -16px;
-        padding: 14px 16px 18px;
+        padding: 10px 16px 12px;
         background: linear-gradient(160deg, #1a237e 0%, #283593 55%, #1565c0 100%);
         border-radius: 0 0 22px 22px;
         box-shadow: 0 4px 18px rgba(26,35,126,0.28);
@@ -1004,27 +1004,173 @@
         transition: width 0.6s cubic-bezier(.4,2,.55,1);
       }
 
-      /* ボトムナビ（5タブ）復活 */
-      .bottom-nav {
-        display: flex;
-        position: fixed; bottom: 0; left: 0; right: 0;
-        height: calc(80px + env(safe-area-inset-bottom));
-        padding-bottom: env(safe-area-inset-bottom);
-        background: linear-gradient(180deg, #1a237e 0%, #283593 100%);
-        z-index: 200;
-        box-shadow: 0 -2px 14px rgba(0,0,0,0.28);
-      }
-      .bottom-nav-item {
-        flex: 1; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; gap: 5px;
-        cursor: pointer; position: relative;
-        color: rgba(255,255,255,0.5); font-size: 26px;
-        transition: color 0.15s;
+      /* ボトムナビ非表示（ホームアイコン方式に移行） */
+      .bottom-nav { display: none !important; }
+
+      /* ホームFAB（練習・学習・カード以外の画面で表示） */
+      .home-fab {
+        position: fixed;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 500;
+        background: linear-gradient(135deg, #1a237e, #3f51b5);
+        color: white;
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 2px;
+        font-size: 24px;
+        box-shadow: 0 4px 20px rgba(26,35,126,0.45);
+        cursor: pointer;
         -webkit-tap-highlight-color: transparent;
-        min-height: 80px;
+        border: 3px solid rgba(255,255,255,0.3);
       }
-      .bottom-nav-item.active { color: #ffd54f; }
-      .bottom-nav-item-label { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+      .home-fab-label {
+        font-size: 9px; font-weight: 800;
+        color: rgba(255,255,255,0.9);
+        letter-spacing: 0.5px;
+      }
+
+      /* メインエリアのbottom余白（ホームFAB分）— FABはhome以外で表示 */
+      .main { padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important; }
+      /* ホームタブはFABなし → 余白を最小に */
+      .main.main-home { padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important; }
+
+      /* ===== ホーム 3アイコングリッド ===== */
+      .home-icon-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .home-icon-btn {
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 6px; padding: 12px 8px 10px;
+        border-radius: 22px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        border: none;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+        transition: transform 0.12s;
+        min-height: 95px;
+      }
+      .home-icon-btn:active { transform: scale(0.95); }
+      .home-icon-emoji {
+        font-size: 38px;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+        line-height: 1;
+      }
+      .home-icon-fa {
+        font-size: 28px;
+        color: white;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+      }
+      .home-icon-label {
+        font-size: 13px; font-weight: 900;
+        color: white; letter-spacing: 0.5px;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      }
+      .home-icon-btn.tutorial-icon-glow {
+        animation: tutorialIconPulse 1s ease-in-out infinite;
+      }
+      @keyframes tutorialIconPulse {
+        0%, 100% { box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 0 0 0 rgba(255,213,79,0.8); }
+        50%       { box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 0 0 12px rgba(255,213,79,0); }
+      }
+
+      /* ===== チュートリアル ===== */
+      .tutorial-tab-glow {
+        position: relative;
+        color: #ffd54f !important;
+        animation: tutorialTabPulse 1s ease-in-out infinite;
+      }
+      .tutorial-tab-glow::after {
+        content: '';
+        position: absolute;
+        inset: 4px;
+        border-radius: 14px;
+        background: rgba(255,213,79,0.18);
+        animation: tutorialTabPulse 1s ease-in-out infinite;
+        pointer-events: none;
+      }
+      @keyframes tutorialTabPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(255,213,79,0.7); }
+        50%       { box-shadow: 0 0 0 10px rgba(255,213,79,0); }
+      }
+      .tutorial-banner {
+        position: fixed;
+        left: 0; right: 0;
+        bottom: calc(80px + env(safe-area-inset-bottom));
+        z-index: 4000;
+        padding: 0 12px 10px;
+        pointer-events: none;
+      }
+      .tutorial-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 -4px 30px rgba(0,0,0,0.18), 0 4px 20px rgba(0,0,0,0.12);
+        padding: 14px 16px 14px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        pointer-events: auto;
+        border: 2px solid #ffd54f;
+        position: relative;
+      }
+      .tutorial-mascot {
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        border: 2px solid #e8eaf6;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+      .tutorial-msg {
+        flex: 1;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #1a237e;
+        line-height: 1.5;
+      }
+      .tutorial-skip {
+        position: absolute;
+        top: 8px; right: 10px;
+        font-size: 11px;
+        color: #bbb;
+        cursor: pointer;
+        padding: 2px 6px;
+        background: none;
+        border: none;
+        pointer-events: auto;
+      }
+      .tutorial-arrow {
+        animation: tutorialBounce 0.7s ease-in-out infinite alternate;
+        font-size: 22px;
+        display: block;
+        text-align: center;
+        margin-top: 4px;
+      }
+      @keyframes tutorialBounce {
+        from { transform: translateY(0); }
+        to   { transform: translateY(6px); }
+      }
+      .tutorial-step-dots {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+        margin-top: 8px;
+      }
+      .tutorial-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #ddd;
+        transition: background 0.2s;
+      }
+      .tutorial-dot.active { background: #ffd54f; }
       .bottom-nav-badge {
         position: absolute; top: 6px; right: calc(50% - 18px);
         background: #ff5252; color: white; border-radius: 50%;
@@ -1335,6 +1481,32 @@ function saveDailyTargets(obj)    { localStorage.setItem(TARGETS_STORAGE_KEY, JS
 
 // オンボーディング完了フラグ（リセット耐性あり）
 const ONBOARDING_KEY = 'baseball_app_onboarding_v1';
+
+// チュートリアル進捗（リセット連動）
+const TUTORIAL_KEY = 'baseball_app_tutorial_v1';
+function getTutorialStep() {
+  const v = localStorage.getItem(TUTORIAL_KEY);
+  if (!v || v === 'done') return null;
+  return parseInt(v) || null;
+}
+function saveTutorialStep(s) {
+  if (s === null) localStorage.setItem(TUTORIAL_KEY, 'done');
+  else localStorage.setItem(TUTORIAL_KEY, String(s));
+}
+
+// チュートリアルステップ定義
+const TUTORIAL_STEPS = [
+  { step:1, target:'practice',   arrow:true,
+    msg:'まず練習メニューをタップして、\n今日やった回数を入力してみよう！⚾' },
+  { step:2, target:'stamp',      arrow:true,
+    msg:'やったね！📮 スタンプ帳でハンコを押してみよう！\n「スタンプ」タブを押してね' },
+  { step:3, target:'badge',      arrow:true,
+    msg:'🎖 バッジが届いているよ！\n「バッジ」タブで受け取ってみよう！' },
+  { step:4, target:'collection', arrow:true,
+    msg:'🪙 ポイントが貯まったよ！\n「カード」タブでLv1のカードを買ってみよう！' },
+  { step:5, target:null,         arrow:false,
+    msg:'🌟 チュートリアル完了！\nあとは毎日コツコツ練習を続けよう！' },
+];
 function isOnboardingDone() { return !!localStorage.getItem(ONBOARDING_KEY); }
 function markOnboardingDone() { localStorage.setItem(ONBOARDING_KEY, '1'); }
 
@@ -2910,6 +3082,53 @@ function playHankoSound() {
   playSound('hanko.mp3', 1.0);
 }
 
+// ===== チュートリアルバナー =====
+function TutorialBanner({ step, onSkip }) {
+  const info = TUTORIAL_STEPS.find(s => s.step === step);
+  if (!info) return null;
+
+  // step5 は3秒後に自動スキップ
+  React.useEffect(() => {
+    if (step !== 5) return;
+    const t = setTimeout(() => onSkip(), 3000);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  const lines = info.msg.split('\n');
+
+  return (
+    <div className="tutorial-banner">
+      <div className="tutorial-card">
+        <img src="icons/icon-192.png" alt="ROOKIE" className="tutorial-mascot" />
+        <div style={{flex:1}}>
+          {lines.map((l, i) => (
+            <div key={i} className="tutorial-msg" style={{fontWeight: i===0 ? 900 : 700, fontSize: i===0 ? 14 : 12.5, color: i===0 ? '#1a237e' : '#555'}}>
+              {l}
+            </div>
+          ))}
+          {info.arrow && (
+            <div style={{fontSize:11, color:'#f9a825', fontWeight:800, marginTop:4}}>
+              ▼ ここを押してね！
+            </div>
+          )}
+          {/* ステップドット */}
+          <div className="tutorial-step-dots" style={{justifyContent:'flex-start', marginTop:6}}>
+            {TUTORIAL_STEPS.map(s => (
+              <div key={s.step} className={`tutorial-dot ${s.step === step ? 'active' : ''}`} />
+            ))}
+          </div>
+        </div>
+        {step !== 5 && (
+          <button className="tutorial-skip" onClick={onSkip}>スキップ</button>
+        )}
+      </div>
+      {info.arrow && (
+        <div className="tutorial-arrow">👇</div>
+      )}
+    </div>
+  );
+}
+
 // ===== オンボーディング推奨メニュー定義 =====
 // grade: low(1-2年) / mid(3-4年) / high(5-6年) / jhs(中学生)
 // exp:   beginner / some / used
@@ -3241,12 +3460,15 @@ function App() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [pendingCardDetail, setPendingCardDetail] = useState(null); // { lv, typeId } — プロフィールから特定カードを開く
+  const [collectionView, setCollectionView] = useState('shop'); // 'shop' | 'mycards'
   // 設定（リセット耐性あり・別localStorage キー）
   const [soundOn,       setSoundOn]       = useState(isSoundEnabled);
   const [playerName,    setPlayerNameSt]  = useState(getPlayerName);
   const [dailyTargets,  setDailyTargetsSt]= useState(getDailyTargets);
   // オンボーディング
   const [onboardingDone, setOnboardingDone] = useState(isOnboardingDone);
+  // チュートリアル
+  const [tutorialStep, setTutorialStep] = useState(getTutorialStep);
 
   const today = todayStr();
   const todayRec = data.records[today] || {};
@@ -3286,7 +3508,28 @@ function App() {
     }
     markOnboardingDone();
     setOnboardingDone(true);
+    // チュートリアル開始：step1 → 練習タブへ誘導
+    saveTutorialStep(1);
+    setTutorialStep(1);
+    setTab('practice');
     playSound('upgrade.mp3');
+  }
+
+  function advanceTutorial(fromStep) {
+    if (tutorialStep !== fromStep) return;
+    const next = fromStep + 1;
+    if (next > 5) {
+      saveTutorialStep(null);
+      setTutorialStep(null);
+    } else {
+      saveTutorialStep(next);
+      setTutorialStep(next);
+    }
+  }
+
+  function skipTutorial() {
+    saveTutorialStep(null);
+    setTutorialStep(null);
   }
 
   function openModal(menu) {
@@ -3331,6 +3574,7 @@ function App() {
 
   // 練習記録の実際の保存処理（PINあり・なし両経路から呼ばれる）
   function doStamp(num, menu) {
+    advanceTutorial(1); // step1: 練習記録 → step2へ
     const newRec = { ...data.records };
     if (!newRec[today]) newRec[today] = {};
     newRec[today][menu.id] = (newRec[today][menu.id] || 0) + num;
@@ -3442,14 +3686,17 @@ function App() {
     updateData(empty);
     savePlayerName('');
     setPlayerNameSt('');
-    // オンボーディングもリセット → また最初から案内する
+    // オンボーディング・チュートリアルもリセット → また最初から案内する
     localStorage.removeItem(ONBOARDING_KEY);
+    localStorage.removeItem(TUTORIAL_KEY);
     setOnboardingDone(false);
+    setTutorialStep(null);
     setTab('practice');
   }
 
   // スタンプ帳へのハンコを手動で押す
   function handlePressHanko() {
+    advanceTutorial(2); // step2: スタンプ → step3へ
     const newStamps = { ...data.stamps, [today]: true };
     checkAndAwardBadges({ ...data, stamps: newStamps });
     playHankoSound();
@@ -3543,6 +3790,7 @@ function App() {
     if ((data.ownedCards || []).includes(key)) return;
     const newOwned = [...(data.ownedCards || []), key];
     checkAndAwardBadges({ ...data, ownedCards: newOwned });
+    advanceTutorial(4); // step4: カード購入 → step5へ
     playSound('get_card.mp3');
   }
   function handleUpgradeStat(lv, typeId, stat) {
@@ -3564,6 +3812,7 @@ function App() {
 
   // バッジ手動受け取り
   function handleClaimBadge(badgeId) {
+    advanceTutorial(3); // step3: バッジ受け取り → step4へ
     const badge = BADGES.find(b => b.id === badgeId);
     if (!badge) return;
     const claimed = data.claimedBadges || [];
@@ -3771,29 +4020,46 @@ function App() {
 
       {/* ボトムナビ（スマホ専用・6タブ）*/}
       <div className="bottom-nav">
-        {navItems.filter(n => n.id !== 'profile').map(n => (
-          <div
-            key={n.id}
-            className={`bottom-nav-item ${tab === n.id ? 'active' : ''}`}
-            onClick={() => setTab(n.id)}
-          >
-            <i className={`fa-solid ${n.icon}`} />
-            <span className="bottom-nav-item-label">{n.labelStr}</span>
-            {n.id === 'badge' && unclaimedBadgeCount > 0 && (
-              <span className="bottom-nav-badge">{unclaimedBadgeCount}</span>
-            )}
-          </div>
-        ))}
+        {navItems.filter(n => n.id !== 'profile').map(n => {
+          const tutTarget = TUTORIAL_STEPS.find(s => s.step === tutorialStep)?.target;
+          const isGlowing = tutTarget === n.id;
+          return (
+            <div
+              key={n.id}
+              className={`bottom-nav-item ${tab === n.id ? 'active' : ''} ${isGlowing ? 'tutorial-tab-glow' : ''}`}
+              onClick={() => setTab(n.id)}
+            >
+              <i className={`fa-solid ${n.icon}`} />
+              <span className="bottom-nav-item-label">{n.labelStr}</span>
+              {n.id === 'badge' && unclaimedBadgeCount > 0 && (
+                <span className="bottom-nav-badge">{unclaimedBadgeCount}</span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
+      {/* チュートリアルバナー */}
+      {tutorialStep && onboardingDone && (
+        <TutorialBanner step={tutorialStep} onSkip={skipTutorial} />
+      )}
+
+      {/* ホームFAB（ホーム以外のタブで表示・スマホ専用） */}
+      {tab !== 'home' && (
+        <div className="home-fab mobile-only" onClick={() => { playSound('menu_select.mp3', 0.35); setTab('home'); }}>
+          <i className="fa-solid fa-house" />
+          <span className="home-fab-label">ホーム</span>
+        </div>
+      )}
+
       {/* メインコンテンツ */}
-      <main className="main">
+      <main className={`main${tab === 'home' ? ' main-home' : ''}`}>
         <div className="content">
-          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} />}
+          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} />}
           {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
-          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} />}
+          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
           {tab === 'profile' && <ProfileTab data={data} streak={data.streak} totalStats={data.totalStats} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} />}
         </div>
@@ -4167,205 +4433,255 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
 }
 
 // ===== ホームタブ（モバイル専用トップ画面）=====
-function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, profileProgress, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange }) {
+function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, profileProgress, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange, todayRec, openModal, unclaimedBadgeCount, tutorialStep, onNavigateToShop, onNavigateToMyCards, cardUpgrades }) {
   const d = new Date(today);
   const DAY_NAMES = ['日','月','火','水','木','金','土'];
-  const dateLabel = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${DAY_NAMES[d.getDay()]}）`;
+  const dateLabel = `${d.getMonth()+1}月${d.getDate()}日（${DAY_NAMES[d.getDay()]}）`;
   const ptPct = Math.min(100, Math.round(todayPoints / DAILY_POINT_CAP * 100));
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
-  // ランダムカード選択（マウント時に1枚固定）
-  const randomCard = React.useMemo(() => {
-    if (!ownedCards || ownedCards.length === 0) return null;
-    const key = ownedCards[Math.floor(Math.random() * ownedCards.length)];
-    // key = "lv01_meet" など
-    const parts = key.split('_');
-    const lv = parseInt(parts[0].replace('lv', ''));
-    const typeId = parts.slice(1).join('_');
-    const cardType = CARD_TYPES.find(t => t.id === typeId);
-    return { key, lv, typeId, cardType };
-  }, []);
+  // 3つのメインアイコン定義
+  const mainIcons = [
+    {
+      id: 'practice',
+      label: '練習',
+      bg: 'linear-gradient(145deg,#c62828,#e53935)',
+      icon: 'fa-baseball-bat-ball',
+      onClick: () => { playSound('menu_select.mp3', 0.35); onNavigate('practice'); },
+      sub: targetMenus.length > 0
+        ? `${doneCount}/${targetMenus.length} 達成`
+        : `今日 ${totalPracticed}/${threshold} 種目`,
+    },
+    {
+      id: 'quiz',
+      label: '学習',
+      bg: 'linear-gradient(145deg,#1565c0,#1976d2)',
+      icon: 'fa-book-open',
+      onClick: () => { playSound('menu_select.mp3', 0.35); onNavigate('quiz'); },
+      sub: '覚えよう・テスト',
+    },
+    {
+      id: 'shop',
+      label: 'お店',
+      bg: 'linear-gradient(145deg,#6a1b9a,#7b1fa2)',
+      icon: 'fa-store',
+      onClick: () => { playSound('menu_select.mp3', 0.35); onNavigateToShop(); },
+      sub: (ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚所持` : 'カードをゲット',
+    },
+  ];
+
+  // 今日のターゲットメニュー
+  const rec = todayRec || {};
+  const targetMenus = MENUS
+    .filter(m => (dailyTargets[m.id] || 0) > 0)
+    .map(m => ({
+      menu: m,
+      target: dailyTargets[m.id],
+      done: (rec[m.id] || 0) >= dailyTargets[m.id],
+      val: rec[m.id] || 0,
+    }));
+  const doneCount = targetMenus.filter(x => x.done).length;
+  const allDone = targetMenus.length > 0 && doneCount === targetMenus.length;
 
   return (
     <>
-      {/* バナー */}
+      {/* ─── HUDバナー ─── */}
       <div className="mobile-game-top">
         <div className="mobile-hud">
           <div className="mobile-hud-streak">
             <span className="hud-fire">🔥</span>
             <span className="hud-streak-num">{streak || 0}</span>
-            <span style={{fontSize:12, color:'rgba(255,255,255,0.75)', marginLeft:2}}>日連続</span>
+            <span style={{fontSize:11, color:'rgba(255,255,255,0.75)', marginLeft:2}}>日連続</span>
           </div>
-          <div style={{fontSize:15, fontWeight:800, color:'white', letterSpacing:1}}>ROOKIE BASEBALL</div>
+          <div style={{fontSize:14, fontWeight:900, color:'white', letterSpacing:1}}>⚾ ROOKIE</div>
           <div className="mobile-hud-coins">
-            <span style={{fontSize:16}}>🪙</span>
+            <span style={{fontSize:15}}>🪙</span>
             <span className="hud-coins-num">{availablePoints || 0}</span>
             <span className="hud-coins-label" style={{marginLeft:2}}>pt</span>
           </div>
         </div>
-        <div style={{textAlign:'center', color:'rgba(255,255,255,0.8)', fontSize:13, fontWeight:600, marginTop:4}}>
-          {dateLabel}
-        </div>
-      </div>
-
-      {/* ① 今日のポイント */}
-      <div className="mobile-progress-card" style={{marginBottom:10}}>
-        <div className="mobile-progress-top">
-          <span className="mobile-progress-title">今日のポイント</span>
-          <span>
-            <strong style={{fontSize:22, fontWeight:900, color: ptPct>=100?'#f9a825':'#1a237e'}}>{todayPoints}</strong>
-            <span className="mobile-progress-cap">/{DAILY_POINT_CAP}pt</span>
+        <div style={{textAlign:'center', color:'rgba(255,255,255,0.75)', fontSize:12, marginTop:2}}>
+          {dateLabel} &nbsp;·&nbsp;
+          <span style={{color: ptPct>=100?'#ffd54f':'rgba(255,255,255,0.9)', fontWeight:700}}>
+            今日 {todayPoints}/{DAILY_POINT_CAP}pt
           </span>
         </div>
-        <div className="mobile-progress-track">
-          <div className="mobile-progress-fill" style={{width: ptPct+'%'}} />
-        </div>
-        <div style={{fontSize:11, color:'#999', marginTop:4}}>
-          練習メニュー {totalPracticed}/{threshold} 種目
+        {/* 今日のポイントバー */}
+        <div style={{margin:'8px 0 2px', height:6, background:'rgba(255,255,255,0.2)', borderRadius:999, overflow:'hidden'}}>
+          <div style={{height:'100%', width:ptPct+'%',
+            background: ptPct>=100 ? '#ffd54f' : 'rgba(255,255,255,0.85)',
+            borderRadius:999, transition:'width 0.6s ease'}} />
         </div>
       </div>
 
-      {/* ② 今日のスタンプ */}
-      {canStampToday && !stampedToday ? (
-        <button className="mobile-stamp-banner can-stamp-now" onClick={() => onNavigate('stamp')}>
-          <div style={{display:'flex', alignItems:'center', gap:12}}>
-            <span style={{fontSize:28}}>📮</span>
-            <div style={{textAlign:'left'}}>
-              <div style={{fontSize:13, fontWeight:900, color:'#2e7d32', lineHeight:1.2}}>今日のスタンプが押せます！</div>
-              <div style={{fontSize:11, color:'#888', marginTop:2}}>🔥 {streak || 0}日連続 · タップしてスタンプ帳へ</div>
-            </div>
+      {/* ─── ① 3つのメインアイコン ─── */}
+      <div className="home-icon-grid">
+        {mainIcons.map(icon => {
+          const isGlowing = (tutorialStep === 1 && icon.id === 'practice')
+                         || (tutorialStep === 4 && icon.id === 'shop');
+          return (
+            <button
+              key={icon.id}
+              className={`home-icon-btn ${isGlowing ? 'tutorial-icon-glow' : ''}`}
+              style={{background: icon.bg}}
+              onClick={icon.onClick}
+            >
+              <i className={`fa-solid ${icon.icon} home-icon-fa`} />
+              <span className="home-icon-label">{icon.label}</span>
+              <span style={{fontSize:10, color:'rgba(255,255,255,0.75)', fontWeight:600}}>
+                {icon.sub}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─── ② TODAY ストリップ（3列）─── */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:10}}>
+
+        {/* スタンプ */}
+        {(() => {
+          const isGlowing = tutorialStep === 2;
+          const pressed = stampedToday;
+          const canStamp = canStampToday && !stampedToday;
+          return (
+            <button
+              className={isGlowing ? 'tutorial-icon-glow' : ''}
+              style={{
+                background: pressed ? 'linear-gradient(145deg,#ffebee,#fff5f5)'
+                  : canStamp ? 'linear-gradient(145deg,#e8f5e9,#f1f8e9)'
+                  : 'white',
+                border: pressed ? '1.5px solid rgba(198,40,40,0.25)'
+                  : canStamp ? '1.5px solid rgba(46,125,50,0.3)'
+                  : `1.5px solid ${isGlowing ? '#ffd54f' : '#e8eaf6'}`,
+                borderRadius:16, padding:'10px 6px',
+                display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+                cursor:'pointer', WebkitTapHighlightColor:'transparent',
+                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.4)' : '0 2px 8px rgba(0,0,0,0.05)',
+              }}
+              onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('stamp'); }}
+            >
+              <div style={{width:38, height:38, borderRadius:11, flexShrink:0,
+                background: pressed ? 'linear-gradient(135deg,#c62828,#e53935)'
+                  : canStamp ? 'linear-gradient(135deg,#2e7d32,#43a047)'
+                  : 'linear-gradient(135deg,#90a4ae,#78909c)',
+                display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <i className={`fa-solid ${pressed ? 'fa-stamp' : canStamp ? 'fa-circle-plus' : 'fa-calendar-check'}`}
+                   style={{fontSize:17, color:'white'}} />
+              </div>
+              <div style={{fontSize:11, fontWeight:800,
+                color: pressed ? '#c62828' : canStamp ? '#2e7d32' : '#555'}}>
+                スタンプ
+              </div>
+              <div style={{fontSize:10, fontWeight:600,
+                color: pressed ? '#e57373' : canStamp ? '#66bb6a' : '#aaa'}}>
+                {pressed ? '押したよ！' : canStamp ? '押せるよ！' : `🔥${streak||0}日`}
+              </div>
+            </button>
+          );
+        })()}
+
+        {/* バッジ */}
+        {(() => {
+          const isGlowing = tutorialStep === 3;
+          const hasBadge = (unclaimedBadgeCount || 0) > 0;
+          return (
+            <button
+              className={isGlowing ? 'tutorial-icon-glow' : ''}
+              style={{
+                background: hasBadge ? 'linear-gradient(145deg,#fff8e1,#fff3e0)' : 'white',
+                border: hasBadge ? '1.5px solid rgba(255,160,0,0.35)'
+                  : `1.5px solid ${isGlowing ? '#ffd54f' : '#e8eaf6'}`,
+                borderRadius:16, padding:'10px 6px',
+                display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+                cursor:'pointer', WebkitTapHighlightColor:'transparent',
+                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.4)' : '0 2px 8px rgba(0,0,0,0.05)',
+              }}
+              onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('badge'); }}
+            >
+              <div style={{width:38, height:38, borderRadius:11, flexShrink:0, position:'relative',
+                background: hasBadge ? 'linear-gradient(135deg,#e65100,#ff6f00)' : 'linear-gradient(135deg,#90a4ae,#78909c)',
+                display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <i className="fa-solid fa-medal" style={{fontSize:17, color:'white'}} />
+                {hasBadge && (
+                  <div style={{position:'absolute', top:-5, right:-5, background:'#f44336',
+                    color:'white', fontSize:9, fontWeight:900, borderRadius:999,
+                    minWidth:17, height:17, display:'flex', alignItems:'center', justifyContent:'center',
+                    padding:'0 3px', lineHeight:1, boxShadow:'0 1px 4px rgba(0,0,0,0.25)'}}>
+                    {unclaimedBadgeCount}
+                  </div>
+                )}
+              </div>
+              <div style={{fontSize:11, fontWeight:800, color: hasBadge ? '#e65100' : '#555'}}>バッジ</div>
+              <div style={{fontSize:10, fontWeight:600, color: hasBadge ? '#ffa000' : '#aaa'}}>
+                {hasBadge ? `${unclaimedBadgeCount}個あり！` : 'なし'}
+              </div>
+            </button>
+          );
+        })()}
+
+        {/* マイカード */}
+        <button
+          style={{
+            background: (ownedCards||[]).length > 0 ? 'linear-gradient(145deg,#f3e5f5,#ede7f6)' : 'white',
+            border: (ownedCards||[]).length > 0
+              ? '1.5px solid rgba(142,36,170,0.25)' : '1.5px solid #e8eaf6',
+            borderRadius:16, padding:'10px 6px',
+            display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+            cursor:'pointer', WebkitTapHighlightColor:'transparent',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.05)',
+          }}
+          onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToMyCards(); }}
+        >
+          <div style={{width:38, height:38, borderRadius:11, flexShrink:0,
+            background: (ownedCards||[]).length > 0
+              ? 'linear-gradient(135deg,#6a1b9a,#8e24aa)' : 'linear-gradient(135deg,#90a4ae,#78909c)',
+            display:'flex', alignItems:'center', justifyContent:'center'}}>
+            <i className="fa-solid fa-id-card" style={{fontSize:17, color:'white'}} />
           </div>
-          <i className="fa-solid fa-chevron-right" style={{color:'#43a047', fontSize:14}} />
+          <div style={{fontSize:11, fontWeight:800,
+            color: (ownedCards||[]).length > 0 ? '#6a1b9a' : '#555'}}>
+            マイカード
+          </div>
+          <div style={{fontSize:10, fontWeight:600,
+            color: (ownedCards||[]).length > 0 ? '#8e24aa' : '#aaa'}}>
+            {(ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚` : 'なし'}
+          </div>
         </button>
-      ) : stampedToday ? (
-        /* ── スタンプ済み：ハンコできらっと光る ── */
-        <div
-          style={{background:'linear-gradient(135deg,#fff5f5,#ffebee)', borderRadius:16,
-            padding:'12px 16px', marginBottom:10,
-            boxShadow:'0 2px 14px rgba(198,40,40,0.12)',
-            border:'1.5px solid rgba(198,40,40,0.22)',
-            display:'flex', alignItems:'center', gap:14, cursor:'pointer'}}
-          onClick={() => onNavigate('stamp')}
-        >
-          <div className="hanko-pressed" style={{flexShrink:0}}>
-            <HankoSeal size="md" />
-          </div>
-          <div style={{flex:1, minWidth:0}}>
-            <div style={{fontSize:13, fontWeight:900, color:'#c62828', lineHeight:1.4}}>
-              今日のスタンプ、押せたね！🌟
-            </div>
-            <div style={{fontSize:11, color:'#aaa', marginTop:3}}>
-              🔥 {streak || 0}日連続 · スタンプ帳を見る
-            </div>
-          </div>
-          <i className="fa-solid fa-chevron-right" style={{color:'#e57373', fontSize:13}} />
-        </div>
-      ) : (
-        /* ── 未スタンプ ── */
-        <div
-          style={{background:'white', borderRadius:16, padding:'14px 16px', marginBottom:10,
-            boxShadow:'0 2px 12px rgba(0,0,0,0.08)', border:'1.5px solid #e8eaf6',
-            display:'flex', alignItems:'center', gap:12, cursor:'pointer'}}
-          onClick={() => onNavigate('stamp')}
-        >
-          <span style={{fontSize:28}}>📅</span>
-          <div>
-            <div style={{fontSize:13, fontWeight:700, color:'#555'}}>まだスタンプを押していません</div>
-            <div style={{fontSize:11, color:'#999', marginTop:2}}>🔥 {streak || 0}日連続 · スタンプ帳を見る</div>
-          </div>
-          <i className="fa-solid fa-chevron-right" style={{color:'#bbb', fontSize:13, marginLeft:'auto'}} />
-        </div>
-      )}
-
-      {/* ③ プロフィール */}
-      <div className="mobile-profile-card" onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('profile'); }}>
-        <div className="mobile-profile-avatar">🏆</div>
-        <div className="mobile-profile-info">
-          <div className="mobile-profile-level">Lv.{profileLevel} · {profileTitle}</div>
-          <div className="mobile-profile-title">{playerName || '選手'}</div>
-          <div className="mobile-profile-stats">🔥 {streak}日連続 &nbsp;·&nbsp; 🪙 {availablePoints}pt 所持</div>
-          {/* 次のタイトルまでの進捗バー */}
-          <div style={{marginTop:6}}>
-            <div style={{background:'#e8eaf6', borderRadius:4, height:5, overflow:'hidden', marginBottom:3}}>
-              <div style={{height:'100%', width: profileProgress.pct + '%',
-                background:'linear-gradient(90deg,#5c6bc0,#42a5f5)',
-                borderRadius:4, transition:'width 0.5s ease'}} />
-            </div>
-            <div style={{fontSize:10, color:'#888', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
-              {profileProgress.nextName
-                ? `「${profileProgress.nextName}」まであと ${profileProgress.remaining} 日`
-                : '🏆 最高ランク達成！'}
-            </div>
-          </div>
-        </div>
-        <i className="fa-solid fa-chevron-right" style={{color:'#bbb', fontSize:13}} />
       </div>
 
-      {/* ④ 設定 */}
+      {/* ─── ③ プロフィール1行 + 設定ギア ─── */}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onReset={onReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={onSoundToggle} onNameSave={onNameSave} onTargetsChange={onTargetsChange} />}
-      <button
-        style={{width:'100%', background:'white', borderRadius:16, padding:'14px 16px',
-          marginBottom:10, boxShadow:'0 2px 12px rgba(0,0,0,0.08)',
-          border:'1.5px solid #e8eaf6', display:'flex', alignItems:'center',
-          gap:12, cursor:'pointer', textAlign:'left', WebkitTapHighlightColor:'transparent'}}
-        onClick={() => { playSound('menu_select.mp3', 0.35); setSettingsOpen(true); }}
+      <div
+        style={{background:'white', borderRadius:16, padding:'10px 14px', marginBottom:6,
+          boxShadow:'0 1px 8px rgba(0,0,0,0.06)', border:'1.5px solid #e8eaf6',
+          display:'flex', alignItems:'center', gap:10, cursor:'pointer',
+          WebkitTapHighlightColor:'transparent'}}
+        onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('profile'); }}
       >
-        <div style={{width:46, height:46, borderRadius:14, flexShrink:0,
-          background:'linear-gradient(135deg,#37474f,#607d8b)',
-          display:'flex', alignItems:'center', justifyContent:'center', fontSize:22}}>⚙️</div>
+        <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
+          background:'linear-gradient(135deg,#1a237e,#3f51b5)',
+          display:'flex', alignItems:'center', justifyContent:'center'}}>
+          <i className="fa-solid fa-user" style={{fontSize:15, color:'white'}} />
+        </div>
         <div style={{flex:1, minWidth:0}}>
-          <div style={{fontSize:15, fontWeight:900, color:'#1a237e'}}>設定</div>
-          <div style={{fontSize:11, color:'#888', marginTop:2}}>PINコード・データリセット</div>
+          <div style={{fontSize:12, fontWeight:900, color:'#1a237e',
+            overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis'}}>
+            {playerName || '選手'} &nbsp;·&nbsp; Lv.{profileLevel} {profileTitle}
+          </div>
+          <div style={{fontSize:10, color:'#888', marginTop:1}}>
+            🔥 {streak}日連続 &nbsp;·&nbsp; 🪙 {availablePoints}pt
+          </div>
         </div>
-        <i className="fa-solid fa-chevron-right" style={{color:'#bbb', fontSize:13}} />
-      </button>
-
-      {/* ⑤ 選手カードランダム表示 */}
-      {randomCard ? (
-        <div
-          style={{borderRadius:20, overflow:'hidden', marginBottom:10, cursor:'pointer',
-            boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
-            background: randomCard.cardType ? randomCard.cardType.headerBg : 'linear-gradient(135deg,#1a237e,#3949ab)'}}
-          onClick={() => onNavigateToCard(randomCard.lv, randomCard.typeId)}
+        <button
+          style={{width:34, height:34, borderRadius:9, background:'#f5f5f5',
+            border:'none', display:'flex', alignItems:'center', justifyContent:'center',
+            cursor:'pointer', flexShrink:0, WebkitTapHighlightColor:'transparent'}}
+          onClick={e => { e.stopPropagation(); playSound('menu_select.mp3', 0.35); setSettingsOpen(true); }}
         >
-          {/* カードヘッダー */}
-          <div style={{padding:'10px 16px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-            <div style={{color:'rgba(255,255,255,0.85)', fontSize:12, fontWeight:700}}>
-              {randomCard.cardType ? `${randomCard.cardType.emoji} ${randomCard.cardType.label}` : '選手カード'}
-            </div>
-            <div style={{color:'rgba(255,255,255,0.85)', fontSize:12, fontWeight:700}}>
-              Lv.{randomCard.lv}
-            </div>
-          </div>
-          {/* カード画像 */}
-          <div style={{width:'100%', aspectRatio:'3/4', background:'rgba(0,0,0,0.1)', position:'relative'}}>
-            <img
-              src={`images/card_lv${String(randomCard.lv).padStart(2,'0')}_${randomCard.typeId}.png`}
-              alt={`Lv${randomCard.lv} ${randomCard.cardType?.label || ''}`}
-              style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}
-              onError={e => { e.target.style.display='none'; }}
-            />
-          </div>
-          {/* カードフッター */}
-          <div style={{padding:'10px 16px', display:'flex', alignItems:'center', justifyContent:'space-between',
-            background:'rgba(0,0,0,0.15)'}}>
-            <div style={{color:'rgba(255,255,255,0.75)', fontSize:11}}>タップしてカードを見る</div>
-            <i className="fa-solid fa-chevron-right" style={{color:'rgba(255,255,255,0.6)', fontSize:12}} />
-          </div>
-        </div>
-      ) : (
-        <div
-          style={{borderRadius:20, padding:'24px 16px', marginBottom:10, cursor:'pointer',
-            background:'linear-gradient(135deg,#1a237e,#3949ab)',
-            boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
-            display:'flex', flexDirection:'column', alignItems:'center', gap:8}}
-          onClick={() => onNavigate('collection')}
-        >
-          <span style={{fontSize:40}}>🃏</span>
-          <div style={{color:'white', fontWeight:800, fontSize:14}}>選手カードを集めよう！</div>
-          <div style={{color:'rgba(255,255,255,0.7)', fontSize:11}}>ポイントでカードを購入できます</div>
-        </div>
-      )}
+          <i className="fa-solid fa-gear" style={{fontSize:15, color:'#607d8b'}} />
+        </button>
+      </div>
     </>
   );
 }
@@ -4878,12 +5194,16 @@ function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoint
   );
 }
 
-function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays }) {
+function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays, initialView }) {
   const totalCards = CARD_LEVELS.length * CARD_TYPES.length;
   const ownedCount = CARD_LEVELS.reduce((sum, lv) =>
     sum + CARD_TYPES.filter(t => isCardOwned(lv, t.id)).length, 0);
   const [openLevels, setOpenLevels] = React.useState(new Set());
   const [detailCard, setDetailCard] = React.useState(null); // { lv, typeInfo }
+  const [activeView, setActiveView] = React.useState(initialView || 'shop');
+
+  // ホームから遷移時に initialView に追従
+  React.useEffect(() => { if (initialView) setActiveView(initialView); }, [initialView]);
 
   // プロフィールタブから特定カードへのジャンプ
   React.useEffect(() => {
@@ -4934,6 +5254,116 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
           </div>
         </div>
       </div>
+
+      {/* ─── ビュー切り替えタブ ─── */}
+      <div style={{display:'flex', gap:8, marginBottom:12}}>
+        {[
+          { id:'shop',    label:'🛒 お店',      sub:'カードをゲット' },
+          { id:'mycards', label:'🃏 マイカード', sub:`${ownedCount}枚所持` },
+        ].map(v => (
+          <button key={v.id}
+            style={{
+              flex:1, padding:'10px 8px', borderRadius:14,
+              border: activeView === v.id ? '2px solid #6a1b9a' : '2px solid #e0e0e0',
+              background: activeView === v.id ? 'linear-gradient(135deg,#6a1b9a,#8e24aa)' : 'white',
+              color: activeView === v.id ? 'white' : '#555',
+              fontWeight:800, fontSize:13, cursor:'pointer',
+              WebkitTapHighlightColor:'transparent',
+              transition:'all 0.15s',
+              boxShadow: activeView === v.id ? '0 3px 10px rgba(106,27,154,0.35)' : 'none',
+            }}
+            onClick={() => { playSound('menu_select.mp3', 0.35); setActiveView(v.id); }}
+          >
+            <div>{v.label}</div>
+            <div style={{fontSize:10, opacity:0.8, marginTop:2, fontWeight:600}}>{v.sub}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* ─── マイカードビュー ─── */}
+      {activeView === 'mycards' && (() => {
+        // 所持カードをレベルグループ別に表示
+        const ownedGroups = CARD_LEVELS.map(lv => ({
+          lv,
+          cards: CARD_TYPES.filter(t => isCardOwned(lv, t.id)),
+        })).filter(g => g.cards.length > 0);
+
+        if (ownedGroups.length === 0) return (
+          <div style={{textAlign:'center', padding:'48px 24px', color:'#999'}}>
+            <i className="fa-solid fa-id-card" style={{fontSize:48, color:'#ce93d8', marginBottom:16}} />
+            <div style={{fontSize:16, fontWeight:700, color:'#6a1b9a', marginBottom:8}}>まだカードがないよ！</div>
+            <div style={{fontSize:13}}>お店でポイントを使ってゲットしよう⚾</div>
+            <button style={{marginTop:16, background:'linear-gradient(135deg,#6a1b9a,#8e24aa)',
+              color:'white', border:'none', borderRadius:12, padding:'12px 28px',
+              fontSize:14, fontWeight:800, cursor:'pointer'}}
+              onClick={() => setActiveView('shop')}>
+              <i className="fa-solid fa-store" style={{marginRight:6}} />お店へ
+            </button>
+          </div>
+        );
+
+        return (
+          <div style={{display:'flex', flexDirection:'column', gap:16}}>
+            {ownedGroups.map(({ lv, cards }) => {
+              const lvInfo = getLevelInfo(lv);
+              return (
+                <div key={lv}>
+                  {/* レベルヘッダー */}
+                  <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:10,
+                    padding:'6px 12px', background:lvInfo.bg, borderRadius:10,
+                    borderLeft:`4px solid ${lvInfo.color}`}}>
+                    <span style={{color:lvInfo.color, fontWeight:900, fontSize:14}}>
+                      レベル{lv} {lvInfo.label}
+                    </span>
+                    <span style={{marginLeft:'auto', fontSize:12, color:lvInfo.color, opacity:0.8}}>
+                      {cards.length}枚
+                    </span>
+                  </div>
+                  {/* カードグリッド */}
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12}}>
+                    {cards.map(typeInfo => {
+                      const key = cardKey(lv, typeInfo.id);
+                      const base = CARD_BASE_STATS[key] || {};
+                      const stats = cardUpgrades[key] || base;
+                      return (
+                        <div key={typeInfo.id}
+                          style={{borderRadius:14, overflow:'hidden', cursor:'pointer',
+                            boxShadow:'0 3px 12px rgba(0,0,0,0.12)',
+                            border:`2px solid ${typeInfo.color || '#ccc'}`,
+                            background:'white'}}
+                          onClick={() => { playSound('menu_select.mp3', 0.35); setDetailCard({ lv, typeInfo }); }}
+                        >
+                          {/* カード画像 */}
+                          <div style={{width:'100%', aspectRatio:'3/4', background:'#f5f5f5', position:'relative'}}>
+                            <img
+                              src={`images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`}
+                              alt={typeInfo.label}
+                              style={{width:'100%', height:'100%', objectFit:'cover'}}
+                              onError={e => { e.target.style.display='none'; }}
+                            />
+                          </div>
+                          {/* フッター */}
+                          <div style={{padding:'8px 10px', background:typeInfo.headerBg || lvInfo.bg}}>
+                            <div style={{color:'white', fontWeight:800, fontSize:12}}>
+                              {typeInfo.emoji} {typeInfo.label}
+                            </div>
+                            <div style={{fontSize:10, color:'rgba(255,255,255,0.75)', marginTop:2}}>
+                              Lv.{lv} · タップして強化
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* ─── お店ビュー（既存のレベルグループ）─── */}
+      {activeView === 'shop' && <>
 
       {/* ポイントバー */}
       <div className="collection-score-bar">
@@ -5069,8 +5499,8 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
           </div>
         );
       })}
-    </>
-  );
+    </>} {/* end activeView === 'shop' */}
+  </>);
 }
 
 // ===== バッジタブ =====
