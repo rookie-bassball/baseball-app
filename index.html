@@ -1057,7 +1057,7 @@
         overflow: hidden;
         box-shadow: 0 4px 18px rgba(0,0,0,0.18);
         transition: transform 0.12s;
-        min-height: 95px;
+        min-height: 110px;
       }
       .home-icon-btn:active { transform: scale(0.95); }
       .home-icon-emoji {
@@ -1069,6 +1069,15 @@
         font-size: 28px;
         color: white;
         filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+      }
+      /* 画像アイコン */
+      .home-icon-img {
+        width: 74px; height: 74px;
+        object-fit: contain;
+        border-radius: 14px;
+        filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
+        flex-shrink: 0;
+        display: block;
       }
       .home-icon-label {
         font-size: 13px; font-weight: 900;
@@ -4470,8 +4479,9 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
     {
       id: 'practice',
       label: '練習',
-      bg: 'linear-gradient(145deg,#c62828,#e53935)',
+      bg: 'linear-gradient(160deg,#1a237e 0%,#283593 60%,#1565c0 100%)',
       icon: 'fa-baseball-bat-ball',
+      img: 'images/home_icon_practice.png',
       onClick: () => { playSound('menu_select.mp3', 0.35); onNavigate('practice'); },
       sub: targetMenus.length > 0
         ? `${doneCount}/${targetMenus.length} 達成`
@@ -4480,16 +4490,18 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
     {
       id: 'quiz',
       label: '学習',
-      bg: 'linear-gradient(145deg,#1565c0,#1976d2)',
+      bg: 'linear-gradient(160deg,#01579b 0%,#0277bd 60%,#0288d1 100%)',
       icon: 'fa-book-open',
+      img: 'images/home_icon_quiz.png',
       onClick: () => { playSound('menu_select.mp3', 0.35); onNavigate('quiz'); },
       sub: '覚えよう・テスト',
     },
     {
       id: 'shop',
       label: 'お店',
-      bg: 'linear-gradient(145deg,#6a1b9a,#7b1fa2)',
+      bg: 'linear-gradient(160deg,#4a148c 0%,#6a1b9a 60%,#7b1fa2 100%)',
       icon: 'fa-store',
+      img: 'images/home_icon_shop.png',
       onClick: () => { playSound('menu_select.mp3', 0.35); onNavigateToShop(); },
       sub: (ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚所持` : 'カードをゲット',
     },
@@ -4538,7 +4550,13 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
               style={{background: icon.bg}}
               onClick={icon.onClick}
             >
-              <i className={`fa-solid ${icon.icon} home-icon-fa`} />
+              {icon.img
+                ? <img src={icon.img} alt={icon.label} className="home-icon-img"
+                    onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='inline-block'; }}
+                  />
+                : null}
+              <i className={`fa-solid ${icon.icon} home-icon-fa`}
+                 style={{display: icon.img ? 'none' : 'inline-block'}} />
               <span className="home-icon-label">{icon.label}</span>
               <span style={{fontSize:10, color:'rgba(255,255,255,0.75)', fontWeight:600}}>
                 {icon.sub}
