@@ -1105,11 +1105,12 @@
         position: relative;
       }
       .tutorial-mascot {
-        width: 52px; height: 52px;
-        border-radius: 50%;
-        border: 2px solid #e8eaf6;
+        width: 56px; height: 56px;
+        border-radius: 14px;
+        background: #000;
         object-fit: cover;
         flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       }
       .tutorial-msg {
         flex: 1;
@@ -1491,19 +1492,19 @@ function saveTutorialStep(s) {
 // チュートリアルステップ定義
 const TUTORIAL_STEPS = [
   { step:1, target:'practice',   arrow:true,
-    msg:'まず「練習」をタップして\n今日の練習を記録してみよう！⚾' },
+    msg:'まず「練習」アイコンをタップして\n今日の練習を記録してみよう！⚾' },
   { step:2, target:null,         arrow:false,
-    msg:'⚾ 光っているメニューをタップして\n回数を入力して「記録」ボタンを押してみよう！' },
+    msg:'光っているメニューをタップして\n回数を入力し「記録」ボタンを押してみよう！⚾' },
   { step:3, target:'quiz',       arrow:true,
-    msg:'次は「学習」タブで\n「覚えよう」のクイズをやってみよう！📚' },
+    msg:'練習おつかれ！🏠 ホームに戻って\n「学習」アイコンを押してみよう！📚' },
   { step:4, target:null,         arrow:false,
-    msg:'📚 光っている「覚えよう」をタップして\nクイズに挑戦してみよう！' },
+    msg:'光っている「覚えよう」をタップして\nクイズに挑戦してみよう！📚' },
   { step:5, target:'stamp',      arrow:true,
-    msg:'📮 スタンプ帳でハンコを押してみよう！\n「スタンプ」タブをタップしてね' },
+    msg:'クイズおつかれ！🏠 ホームに戻って\n「スタンプ」アイコンを押してみよう！📮' },
   { step:6, target:'badge',      arrow:true,
-    msg:'🎖 バッジタブを開いて\nバッジを確認しよう！' },
+    msg:'🏠 ホームに戻って\n「バッジ」アイコンを押してみよう！🎖' },
   { step:7, target:'collection', arrow:true,
-    msg:'🪙「カード」タブでLv1の選手カードを\n買ってみよう！' },
+    msg:'🏠 ホームに戻って\n「カード」アイコンを押してみよう！🪙' },
   { step:8, target:null,         arrow:false,
     msg:'🌟 チュートリアル完了！\nあとは毎日コツコツ練習を続けよう！' },
 ];
@@ -3152,7 +3153,8 @@ function TutorialBanner({ step, onSkip }) {
   return (
     <div className="tutorial-banner">
       <div className="tutorial-card">
-        <img src="icons/icon-192.png" alt="ROOKIE" className="tutorial-mascot" />
+        <img src="images/tutorial_mascot.png" alt="マスコット" className="tutorial-mascot"
+          onError={e => { e.target.src='icons/icon-192.png'; }} />
         <div style={{flex:1}}>
           {msgLines.map((l, i) => (
             <div key={i} className="tutorial-msg" style={{fontWeight: i===0 ? 900 : 700, fontSize: i===0 ? 14 : 12.5, color: i===0 ? '#1a237e' : '#555'}}>
@@ -3836,7 +3838,6 @@ function App() {
     const newQuizDone = { ...(data.quizDone || {}), [today]: [...((data.quizDone || {})[today] || []), entry] };
     const newData = { ...data, quizBonus: newQuizBonus, quizDone: newQuizDone };
     checkAndAwardBadges(newData);
-    advanceTutorial(4); // step4: クイズ完了 → step5へ
   }
 
   function isCardOwned(lv, typeId) {
@@ -4099,25 +4100,51 @@ function App() {
         })}
       </div>
 
-      {/* チュートリアルバナー */}
-      {tutorialStep && onboardingDone && (
+      {/* チュートリアルバナー：ホーム画面のみ表示（他タブではボタンと重なるため非表示） */}
+      {tutorialStep && onboardingDone && tab === 'home' && (
         <TutorialBanner step={tutorialStep} onSkip={skipTutorial} />
       )}
 
       {/* ホームFAB（ホーム以外のタブで表示・スマホ専用） */}
-      {tab !== 'home' && (
-        <div className="home-fab mobile-only" onClick={() => { playSound('menu_select.mp3', 0.35); setTab('home'); }}>
-          <i className="fa-solid fa-house" />
-          <span className="home-fab-label">ホーム</span>
-        </div>
-      )}
+      {tab !== 'home' && (() => {
+        // チュートリアル「ホームに戻って」ステップではFABをゴールドにして目立たせる
+        const tutInfo = tutorialStep && onboardingDone
+          ? TUTORIAL_STEPS.find(s => s.step === tutorialStep)
+          : null;
+        const fabGlow = tutInfo && tutInfo.arrow; // arrow:trueは「ホームに戻って」系
+        return (
+          <div className={`home-fab mobile-only${fabGlow ? ' tutorial-icon-glow' : ''}`}
+            style={fabGlow ? {background:'linear-gradient(135deg,#f9a825,#ffd54f)', color:'#5d4037', border:'2px solid #f9a825'} : {}}
+            onClick={() => { playSound('menu_select.mp3', 0.35); setTab('home'); }}>
+            <i className="fa-solid fa-house" />
+            <span className="home-fab-label">{fabGlow ? 'ホームへ' : 'ホーム'}</span>
+          </div>
+        );
+      })()}
 
       {/* メインコンテンツ */}
       <main className={`main${tab === 'home' ? ' main-home' : ''}`}>
+        {/* チュートリアルヒント（ホーム以外・ステップ2/4のみ）*/}
+        {tutorialStep && onboardingDone && tab !== 'home' && (() => {
+          const info = TUTORIAL_STEPS.find(s => s.step === tutorialStep);
+          if (!info || info.arrow) return null; // 「ホームに戻って」系は表示しない
+          return (
+            <div style={{
+              background:'linear-gradient(135deg,#fff8e1,#fff3cd)',
+              borderBottom:'2px solid #ffd54f',
+              padding:'10px 16px',
+              display:'flex', alignItems:'center', gap:10,
+              fontSize:12, fontWeight:700, color:'#5d4037',
+            }}>
+              <span style={{fontSize:20}}>💡</span>
+              <span>{info.msg.replace(/\n/g,'　')}</span>
+            </div>
+          );
+        })()}
         <div className="content">
           {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} tutorialStep={tutorialStep} />}
-          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} />}
+          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => advanceTutorial(4)} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
           {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
@@ -4849,9 +4876,53 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
               )}
             </div>
 
+            {/* 中央カード情報パネル（名前＋能力値） */}
+            {(() => {
+              const key = cards[safeIdx];
+              const cname = getCardName(key);
+              const base = CARD_BASE_STATS[key] || {};
+              const stats = (cardUpgrades||{})[key] || base;
+              const km = key.match(/^lv(\d+)_(.+)$/);
+              const lv = km ? parseInt(km[1]) : 1;
+              const typeId = km ? km[2] : '';
+              const typeInfo = CARD_TYPES.find(t => t.id === typeId) || {};
+              return (
+                <div style={{
+                  background:'white', borderRadius:12, margin:'5px 24px 0',
+                  padding:'7px 12px 8px',
+                  boxShadow:'0 2px 8px rgba(0,0,0,0.1)',
+                  border:`1.5px solid ${typeInfo.color||'#ddd'}`,
+                }}>
+                  {/* 名前行 */}
+                  <div style={{display:'flex', alignItems:'baseline', gap:5, marginBottom:5}}>
+                    {cname
+                      ? <>
+                          <ruby style={{fontSize:14, fontWeight:900, color:typeInfo.color||'#333', letterSpacing:0.5}}>
+                            {cname.last}
+                            <rt style={{fontSize:9, fontWeight:400}}>{cname.lastKana}</rt>
+                          </ruby>
+                          <span style={{fontSize:12, fontWeight:800, color:'#555'}}>{cname.first}</span>
+                        </>
+                      : <span style={{fontSize:12, fontWeight:800, color:'#555'}}>{typeInfo.label}</span>
+                    }
+                    <span style={{marginLeft:'auto', fontSize:10, color:typeInfo.color||'#888', fontWeight:700}}>{typeInfo.emoji} Lv.{lv}</span>
+                  </div>
+                  {/* 能力値5つ */}
+                  <div style={{display:'flex', justifyContent:'space-between'}}>
+                    {STAT_ORDER.map(stat => (
+                      <div key={stat} style={{display:'flex', flexDirection:'column', alignItems:'center', gap:1}}>
+                        <span style={{fontSize:8, color:'#bbb', fontWeight:600, letterSpacing:-0.3}}>{STAT_LABELS[stat]}</span>
+                        <span style={{fontSize:15, fontWeight:900, color:STAT_RANK_COLOR[stats[stat]||'G'], lineHeight:1}}>{stats[stat]||'G'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* ドットインジケーター */}
             {n > 1 && (
-              <div style={{display:'flex', justifyContent:'center', gap:5, marginTop:3}}>
+              <div style={{display:'flex', justifyContent:'center', gap:5, marginTop:6}}>
                 {(n <= 10 ? cards : cards.slice(0,10)).map((_, i) => (
                   <div key={i}
                     style={{
@@ -5677,21 +5748,30 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                               onError={e => { e.target.style.display='none'; }}
                             />
                           </div>
-                          {/* フッター */}
-                          <div style={{padding:'8px 10px', background:typeInfo.headerBg || lvInfo.bg}}>
-                            {/* 選手名 */}
-                            {cname && (
-                              <div style={{display:'flex', alignItems:'baseline', gap:5, marginBottom:3}}>
-                                <ruby style={{fontSize:14, fontWeight:900, color:'white', letterSpacing:0.5}}>
-                                  {cname.last}
-                                  <rt style={{fontSize:9, fontWeight:400}}>{cname.lastKana}</rt>
-                                </ruby>
-                                <span style={{fontSize:12, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{cname.first}</span>
+                          {/* フッター（名前＋タイプ） */}
+                          <div style={{padding:'7px 10px 6px', background:typeInfo.headerBg || lvInfo.bg}}>
+                            {cname
+                              ? <div style={{display:'flex', alignItems:'baseline', gap:5}}>
+                                  <ruby style={{fontSize:13, fontWeight:900, color:'white', letterSpacing:0.5}}>
+                                    {cname.last}
+                                    <rt style={{fontSize:8, fontWeight:400}}>{cname.lastKana}</rt>
+                                  </ruby>
+                                  <span style={{fontSize:11, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{cname.first}</span>
+                                  <span style={{marginLeft:'auto', color:'rgba(255,255,255,0.75)', fontSize:9, fontWeight:600}}>{typeInfo.emoji} Lv.{lv}</span>
+                                </div>
+                              : <div style={{color:'rgba(255,255,255,0.75)', fontSize:10, fontWeight:600}}>
+                                  {typeInfo.emoji} {typeInfo.label} · Lv.{lv}
+                                </div>
+                            }
+                          </div>
+                          {/* 能力値ストリップ */}
+                          <div style={{padding:'6px 8px 7px', background:'white', display:'flex', justifyContent:'space-between'}}>
+                            {STAT_ORDER.map(stat => (
+                              <div key={stat} style={{display:'flex', flexDirection:'column', alignItems:'center', gap:1}}>
+                                <span style={{fontSize:8, color:'#aaa', fontWeight:600, letterSpacing:-0.3}}>{STAT_LABELS[stat]}</span>
+                                <span style={{fontSize:14, fontWeight:900, color:STAT_RANK_COLOR[stats[stat]||'G'], lineHeight:1}}>{stats[stat]||'G'}</span>
                               </div>
-                            )}
-                            <div style={{color:'rgba(255,255,255,0.75)', fontSize:10, fontWeight:600}}>
-                              {typeInfo.emoji} {typeInfo.label} · Lv.{lv}
-                            </div>
+                            ))}
                           </div>
                         </div>
                       );
@@ -6148,7 +6228,7 @@ function CutoffDiagram() {
 }
 
 // ===== 学習タブ =====
-function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep }) {
+function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep, onKisoEnter }) {
   const [view, setView] = React.useState('top'); // 'top' | 'kiso' | 'test' | 'homework'
   // diffFilterをQuizTabレベルで管理（KisoSection remount時もリセットしない）
   const [kisoDiffFilter, setKisoDiffFilter] = React.useState('easy');
@@ -7470,7 +7550,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
             {/* 覚えようカード */}
             <button
               className={tutorialStep === 4 ? 'tutorial-icon-glow' : ''}
-              onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('kiso'); }}
+              onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('kiso'); if (onKisoEnter) onKisoEnter(); }}
               style={{
                 background:'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
                 border: tutorialStep === 4 ? '2.5px solid #ffd54f' : 'none',
