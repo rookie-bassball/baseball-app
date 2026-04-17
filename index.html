@@ -1634,32 +1634,58 @@ const CARD_BASE_STATS = {
   lv50_all:     { meet:'A', power:'A', speed:'A', arm:'A', defense:'A' }, // 全A・全ステータス強化の余白あり
 };
 
-// ===== 選手名データ =====
-// 苗字：タイプ別（架空・かっこいい漢字）
-const TYPE_SURNAMES = {
-  meet:    { last: '蒼嵐', lastKana: 'そうらん' },
-  speed:   { last: '迅雷', lastKana: 'じんらい' },
-  defense: { last: '白嶽', lastKana: 'はくたけ' },
-  arm:     { last: '玄武', lastKana: 'げんぶ'   },
-  pitcher: { last: '紅蓮', lastKana: 'ぐれん'   },
-  all:     { last: '天鳳', lastKana: 'てんほう' },
+// ===== 選手名データ（全48枚・苗字・名前すべて異なる）=====
+const CARD_NAMES = {
+  'lv01_meet':    { last:'蒼嵐',   lastKana:'そうらん',   first:'はると'   },
+  'lv01_speed':   { last:'迅雷',   lastKana:'じんらい',   first:'そうた'   },
+  'lv01_defense': { last:'白嶽',   lastKana:'はくたけ',   first:'ゆいと'   },
+  'lv01_arm':     { last:'玄武',   lastKana:'げんぶ',     first:'りょう'   },
+  'lv01_pitcher': { last:'紅蓮',   lastKana:'ぐれん',     first:'かいと'   },
+  'lv01_all':     { last:'天鳳',   lastKana:'てんほう',   first:'けんと'   },
+  'lv05_meet':    { last:'疾風',   lastKana:'はやて',     first:'しゅう'   },
+  'lv05_speed':   { last:'朱雀',   lastKana:'すざく',     first:'れん'     },
+  'lv05_defense': { last:'白虎',   lastKana:'びゃっこ',   first:'ゆうと'   },
+  'lv05_arm':     { last:'神楽',   lastKana:'かぐら',     first:'こうた'   },
+  'lv05_pitcher': { last:'写楽',   lastKana:'しゃらく',   first:'りく'     },
+  'lv05_all':     { last:'蒼龍',   lastKana:'そうりゅう', first:'だいき'   },
+  'lv10_meet':    { last:'炎帝',   lastKana:'えんてい',   first:'たいよう' },
+  'lv10_speed':   { last:'黒鷹',   lastKana:'くろたか',   first:'あさひ'   },
+  'lv10_defense': { last:'閃光',   lastKana:'せんこう',   first:'みなと'   },
+  'lv10_arm':     { last:'銀狼',   lastKana:'ぎんろう',   first:'いつき'   },
+  'lv10_pitcher': { last:'金剛',   lastKana:'こんごう',   first:'つばさ'   },
+  'lv10_all':     { last:'烈火',   lastKana:'れっか',     first:'まひろ'   },
+  'lv15_meet':    { last:'飛燕',   lastKana:'ひえん',     first:'あきと'   },
+  'lv15_speed':   { last:'天狼',   lastKana:'てんろう',   first:'ひろと'   },
+  'lv15_defense': { last:'霞月',   lastKana:'かすみつき', first:'のぞむ'   },
+  'lv15_arm':     { last:'紫電',   lastKana:'しでん',     first:'けい'     },
+  'lv15_pitcher': { last:'蒼穹',   lastKana:'そうきゅう', first:'しん'     },
+  'lv15_all':     { last:'雷鼓',   lastKana:'らいこ',     first:'こう'     },
+  'lv20_meet':    { last:'白炎',   lastKana:'はくえん',   first:'そら'     },
+  'lv20_speed':   { last:'暁星',   lastKana:'ぎょうせい', first:'ゆうき'   },
+  'lv20_defense': { last:'龍牙',   lastKana:'りゅうが',   first:'まさき'   },
+  'lv20_arm':     { last:'焔王',   lastKana:'えんおう',   first:'かずき'   },
+  'lv20_pitcher': { last:'銀翼',   lastKana:'ぎんよく',   first:'ひかる'   },
+  'lv20_all':     { last:'黒雷',   lastKana:'こくらい',   first:'たつき'   },
+  'lv25_meet':    { last:'蒼天',   lastKana:'そうてん',   first:'ゆうま'   },
+  'lv25_speed':   { last:'神速',   lastKana:'しんそく',   first:'しゅん'   },
+  'lv25_defense': { last:'天剣',   lastKana:'てんけん',   first:'こうすけ' },
+  'lv25_arm':     { last:'嵐龍',   lastKana:'らんりゅう', first:'りん'     },
+  'lv25_pitcher': { last:'白鷹',   lastKana:'はくたか',   first:'はく'     },
+  'lv25_all':     { last:'翠嵐',   lastKana:'すいらん',   first:'いく'     },
+  'lv30_meet':    { last:'黒鉄',   lastKana:'くろがね',   first:'なおき'   },
+  'lv30_speed':   { last:'鉄城',   lastKana:'てつじょう', first:'ゆうせい' },
+  'lv30_defense': { last:'剛雷',   lastKana:'ごうらい',   first:'かんた'   },
+  'lv30_arm':     { last:'霊峰',   lastKana:'れいほう',   first:'たいが'   },
+  'lv30_pitcher': { last:'天嵐',   lastKana:'てんらん',   first:'あつき'   },
+  'lv30_all':     { last:'竜翼',   lastKana:'りゅうよく', first:'えいと'   },
+  'lv50_meet':    { last:'碧空',   lastKana:'へきくう',   first:'しょうた' },
+  'lv50_speed':   { last:'鳳凰',   lastKana:'ほうおう',   first:'こうき'   },
+  'lv50_defense': { last:'七星',   lastKana:'しちせい',   first:'しょうへい'},
+  'lv50_arm':     { last:'麒麟',   lastKana:'きりん',     first:'りょうた' },
+  'lv50_pitcher': { last:'極楽',   lastKana:'ごくらく',   first:'けいと'   },
+  'lv50_all':     { last:'天翔',   lastKana:'あまかけ',   first:'あおと'   },
 };
-// 名前：レベル別（平成・令和らしいひらがな）
-const LEVEL_FIRSTNAMES = {
-  1: 'はると', 5: 'そうた', 10: 'ゆいと', 15: 'りょう',
-  20: 'かいと', 25: 'けんと', 30: 'しゅう', 50: 'れん',
-};
-// カードキーから選手名を取得
-function getCardName(key) {
-  const m = String(key).match(/^lv(\d+)_(.+)$/);
-  if (!m) return null;
-  const lv     = parseInt(m[1]);
-  const typeId = m[2];
-  const sn = TYPE_SURNAMES[typeId];
-  const fn = LEVEL_FIRSTNAMES[lv];
-  if (!sn || !fn) return null;
-  return { last: sn.last, lastKana: sn.lastKana, first: fn };
-}
+function getCardName(key) { return CARD_NAMES[key] || null; }
 
 // カードキーを返す（例: "lv01_meet"）
 function cardKey(lv, typeId) {
