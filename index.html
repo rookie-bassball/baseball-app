@@ -1422,22 +1422,8 @@
   <div id="splash-sub">BASEBALL</div>
   <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
 </div>
-<!-- エラー表示 + スプラッシュ安全タイムアウト -->
+<!-- スプラッシュ安全タイムアウト（Reactが10秒以内に起動しない場合に強制フェードアウト） -->
 <script>
-// JSエラーをキャッチして画面に表示（デバッグ用）
-window.addEventListener('error', function(e) {
-  var el = document.getElementById('splash');
-  if (el) { el.classList.add('hide'); }
-  var box = document.getElementById('js-error-box');
-  if (!box) {
-    box = document.createElement('div');
-    box.id = 'js-error-box';
-    box.style.cssText = 'position:fixed;inset:0;background:#fff3f3;color:#c62828;padding:24px;font-family:monospace;font-size:12px;z-index:999999;overflow:auto;';
-    document.body.appendChild(box);
-  }
-  box.innerHTML = '<h3>⚠️ JavaScriptエラー</h3><p>' + (e.message||'不明') + '</p><pre style="font-size:10px;white-space:pre-wrap;background:#fff;padding:8px;border-radius:4px;">' + (e.filename||'') + ':' + (e.lineno||'') + '\n' + (e.error&&e.error.stack||'') + '</pre>';
-});
-// Reactが起動しない場合の安全タイムアウト（10秒）
 (function() {
   setTimeout(function() {
     var el = document.getElementById('splash');
@@ -4466,6 +4452,19 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
   const ptPct = Math.min(100, Math.round(todayPoints / DAILY_POINT_CAP * 100));
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
+  // 今日のターゲットメニュー（mainIconsより先に定義する必要あり）
+  const rec = todayRec || {};
+  const targetMenus = MENUS
+    .filter(m => (dailyTargets[m.id] || 0) > 0)
+    .map(m => ({
+      menu: m,
+      target: dailyTargets[m.id],
+      done: (rec[m.id] || 0) >= dailyTargets[m.id],
+      val: rec[m.id] || 0,
+    }));
+  const doneCount = targetMenus.filter(x => x.done).length;
+  const allDone = targetMenus.length > 0 && doneCount === targetMenus.length;
+
   // 3つのメインアイコン定義
   const mainIcons = [
     {
@@ -4495,19 +4494,6 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
       sub: (ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚所持` : 'カードをゲット',
     },
   ];
-
-  // 今日のターゲットメニュー
-  const rec = todayRec || {};
-  const targetMenus = MENUS
-    .filter(m => (dailyTargets[m.id] || 0) > 0)
-    .map(m => ({
-      menu: m,
-      target: dailyTargets[m.id],
-      done: (rec[m.id] || 0) >= dailyTargets[m.id],
-      val: rec[m.id] || 0,
-    }));
-  const doneCount = targetMenus.filter(x => x.done).length;
-  const allDone = targetMenus.length > 0 && doneCount === targetMenus.length;
 
   return (
     <>
@@ -7511,34 +7497,7 @@ function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
   );
 }
 
-// エラー境界（クラッシュ時にエラーメッセージを表示）
-class ErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { error: null }; }
-  static getDerivedStateFromError(err) { return { error: err }; }
-  componentDidCatch(err) {
-    // スプラッシュが残っていれば消す
-    const splash = document.getElementById('splash');
-    if (splash) { splash.classList.add('hide'); setTimeout(() => splash.remove(), 400); }
-  }
-  render() {
-    if (this.state.error) {
-      return (
-        <div style={{padding:32, fontFamily:'monospace', color:'#c62828', background:'#fff3f3', minHeight:'100vh'}}>
-          <h2>⚠️ アプリでエラーが発生しました</h2>
-          <p style={{fontSize:13}}>{String(this.state.error)}</p>
-          <pre style={{fontSize:11, whiteSpace:'pre-wrap', background:'#fff', padding:12, borderRadius:8, border:'1px solid #ffcdd2'}}>
-            {this.state.error?.stack}
-          </pre>
-          <button onClick={() => window.location.reload()} style={{marginTop:16, padding:'8px 20px', background:'#1a237e', color:'white', border:'none', borderRadius:8, cursor:'pointer'}}>
-            リロード
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-ReactDOM.createRoot(document.getElementById('root')).render(<ErrorBoundary><App /></ErrorBoundary>);
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 
 <!-- 残りのカード画像・効果音をバックグラウンドでプリロード -->
