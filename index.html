@@ -1490,26 +1490,25 @@ function saveTutorialStep(s) {
 }
 
 // チュートリアルステップ定義
+// 流れ：練習×2 → スタンプ → 学習（覚えよう） → バッジ → カード → 完了
 const TUTORIAL_STEPS = [
-  { step:1,  target:'practice',   arrow:true,
+  { step:1, target:'practice',   arrow:true,
     msg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをタップして\n{練習|れんしゅう}をはじめてみよう！⚾' },
-  { step:2,  target:null,         arrow:false,
-    msg:'「{素振|すぶ}り」をタップして\n「15」といれて「{記録|きろく}」をおしてみよう！🏏' },
-  { step:3,  target:null,         arrow:false,
-    msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「{記録|きろく}」をおしてみよう！⚾' },
-  { step:4,  target:'quiz',       arrow:true,
-    msg:'{練習|れんしゅう}2つ{完了|かんりょう}！スタンプがおせるよ！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
-  { step:5,  target:null,         arrow:false,
+  { step:2, target:null,         arrow:false,
+    msg:'「{素振|すぶ}り」をタップして\n「15」といれて「スタンプをおす！」をおしてみよう！🏏' },
+  { step:3, target:null,         arrow:false,
+    msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「スタンプをおす！」をおしてみよう！⚾' },
+  { step:4, target:'stamp',      arrow:true,
+    msg:'{練習|れんしゅう}2つ{完了|かんりょう}！スタンプがおせるよ！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
+  { step:5, target:'quiz',       arrow:true,
+    msg:'よくできました！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
+  { step:6, target:null,         arrow:false,
     msg:'{光|ひか}っている「{覚|おぼ}えよう」をタップして\nクイズに{挑戦|ちょうせん}してみよう！📚' },
-  { step:6,  target:null,         arrow:false,
-    msg:'クイズがおわったら「テスト」にも{挑戦|ちょうせん}してみよう！✏️' },
-  { step:7,  target:'stamp',      arrow:true,
-    msg:'{練習|れんしゅう}2つやったのでスタンプがおせます！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
-  { step:8,  target:'badge',      arrow:true,
-    msg:'{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
-  { step:9,  target:'collection', arrow:true,
+  { step:7, target:'badge',      arrow:true,
+    msg:'よくできました！\n{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
+  { step:8, target:'collection', arrow:true,
     msg:'{光|ひか}っている「カード」アイコンをタップしてみよう！🪙' },
-  { step:10, target:null,         arrow:false,
+  { step:9, target:null,         arrow:false,
     msg:'🎉 チュートリアル{完了|かんりょう}！\nデータをリセットして{本番|ほんばん}スタート！\n{毎日|まいにち}コツコツがんばろう⚾' },
 ];
 
@@ -1531,12 +1530,13 @@ function saveGrade(g) { if (g) localStorage.setItem(GRADE_KEY, g); }
 
 // {漢字|かな}マーカーを学年に応じて残す/除去する
 // → maxGrade >= その漢字の習得学年 なら振り仮名不要（漢字のみ）
+// 未登録の漢字はデフォルト99扱い（常に振り仮名を表示）
 function processFuri(text, maxGrade) {
   if (!text) return text;
   return text.replace(/\{([^|]+)\|([^}]+)\}/g, (match, kanji, kana) => {
     const kanjiChars = [...kanji].filter(c => /[\u4e00-\u9fff]/.test(c));
     if (!kanjiChars.length) return kanji;
-    const maxKG = kanjiChars.reduce((mx, c) => Math.max(mx, KANJI_GRADE[c] || 1), 0);
+    const maxKG = kanjiChars.reduce((mx, c) => Math.max(mx, KANJI_GRADE[c] ?? 99), 0);
     return maxGrade >= maxKG ? kanji : match;
   });
 }
@@ -3175,9 +3175,9 @@ function TutorialBanner({ step, onSkip, grade }) {
 
   const maxGrade = GRADE_MAX[grade] ?? 2;
 
-  // step10 は3秒後に自動スキップ（skipTutorial内でデータリセットが走る）
+  // step9 は3秒後に自動スキップ（skipTutorial内でデータリセットが走る）
   React.useEffect(() => {
-    if (step !== 10) return;
+    if (step !== 9) return;
     const t = setTimeout(() => onSkip(), 3000);
     return () => clearTimeout(t);
   }, [step]);
@@ -3208,7 +3208,7 @@ function TutorialBanner({ step, onSkip, grade }) {
             ))}
           </div>
         </div>
-        {step !== 10 && (
+        {step !== 9 && (
           <button className="tutorial-skip" onClick={onSkip}>スキップ</button>
         )}
       </div>
@@ -3606,7 +3606,7 @@ function App() {
   function advanceTutorial(fromStep) {
     if (tutorialStep !== fromStep) return;
     const next = fromStep + 1;
-    if (next > 10) {
+    if (next > 9) {
       saveTutorialStep(null);
       setTutorialStep(null);
     } else {
@@ -3616,8 +3616,8 @@ function App() {
   }
 
   function skipTutorial() {
-    // step10（チュートリアル自然完了）のみデータリセットして本番モードへ
-    if (tutorialStep === 10) {
+    // step9（チュートリアル自然完了）のみデータリセットして本番モードへ
+    if (tutorialStep === 9) {
       const empty = { records:{}, totalStats:{}, streak:0, lastDate:null, firstDate:null,
         stamps:{}, ownedCards:[], cardUpgrades:{}, earnedBadges:[], claimedBadges:[],
         quizBonus:{}, quizDone:{}, homeworkBonus:{}, kisoProgress:{}, kisoBonusLog:{}, kisoBonus:{} };
@@ -3793,7 +3793,7 @@ function App() {
 
   // スタンプ帳へのハンコを手動で押す
   function handlePressHanko() {
-    advanceTutorial(7); // step7: スタンプ → step8へ
+    advanceTutorial(4); // step4: スタンプ → step5へ
     const newStamps = { ...data.stamps, [today]: true };
     checkAndAwardBadges({ ...data, stamps: newStamps });
     playHankoSound();
@@ -3866,12 +3866,12 @@ function App() {
     }
   }, [profileLevel]);
 
-  // チュートリアル：タブ遷移で自動進行（step1→2: 練習, step4→5: 学習, step8→9: バッジ）
+  // チュートリアル：タブ遷移で自動進行（step1: 練習, step5: 学習, step7: バッジ）
   React.useEffect(() => {
     if (!onboardingDone || !tutorialStep) return;
     if (tutorialStep === 1 && tab === 'practice') advanceTutorial(1);
-    if (tutorialStep === 4 && tab === 'quiz')     advanceTutorial(4);
-    if (tutorialStep === 8 && tab === 'badge')    advanceTutorial(8);
+    if (tutorialStep === 5 && tab === 'quiz')     advanceTutorial(5);
+    if (tutorialStep === 7 && tab === 'badge')    advanceTutorial(7);
   }, [tab, tutorialStep]);
 
   function handleQuizComplete(earnedPts, difficulty, isPerfect) {
@@ -3895,7 +3895,8 @@ function App() {
     if ((data.ownedCards || []).includes(key)) return;
     const newOwned = [...(data.ownedCards || []), key];
     checkAndAwardBadges({ ...data, ownedCards: newOwned });
-    advanceTutorial(9); // step9: カード購入 → step10へ
+    advanceTutorial(8); // step8: カード購入 → step9（完了）へ
+    if (tutorialStep === 8) setTab('home'); // 完了バナーをホームで表示するために移動
     playSound('get_card.mp3');
   }
   function handleUpgradeStat(lv, typeId, stat) {
@@ -4190,7 +4191,7 @@ function App() {
         <div className="content">
           {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} tutorialStep={tutorialStep} />}
-          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => advanceTutorial(5)} onTestEnter={() => advanceTutorial(6)} />}
+          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => advanceTutorial(6)} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
           {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
@@ -4735,7 +4736,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ 学習 ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 4;
+          const isGlowing = tutorialStep === 5;
           return (
         <button
           className={isGlowing ? 'tutorial-icon-glow' : ''}
@@ -4760,7 +4761,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ お店 ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 9;
+          const isGlowing = tutorialStep === 8;
           const sub = (ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚所持` : 'カードをゲット';
           return (
             <button
@@ -4993,7 +4994,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ スタンプ ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 7;
+          const isGlowing = tutorialStep === 4;
           const pressed = stampedToday;
           const canStamp = canStampToday && !stampedToday;
           const labelColor = pressed ? '#c62828' : canStamp ? '#2e7d32' : '#555';
@@ -5029,7 +5030,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ バッジ ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 8;
+          const isGlowing = tutorialStep === 7;
           const hasBadge = (unclaimedBadgeCount || 0) > 0;
           return (
             <button
@@ -6276,7 +6277,7 @@ function CutoffDiagram() {
 }
 
 // ===== 学習タブ =====
-function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep, onKisoEnter, onTestEnter }) {
+function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep, onKisoEnter }) {
   const [view, setView] = React.useState('top'); // 'top' | 'kiso' | 'test' | 'homework'
   // diffFilterをQuizTabレベルで管理（KisoSection remount時もリセットしない）
   const [kisoDiffFilter, setKisoDiffFilter] = React.useState('easy');
@@ -7597,14 +7598,14 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
           <div style={{display:'flex', flexDirection:'column', gap:16, marginTop:8}}>
             {/* 覚えようカード */}
             <button
-              className={tutorialStep === 5 ? 'tutorial-icon-glow' : ''}
+              className={tutorialStep === 6 ? 'tutorial-icon-glow' : ''}
               onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('kiso'); if (onKisoEnter) onKisoEnter(); }}
               style={{
                 background:'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
-                border: tutorialStep === 5 ? '2.5px solid #ffd54f' : 'none',
+                border: tutorialStep === 6 ? '2.5px solid #ffd54f' : 'none',
                 borderRadius:20, padding:'28px 24px',
                 cursor:'pointer', textAlign:'left',
-                boxShadow: tutorialStep === 5
+                boxShadow: tutorialStep === 6
                   ? '0 0 0 4px rgba(255,213,79,0.4), 0 4px 16px rgba(26,35,126,0.25)'
                   : '0 4px 16px rgba(26,35,126,0.25)',
                 transition:'transform 0.15s, box-shadow 0.15s',
@@ -7632,16 +7633,13 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
             {/* テストカード */}
             <button
-              className={tutorialStep === 6 ? 'tutorial-icon-glow' : ''}
-              onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('test'); if (onTestEnter) onTestEnter(); }}
+              onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('test'); }}
               style={{
                 background:'linear-gradient(135deg, #e65100 0%, #ff8f00 100%)',
-                border: tutorialStep === 6 ? '2.5px solid #ffd54f' : 'none',
+                border:'none',
                 borderRadius:20, padding:'28px 24px',
                 cursor:'pointer', textAlign:'left',
-                boxShadow: tutorialStep === 6
-                  ? '0 0 0 4px rgba(255,213,79,0.4), 0 4px 16px rgba(230,81,0,0.25)'
-                  : '0 4px 16px rgba(230,81,0,0.25)',
+                boxShadow:'0 4px 16px rgba(230,81,0,0.25)',
                 transition:'transform 0.15s, box-shadow 0.15s',
               }}
             >
