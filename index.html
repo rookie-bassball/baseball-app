@@ -1039,58 +1039,16 @@
       .main.main-home { padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important; }
 
       /* ===== ホーム 3アイコングリッド ===== */
-      .home-icon-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin-bottom: 10px;
-      }
-      .home-icon-btn {
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        gap: 6px; padding: 12px 8px 10px;
-        border-radius: 22px;
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-        border: none;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 4px 18px rgba(0,0,0,0.18);
-        transition: transform 0.12s;
-        min-height: 110px;
-      }
-      .home-icon-btn:active { transform: scale(0.95); }
-      .home-icon-emoji {
-        font-size: 38px;
-        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
-        line-height: 1;
-      }
-      .home-icon-fa {
-        font-size: 28px;
-        color: white;
-        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
-      }
-      /* 画像アイコン */
-      .home-icon-img {
-        width: 74px; height: 74px;
-        object-fit: contain;
-        border-radius: 14px;
-        filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
-        flex-shrink: 0;
-        display: block;
-      }
-      .home-icon-label {
-        font-size: 13px; font-weight: 900;
-        color: white; letter-spacing: 0.5px;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
-      }
-      .home-icon-btn.tutorial-icon-glow {
+      /* ホーム アイコンセル（新デザイン：白カード） */
+      .tutorial-icon-glow {
         animation: tutorialIconPulse 1s ease-in-out infinite;
       }
       @keyframes tutorialIconPulse {
-        0%, 100% { box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 0 0 0 rgba(255,213,79,0.8); }
-        50%       { box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 0 0 12px rgba(255,213,79,0); }
+        0%, 100% { box-shadow: 0 3px 14px rgba(0,0,0,0.09), 0 0 0 0 rgba(255,213,79,0.8); }
+        50%       { box-shadow: 0 3px 14px rgba(0,0,0,0.09), 0 0 0 10px rgba(255,213,79,0); }
       }
+      /* ホームアイコンセル タップ時 */
+      .home-grid-cell:active { transform: scale(0.94); }
 
       /* ===== チュートリアル ===== */
       .tutorial-tab-glow {
@@ -4460,10 +4418,8 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
   const dateLabel = `${d.getMonth()+1}月${d.getDate()}日（${DAY_NAMES[d.getDay()]}）`;
   const ptPct = Math.min(100, Math.round(todayPoints / DAILY_POINT_CAP * 100));
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [cardIdx, setCardIdx] = React.useState(0);
-  const touchStartX = React.useRef(null);
 
-  // 今日のターゲットメニュー（mainIconsより先に定義する必要あり）
+  // 今日のターゲットメニュー
   const rec = todayRec || {};
   const targetMenus = MENUS
     .filter(m => (dailyTargets[m.id] || 0) > 0)
@@ -4476,38 +4432,16 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
   const doneCount = targetMenus.filter(x => x.done).length;
   const allDone = targetMenus.length > 0 && doneCount === targetMenus.length;
 
-  // 3つのメインアイコン定義
-  const mainIcons = [
-    {
-      id: 'practice',
-      label: '練習',
-      bg: 'linear-gradient(160deg,#1a237e 0%,#283593 60%,#1565c0 100%)',
-      icon: 'fa-baseball-bat-ball',
-      img: 'images/home_icon_practice.png',
-      onClick: () => { playSound('menu_select.mp3', 0.35); onNavigate('practice'); },
-      sub: targetMenus.length > 0
-        ? `${doneCount}/${targetMenus.length} 達成`
-        : `今日 ${totalPracticed}/${threshold} 種目`,
-    },
-    {
-      id: 'quiz',
-      label: '学習',
-      bg: 'linear-gradient(160deg,#01579b 0%,#0277bd 60%,#0288d1 100%)',
-      icon: 'fa-book-open',
-      img: 'images/home_icon_quiz.png',
-      onClick: () => { playSound('menu_select.mp3', 0.35); onNavigate('quiz'); },
-      sub: '覚えよう・テスト',
-    },
-    {
-      id: 'shop',
-      label: 'お店',
-      bg: 'linear-gradient(160deg,#4a148c 0%,#6a1b9a 60%,#7b1fa2 100%)',
-      icon: 'fa-store',
-      img: 'images/home_icon_shop.png',
-      onClick: () => { playSound('menu_select.mp3', 0.35); onNavigateToShop(); },
-      sub: (ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚所持` : 'カードをゲット',
-    },
-  ];
+  // アイコングリッド用ヘルパー：アイコン画像を overflow:hidden + 拡大でハロー除去
+  const iconImgStyle = {
+    width:'calc(100% + 10px)', height:'calc(100% + 10px)',
+    marginLeft:-5, marginTop:-5,
+    objectFit:'cover', display:'block',
+  };
+  const iconWrapStyle = (sz) => ({
+    width:sz, height:sz, borderRadius: Math.round(sz*0.24),
+    overflow:'hidden', flexShrink:0, position:'relative',
+  });
 
   return (
     <>
@@ -4540,274 +4474,191 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         </div>
       </div>
 
-      {/* ─── ① 3つのメインアイコン ─── */}
-      <div className="home-icon-grid">
-        {mainIcons.map(icon => {
-          const isGlowing = (tutorialStep === 1 && icon.id === 'practice')
-                         || (tutorialStep === 4 && icon.id === 'shop');
-          return (
-            <button
-              key={icon.id}
-              className={`home-icon-btn ${isGlowing ? 'tutorial-icon-glow' : ''}`}
-              style={{background: icon.bg}}
-              onClick={icon.onClick}
-            >
-              {icon.img
-                ? <img src={icon.img} alt={icon.label} className="home-icon-img"
-                    onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='inline-block'; }}
-                  />
-                : null}
-              <i className={`fa-solid ${icon.icon} home-icon-fa`}
-                 style={{display: icon.img ? 'none' : 'inline-block'}} />
-              <span className="home-icon-label">{icon.label}</span>
-              <span style={{fontSize:10, color:'rgba(255,255,255,0.75)', fontWeight:600}}>
-                {icon.sub}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* ─── ① アイコングリッド（3×2）─── */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:10}}>
 
-      {/* ─── ② カードカルーセル ─── */}
-      {(() => {
-        const cards = ownedCards || [];
-        const n = cards.length;
-        const getCardImg = (key) => `images/card_${key}.png`;
-
-        if (n === 0) {
-          return (
-            <div style={{
-              background:'linear-gradient(145deg,#f3e5f5,#ede7f6)',
-              borderRadius:18, padding:'14px 16px', marginBottom:10,
-              border:'1.5px solid rgba(142,36,170,0.18)',
-              display:'flex', flexDirection:'column', alignItems:'center', gap:8,
-              boxShadow:'0 2px 10px rgba(0,0,0,0.06)',
-            }}>
-              <i className="fa-solid fa-id-card" style={{fontSize:28, color:'#ce93d8'}} />
-              <div style={{fontSize:12, fontWeight:800, color:'#7b1fa2'}}>まだカードがないよ！</div>
-              <button
-                style={{
-                  background:'linear-gradient(135deg,#4a148c,#7b1fa2)',
-                  color:'white', borderRadius:10, padding:'6px 20px',
-                  border:'none', fontSize:12, fontWeight:800, cursor:'pointer',
-                  boxShadow:'0 2px 8px rgba(74,20,140,0.35)',
-                }}
-                onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToShop(); }}
-              >
-                お店でゲット！
-              </button>
-            </div>
-          );
-        }
-
-        const safeIdx = ((cardIdx % n) + n) % n;
-        const prevIdx = (safeIdx - 1 + n) % n;
-        const nextIdx = (safeIdx + 1) % n;
-
-        return (
-          <div style={{marginBottom:8}}>
-            {/* 3D carousel */}
-            <div
-              style={{
-                position:'relative', height:150,
-                perspective:'700px',
-                WebkitTapHighlightColor:'transparent',
-                userSelect:'none',
-              }}
-              onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
-              onTouchEnd={e => {
-                if (touchStartX.current == null) return;
-                const dx = e.changedTouches[0].clientX - touchStartX.current;
-                touchStartX.current = null;
-                if (dx < -45) setCardIdx((safeIdx + 1) % n);
-                else if (dx > 45) setCardIdx((safeIdx - 1 + n) % n);
-              }}
-            >
-              {/* 左奥カード（prev） */}
-              {n > 1 && (
-                <div style={{
-                  position:'absolute', top:'50%', left:'50%',
-                  transform:'translateX(calc(-50% - 90px)) translateY(-50%) rotateY(-28deg) scale(0.65)',
-                  transformOrigin:'center center',
-                  filter:'brightness(0.45)',
-                  zIndex:1, pointerEvents:'none',
-                  transition:'transform 0.3s ease, filter 0.3s ease',
-                }}>
-                  <img src={getCardImg(cards[prevIdx])} alt=""
-                    style={{width:82, height:115, objectFit:'cover', borderRadius:10,
-                      boxShadow:'0 4px 14px rgba(0,0,0,0.4)', display:'block'}}
-                    onError={e => { e.target.style.visibility='hidden'; }}
-                  />
-                </div>
-              )}
-
-              {/* 中央カード（current） */}
-              <div
-                style={{
-                  position:'absolute', top:'50%', left:'50%',
-                  transform:'translateX(-50%) translateY(-50%) scale(1)',
-                  transformOrigin:'center center',
-                  zIndex:3,
-                  cursor:'pointer',
-                  transition:'transform 0.3s ease',
-                }}
-                onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToMyCards(); }}
-              >
-                <img src={getCardImg(cards[safeIdx])} alt="マイカード"
-                  style={{
-                    width:104, height:146, objectFit:'cover', borderRadius:14,
-                    boxShadow:'0 8px 28px rgba(0,0,0,0.38)',
-                    border:'2px solid rgba(255,255,255,0.9)',
-                    display:'block',
-                  }}
-                  onError={e => {
-                    e.target.style.display='none';
-                    e.target.nextSibling.style.display='flex';
-                  }}
-                />
-                {/* 画像なしフォールバック */}
-                <div style={{
-                  display:'none', width:104, height:146, borderRadius:14,
-                  background:'linear-gradient(135deg,#4a148c,#7b1fa2)',
-                  alignItems:'center', justifyContent:'center', flexDirection:'column', gap:6,
-                  boxShadow:'0 8px 28px rgba(0,0,0,0.38)',
-                  border:'2px solid rgba(255,255,255,0.9)',
-                  color:'white', fontSize:11, fontWeight:800,
-                }}>
-                  <i className="fa-solid fa-id-card" style={{fontSize:24}} />
-                  <span>{cards[safeIdx]}</span>
-                </div>
-                {/* タップヒント */}
-                <div style={{
-                  position:'absolute', bottom:5, left:0, right:0,
-                  textAlign:'center', fontSize:9, color:'rgba(255,255,255,0.95)',
-                  fontWeight:800, textShadow:'0 1px 4px rgba(0,0,0,0.8)',
-                  pointerEvents:'none', letterSpacing:0.3,
-                }}>
-                  ▶ マイカードへ
-                </div>
-              </div>
-
-              {/* 右奥カード（next） */}
-              {n > 1 && (
-                <div style={{
-                  position:'absolute', top:'50%', left:'50%',
-                  transform:'translateX(calc(-50% + 90px)) translateY(-50%) rotateY(28deg) scale(0.65)',
-                  transformOrigin:'center center',
-                  filter:'brightness(0.45)',
-                  zIndex:1, pointerEvents:'none',
-                  transition:'transform 0.3s ease, filter 0.3s ease',
-                }}>
-                  <img src={getCardImg(cards[nextIdx])} alt=""
-                    style={{width:82, height:115, objectFit:'cover', borderRadius:10,
-                      boxShadow:'0 4px 14px rgba(0,0,0,0.4)', display:'block'}}
-                    onError={e => { e.target.style.visibility='hidden'; }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* ドットインジケーター */}
-            {n > 1 && (
-              <div style={{
-                display:'flex', justifyContent:'center', gap:5, marginTop:2, marginBottom:2,
-              }}>
-                {(n <= 8 ? cards : cards.slice(0,8)).map((_, i) => (
-                  <div key={i} style={{
-                    width: i === safeIdx % 8 ? 16 : 5,
-                    height:5, borderRadius:999,
-                    background: i === safeIdx % 8 ? '#5c35ae' : 'rgba(0,0,0,0.15)',
-                    transition:'width 0.25s, background 0.25s',
-                    cursor:'pointer',
-                  }}
-                  onClick={() => setCardIdx(i)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* ─── ③ TODAY ストリップ（2列）─── */}
-      <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:8, marginBottom:8}}>
-
-        {/* スタンプ */}
+        {/* ─ 練習 ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 2;
-          const pressed = stampedToday;
-          const canStamp = canStampToday && !stampedToday;
+          const isGlowing = tutorialStep === 1;
+          const sub = targetMenus.length > 0
+            ? `${doneCount}/${targetMenus.length} 達成`
+            : `${totalPracticed}/${threshold} 種目`;
           return (
             <button
               className={isGlowing ? 'tutorial-icon-glow' : ''}
-              style={{
-                background: pressed ? 'linear-gradient(145deg,#ffebee,#fff5f5)'
-                  : canStamp ? 'linear-gradient(145deg,#e8f5e9,#f1f8e9)'
-                  : 'white',
-                border: pressed ? '1.5px solid rgba(198,40,40,0.25)'
-                  : canStamp ? '1.5px solid rgba(46,125,50,0.3)'
-                  : `1.5px solid ${isGlowing ? '#ffd54f' : '#e8eaf6'}`,
-                borderRadius:16, padding:'10px 6px',
+              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+                borderRadius:20, padding:'10px 4px 9px',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:4,
                 cursor:'pointer', WebkitTapHighlightColor:'transparent',
-                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.4)' : '0 2px 8px rgba(0,0,0,0.05)',
+                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 3px 14px rgba(0,0,0,0.09)' : '0 3px 14px rgba(0,0,0,0.09)',
               }}
-              onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('stamp'); }}
+              onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('practice'); }}
             >
-              <div style={{width:38, height:38, borderRadius:11, flexShrink:0,
-                background: pressed ? 'linear-gradient(135deg,#c62828,#e53935)'
-                  : canStamp ? 'linear-gradient(135deg,#2e7d32,#43a047)'
-                  : 'linear-gradient(135deg,#90a4ae,#78909c)',
-                display:'flex', alignItems:'center', justifyContent:'center'}}>
-                <i className={`fa-solid ${pressed ? 'fa-stamp' : canStamp ? 'fa-circle-plus' : 'fa-calendar-check'}`}
-                   style={{fontSize:17, color:'white'}} />
+              <div style={iconWrapStyle(72)}>
+                <img src="images/home_icon_practice.png" alt="練習" style={iconImgStyle}
+                  onError={e => { e.target.style.display='none'; }}
+                />
               </div>
-              <div style={{fontSize:11, fontWeight:800,
-                color: pressed ? '#c62828' : canStamp ? '#2e7d32' : '#555'}}>
-                スタンプ
-              </div>
-              <div style={{fontSize:10, fontWeight:600,
-                color: pressed ? '#e57373' : canStamp ? '#66bb6a' : '#aaa'}}>
-                {pressed ? '押したよ！' : canStamp ? '押せるよ！' : `🔥${streak||0}日`}
-              </div>
+              <div style={{fontSize:12, fontWeight:900, color:'#1a237e', marginTop:1}}>練習</div>
+              <div style={{fontSize:10, fontWeight:700, color:'#5c6bc0'}}>{sub}</div>
             </button>
           );
         })()}
 
-        {/* バッジ */}
+        {/* ─ 学習 ─ */}
+        <button
+          style={{background:'white', border:'1.5px solid rgba(0,0,0,0.07)',
+            borderRadius:20, padding:'10px 4px 9px',
+            display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+            cursor:'pointer', WebkitTapHighlightColor:'transparent',
+            boxShadow:'0 3px 14px rgba(0,0,0,0.09)',
+          }}
+          onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('quiz'); }}
+        >
+          <div style={iconWrapStyle(72)}>
+            <img src="images/home_icon_quiz.png" alt="学習" style={iconImgStyle}
+              onError={e => { e.target.style.display='none'; }}
+            />
+          </div>
+          <div style={{fontSize:12, fontWeight:900, color:'#01579b', marginTop:1}}>学習</div>
+          <div style={{fontSize:10, fontWeight:700, color:'#039be5'}}>覚えよう・テスト</div>
+        </button>
+
+        {/* ─ お店 ─ */}
+        {(() => {
+          const isGlowing = tutorialStep === 4;
+          const sub = (ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚所持` : 'カードをゲット';
+          return (
+            <button
+              className={isGlowing ? 'tutorial-icon-glow' : ''}
+              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+                borderRadius:20, padding:'10px 4px 9px',
+                display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+                cursor:'pointer', WebkitTapHighlightColor:'transparent',
+                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 3px 14px rgba(0,0,0,0.09)' : '0 3px 14px rgba(0,0,0,0.09)',
+              }}
+              onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToShop(); }}
+            >
+              <div style={iconWrapStyle(72)}>
+                <img src="images/home_icon_shop.png" alt="お店" style={iconImgStyle}
+                  onError={e => { e.target.style.display='none'; }}
+                />
+              </div>
+              <div style={{fontSize:12, fontWeight:900, color:'#4a148c', marginTop:1}}>お店</div>
+              <div style={{fontSize:10, fontWeight:700, color:'#7b1fa2'}}>{sub}</div>
+            </button>
+          );
+        })()}
+
+        {/* ─ スタンプ ─ */}
+        {(() => {
+          const isGlowing = tutorialStep === 2;
+          const pressed = stampedToday;
+          const canStamp = canStampToday && !stampedToday;
+          const labelColor = pressed ? '#c62828' : canStamp ? '#2e7d32' : '#555';
+          const subColor   = pressed ? '#e53935' : canStamp ? '#43a047' : '#aaa';
+          const subText    = pressed ? '押したよ！' : canStamp ? '押せるよ！' : `🔥${streak||0}日`;
+          return (
+            <button
+              className={isGlowing ? 'tutorial-icon-glow' : ''}
+              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+                borderRadius:20, padding:'10px 4px 9px',
+                display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+                cursor:'pointer', WebkitTapHighlightColor:'transparent',
+                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 3px 14px rgba(0,0,0,0.09)' : '0 3px 14px rgba(0,0,0,0.09)',
+              }}
+              onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('stamp'); }}
+            >
+              <div style={{...iconWrapStyle(66), position:'relative'}}>
+                <img src="images/home_icon_stamp.png" alt="スタンプ" style={iconImgStyle}
+                  onError={e => { e.target.style.display='none'; }}
+                />
+                {/* ステータスドット */}
+                <div style={{
+                  position:'absolute', bottom:3, right:3,
+                  width:11, height:11, borderRadius:999,
+                  background: pressed ? '#c62828' : canStamp ? '#43a047' : '#90a4ae',
+                  border:'2px solid white', pointerEvents:'none',
+                }} />
+              </div>
+              <div style={{fontSize:12, fontWeight:900, color:labelColor, marginTop:1}}>スタンプ</div>
+              <div style={{fontSize:10, fontWeight:700, color:subColor}}>{subText}</div>
+            </button>
+          );
+        })()}
+
+        {/* ─ バッジ ─ */}
         {(() => {
           const isGlowing = tutorialStep === 3;
           const hasBadge = (unclaimedBadgeCount || 0) > 0;
           return (
             <button
               className={isGlowing ? 'tutorial-icon-glow' : ''}
-              style={{
-                background: hasBadge ? 'linear-gradient(145deg,#fff8e1,#fff3e0)' : 'white',
-                border: hasBadge ? '1.5px solid rgba(255,160,0,0.35)'
-                  : `1.5px solid ${isGlowing ? '#ffd54f' : '#e8eaf6'}`,
-                borderRadius:16, padding:'10px 6px',
+              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+                borderRadius:20, padding:'10px 4px 9px',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:4,
                 cursor:'pointer', WebkitTapHighlightColor:'transparent',
-                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.4)' : '0 2px 8px rgba(0,0,0,0.05)',
+                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 3px 14px rgba(0,0,0,0.09)' : '0 3px 14px rgba(0,0,0,0.09)',
               }}
               onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('badge'); }}
             >
-              <div style={{width:38, height:38, borderRadius:11, flexShrink:0, position:'relative',
-                background: hasBadge ? 'linear-gradient(135deg,#e65100,#ff6f00)' : 'linear-gradient(135deg,#90a4ae,#78909c)',
-                display:'flex', alignItems:'center', justifyContent:'center'}}>
-                <i className="fa-solid fa-medal" style={{fontSize:17, color:'white'}} />
+              <div style={{...iconWrapStyle(66), position:'relative'}}>
+                <img src="images/home_icon_badge.png" alt="バッジ" style={iconImgStyle}
+                  onError={e => { e.target.style.display='none'; }}
+                />
+                {/* 未受取バッジ数バッジ */}
                 {hasBadge && (
-                  <div style={{position:'absolute', top:-5, right:-5, background:'#f44336',
-                    color:'white', fontSize:9, fontWeight:900, borderRadius:999,
+                  <div style={{
+                    position:'absolute', top:2, right:2,
+                    background:'#f44336', color:'white',
+                    fontSize:9, fontWeight:900, borderRadius:999,
                     minWidth:17, height:17, display:'flex', alignItems:'center', justifyContent:'center',
-                    padding:'0 3px', lineHeight:1, boxShadow:'0 1px 4px rgba(0,0,0,0.25)'}}>
+                    padding:'0 3px', lineHeight:1,
+                    boxShadow:'0 1px 4px rgba(0,0,0,0.3)', pointerEvents:'none',
+                  }}>
                     {unclaimedBadgeCount}
                   </div>
                 )}
               </div>
-              <div style={{fontSize:11, fontWeight:800, color: hasBadge ? '#e65100' : '#555'}}>バッジ</div>
-              <div style={{fontSize:10, fontWeight:600, color: hasBadge ? '#ffa000' : '#aaa'}}>
+              <div style={{fontSize:12, fontWeight:900, color: hasBadge ? '#e65100' : '#555', marginTop:1}}>バッジ</div>
+              <div style={{fontSize:10, fontWeight:700, color: hasBadge ? '#ffa000' : '#aaa'}}>
                 {hasBadge ? `${unclaimedBadgeCount}個あり！` : 'なし'}
+              </div>
+            </button>
+          );
+        })()}
+
+        {/* ─ マイカード ─ */}
+        {(() => {
+          const cards = ownedCards || [];
+          const hasCards = cards.length > 0;
+          const cardImg = hasCards ? `images/card_${cards[cards.length-1]}.png` : null;
+          return (
+            <button
+              style={{background:'white', border:'1.5px solid rgba(0,0,0,0.07)',
+                borderRadius:20, padding:'10px 4px 9px',
+                display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+                cursor:'pointer', WebkitTapHighlightColor:'transparent',
+                boxShadow:'0 3px 14px rgba(0,0,0,0.09)',
+              }}
+              onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToMyCards(); }}
+            >
+              <div style={{
+                ...iconWrapStyle(66),
+                background: hasCards ? undefined : 'linear-gradient(135deg,#ede7f6,#f3e5f5)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+              }}>
+                {hasCards ? (
+                  <img src={cardImg} alt="マイカード" style={iconImgStyle}
+                    onError={e => { e.target.style.display='none'; }}
+                  />
+                ) : (
+                  <i className="fa-solid fa-id-card" style={{fontSize:26, color:'#ce93d8'}} />
+                )}
+              </div>
+              <div style={{fontSize:12, fontWeight:900, color: hasCards ? '#4a148c' : '#555', marginTop:1}}>マイカード</div>
+              <div style={{fontSize:10, fontWeight:700, color: hasCards ? '#7b1fa2' : '#aaa'}}>
+                {hasCards ? `${cards.length}枚` : 'なし'}
               </div>
             </button>
           );
