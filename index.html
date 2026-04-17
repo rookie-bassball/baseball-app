@@ -1105,10 +1105,10 @@
         position: relative;
       }
       .tutorial-mascot {
-        width: 56px; height: 56px;
-        border-radius: 14px;
-        background: #000;
-        object-fit: cover;
+        width: 64px; height: 64px;
+        border-radius: 16px;
+        background: transparent;
+        object-fit: contain;
         flex-shrink: 0;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       }
@@ -1498,7 +1498,7 @@ const TUTORIAL_STEPS = [
   { step:3,  target:null,         arrow:false,
     msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「{記録|きろく}」をおしてみよう！⚾' },
   { step:4,  target:'quiz',       arrow:true,
-    msg:'{練習|れんしゅう}2つ{完了|かんりょう}！スタンプがおせるよ！\n{光|ひか}っている「{学習|がくしゅう}」をタップしてみよう！📚' },
+    msg:'{練習|れんしゅう}2つ{完了|かんりょう}！スタンプがおせるよ！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
   { step:5,  target:null,         arrow:false,
     msg:'{光|ひか}っている「{覚|おぼ}えよう」をタップして\nクイズに{挑戦|ちょうせん}してみよう！📚' },
   { step:6,  target:null,         arrow:false,
@@ -3198,7 +3198,7 @@ function TutorialBanner({ step, onSkip, grade }) {
           {info.arrow && (
             <div style={{fontSize:11, color:'#f9a825', fontWeight:800, marginTop:4, display:'flex', alignItems:'center', gap:3}}>
               <span style={{animation:'tutorialBounce 0.7s ease-in-out infinite alternate', display:'inline-block'}}>👆</span>
-              <Furi t="{光|ひか}っているボタンをおしてね！" />
+              <Furi t="{光|ひか}っているアイコンをおしてね！" />
             </div>
           )}
           {/* ステップドット */}
@@ -3956,7 +3956,7 @@ function App() {
           <div style={{flex:1}}>
             <div className="badge-notify-text-title">🎉 バッジ解放！</div>
             <div className="badge-notify-text-name">{badgeNotify.name}</div>
-            <div className="badge-notify-text-bonus">バッジタブで受け取れます！</div>
+            <div className="badge-notify-text-bonus">バッジアイコンから受け取れます！</div>
           </div>
           {badgeQueue.length > 0 && (
             <div style={{
@@ -4293,7 +4293,7 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
           <div className="pin-section">
             <div className="pin-section-title">🎯 種目別の目標設定</div>
             <div className="pin-section-desc">
-              各種目に1日の目標回数を設定しておくと、練習タブでまだ達成していない種目が光って表示されます。<br />
+              各種目に1日の目標回数を設定しておくと、練習メニューでまだ達成していない種目が光って表示されます。<br />
               👁️ ボタンで「非表示」にした種目は練習メニューに表示されません。<br />
               スタンプの条件には影響しません。保護者が設定・変更します。
             </div>
