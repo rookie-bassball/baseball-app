@@ -1503,7 +1503,7 @@ const TUTORIAL_STEPS = [
     homeMsg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをおして\n{練習|れんしゅう}の{画面|がめん}へいこう！⚾',
     msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「スタンプをおす！」をおしてみよう！⚾' },
   { step:4, target:'stamp',      arrow:true,
-    msg:'{練習|れんしゅう}2つ{完了|かんりょう}！スタンプがおせるよ！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
+    msg:'{練習|れんしゅう}2つ{完了|かんりょう}！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
   { step:5, target:'quiz',       arrow:true,
     msg:'よくできました！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
   { step:6, target:null,         arrow:false, homeTab:'quiz',
@@ -3187,15 +3187,36 @@ function TutorialBanner({ step, onSkip, grade, currentTab }) {
     return () => clearTimeout(t);
   }, [step]);
 
-  // ホーム画面かつ homeMsg があるステップ → homeMsg（「練習アイコンをおして」等）を表示
-  // それ以外 → step固有のmsg（「素振りをタップして」等）を表示
   const isOnHome = currentTab === 'home';
-  const useHomeMsg = !info.arrow && isOnHome && !!info.homeMsg;
-  const rawMsg = useHomeMsg ? info.homeMsg : info.msg;
-  const msgLines = rawMsg.split('\n');
 
-  // 矢印ヒント：arrow:true（元々）OR ホームでhomeMsgを表示中（アイコンを光らせているから）
-  const showArrowHint = info.arrow || useHomeMsg;
+  // メッセージ決定ロジック
+  // ① arrow:true + ホーム以外 → 「まずホームに戻ろう」（ホームFABが光っているので）
+  // ② arrow:true + ホーム     → step固有のmsg（「スタンプアイコンをタップ」等）
+  // ③ arrow:false + ホーム + homeMsg あり → homeMsg（「練習アイコンをおして」等）
+  // ④ arrow:false + 対象タブ内 → step固有のmsg（「素振りをタップして」等）
+  let rawMsg, showArrowHint;
+  if (info.arrow) {
+    if (isOnHome) {
+      // ホームに着いた → 具体的なアイコンを押すよう案内
+      rawMsg = info.msg;
+      showArrowHint = true;
+    } else {
+      // まだホーム外 → ホームに戻るよう案内（ホームFABが金色に光っている）
+      rawMsg = 'まず{ホーム|ほーむ}{画面|がめん}に{戻|もど}ろう！\n{光|ひか}っているホームボタンをおしてね！🏠';
+      showArrowHint = true;
+    }
+  } else {
+    if (isOnHome && !!info.homeMsg) {
+      // ホームから対象タブへ誘導
+      rawMsg = info.homeMsg;
+      showArrowHint = true;
+    } else {
+      // 対象タブ内での具体的な操作案内
+      rawMsg = info.msg;
+      showArrowHint = false;
+    }
+  }
+  const msgLines = rawMsg.split('\n');
 
   return (
     <div className="tutorial-banner">
