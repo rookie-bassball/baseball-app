@@ -1512,6 +1512,7 @@ const TUTORIAL_STEPS = [
     homeMsg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをおして\n{練習|れんしゅう}の{画面|がめん}へいこう！⚾',
     msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「スタンプをおす！」をおしてみよう！⚾' },
   { step:4, target:'stamp',      arrow:true,
+    tabMsg:'{光|ひか}っているハンコをおそう！\nスタンプをおしてみよう！📮',
     msg:'{練習|れんしゅう}2つ{完了|かんりょう}！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
   { step:5, target:'quiz',       arrow:true,
     msg:'よくできました！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
@@ -3199,19 +3200,24 @@ function TutorialBanner({ step, onSkip, grade, currentTab }) {
   const isOnHome = currentTab === 'home';
 
   // メッセージ決定ロジック
-  // ① arrow:true + ホーム以外 → 「まずホームに戻ろう」（ホームFABが光っているので）
+  // ① arrow:true + 対象タブ内（tabMsgあり） → tabMsg（「ハンコをおそう」等）
   // ② arrow:true + ホーム     → step固有のmsg（「スタンプアイコンをタップ」等）
-  // ③ arrow:false + ホーム + homeMsg あり → homeMsg（「練習アイコンをおして」等）
-  // ④ arrow:false + 対象タブ内 → step固有のmsg（「素振りをタップして」等）
+  // ③ arrow:true + ホーム以外（対象タブでもない）→ 「ホーム画面に戻ろう」
+  // ④ arrow:false + ホーム + homeMsg あり → homeMsg（「練習アイコンをおして」等）
+  // ⑤ arrow:false + 対象タブ内 → step固有のmsg（「素振りをタップして」等）
   let rawMsg, showArrowHint;
   if (info.arrow) {
-    if (isOnHome) {
-      // ホームに着いた → 具体的なアイコンを押すよう案内
+    if (info.tabMsg && currentTab === info.target) {
+      // 対象タブに既にいる → タブ内の具体的な操作を案内
+      rawMsg = info.tabMsg;
+      showArrowHint = false;
+    } else if (isOnHome) {
+      // ホームに着いた → 光っているアイコンを押すよう案内
       rawMsg = info.msg;
       showArrowHint = true;
     } else {
-      // まだホーム外 → ホームに戻るよう案内（ホームFABが金色に光っている）
-      rawMsg = 'まず{ホーム|ほーむ}{画面|がめん}に{戻|もど}ろう！\n{光|ひか}っているホームボタンをおしてね！🏠';
+      // ホーム外 → ホームに戻るよう案内（ホームFABが金色に光っている）
+      rawMsg = 'ホーム{画面|がめん}に{戻|もど}ろう！\n{光|ひか}っているホームボタンをおしてね！🏠';
       showArrowHint = true;
     }
   } else {
