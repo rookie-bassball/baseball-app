@@ -1519,6 +1519,7 @@ const TUTORIAL_STEPS = [
     msg:'よくできました！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
   { step:6, target:null,         arrow:false, homeTab:'quiz',
     homeMsg:'{光|ひか}っている「{学習|がくしゅう}」アイコンをおして\n{学習|がくしゅう}の{画面|がめん}へいこう！📚',
+    kisoListMsg:'{光|ひか}っているポジションをタップして\nクイズをはじめよう！⚾',
     msg:'「{覚|おぼ}えよう」をタップして\n「やさしい」からクイズにちょうせんしよう！📚' },
   { step:7, target:'badge',      arrow:true,
     awayMsg:'よくできました！🎉\nホーム{画面|がめん}に{戻|もど}って\n{光|ひか}っているバッジアイコンをおそう！🎖',
@@ -3186,7 +3187,7 @@ function playHankoSound() {
 }
 
 // ===== チュートリアルバナー =====
-function TutorialBanner({ step, onSkip, grade, currentTab }) {
+function TutorialBanner({ step, onSkip, grade, currentTab, kisoViewState }) {
   const info = TUTORIAL_STEPS.find(s => s.step === step);
   if (!info) return null;
 
@@ -3228,6 +3229,10 @@ function TutorialBanner({ step, onSkip, grade, currentTab }) {
       // ホームから対象タブへ誘導
       rawMsg = info.homeMsg;
       showArrowHint = true;
+    } else if (info.kisoListMsg && kisoViewState === 'list') {
+      // kiso ポジション一覧表示中 → 光っているポジションをタップするよう案内
+      rawMsg = info.kisoListMsg;
+      showArrowHint = false;
     } else {
       // 対象タブ内での具体的な操作案内
       rawMsg = info.msg;
@@ -3612,6 +3617,8 @@ function App() {
   const [onboardingDone, setOnboardingDone] = useState(isOnboardingDone);
   // チュートリアル
   const [tutorialStep, setTutorialStep] = useState(getTutorialStep);
+  // kiso内部ビュー状態（null=kiso外, 'list'=ポジション一覧, 'active'=読み/クイズ/結果中）
+  const [kisoViewState, setKisoViewState] = React.useState(null);
 
   const today = todayStr();
   const todayRec = data.records[today] || {};
@@ -4203,10 +4210,11 @@ function App() {
         })}
       </div>
 
-      {/* チュートリアルバナー：全タブで表示（画面下部固定） */}
-      {tutorialStep && onboardingDone && (
-        <TutorialBanner step={tutorialStep} onSkip={skipTutorial} grade={getGrade()} currentTab={tab} />
+      {/* チュートリアルバナー：全タブで表示（クイズ中のみ非表示） */}
+      {tutorialStep && onboardingDone && kisoViewState !== 'active' && (
+        <TutorialBanner step={tutorialStep} onSkip={skipTutorial} grade={getGrade()} currentTab={tab} kisoViewState={kisoViewState} />
       )}
+
 
       {/* ホームFAB（ホーム以外のタブで表示・スマホ専用） */}
       {tab !== 'home' && (() => {
@@ -4230,7 +4238,7 @@ function App() {
         <div className="content">
           {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} tutorialStep={tutorialStep} />}
-          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => {}} />}
+          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => {}} onViewStateChange={setKisoViewState} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
           {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
@@ -6316,13 +6324,21 @@ function CutoffDiagram() {
 }
 
 // ===== 学習タブ =====
-function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep, onKisoEnter }) {
+function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep, onKisoEnter, onViewStateChange }) {
   const [view, setView] = React.useState('top'); // 'top' | 'kiso' | 'test' | 'homework'
   // diffFilterをQuizTabレベルで管理（KisoSection remount時もリセットしない）
   const [kisoDiffFilter, setKisoDiffFilter] = React.useState('easy');
   // KisoSectionの内部ビュー状態をQuizTabレベルで管理（ヘッダーの「もどる」で制御するため）
   const [kisoView, setKisoView] = React.useState('list'); // 'list'|'reading'|'quiz'|'result'
   const homeworkDoneToday = (homeworkBonus[today] || 0) > 0;
+
+  // kiso内部ビューの変化をAppに通知（チュートリアルバナー制御用）
+  React.useEffect(() => {
+    if (!onViewStateChange) return;
+    if (view !== 'kiso') { onViewStateChange(null); return; }
+    if (kisoView === 'list') { onViewStateChange('list'); }
+    else { onViewStateChange('active'); } // reading/quiz/result中はバナーを非表示
+  }, [view, kisoView]);
 
   // ヘッダーの「もどる」ボタン処理（文脈に応じて適切な画面に戻る）
   function handleBack() {
@@ -6339,7 +6355,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
   // --- 基礎 sub-tab ---
   // React.useMemo で安定した関数参照を保持 → QuizTab再レンダー時にremountしない
-  const KisoSection = React.useMemo(() => function KisoSection({ kisoProgress, kisoBonusLog, onKisoComplete, diffFilter, onDiffFilterChange, kisoView, onKisoViewChange, profileLevel }) {
+  const KisoSection = React.useMemo(() => function KisoSection({ kisoProgress, kisoBonusLog, onKisoComplete, diffFilter, onDiffFilterChange, kisoView, onKisoViewChange, profileLevel, tutorialStep }) {
     const diffConfig = [
       { key:'easy',   label:'やさしい', emoji:'🟢', color:'#2e7d32', bg:'#e8f5e9' },
       { key:'normal', label:'ふつう',    emoji:'🟡', color:'#e65100', bg:'#fff3e0' },
@@ -7244,13 +7260,17 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
             const cleared = state === 'cleared';
             const locked = state === 'locked';
             return (
+              {(() => {
+                const isTutGlow = tutorialStep === 6 && idx === 0 && state === 'unlocked';
+                return (
               <div key={sec.key} onClick={()=>{ if(!locked) { playSound('menu_select.mp3', 0.35); openSection(sec); } }}
+                className={isTutGlow ? 'tutorial-icon-glow' : ''}
                 style={{background: cleared ? '#e8f5e9' : locked ? '#f5f5f5' : 'white',
                         borderRadius:14, marginBottom:10, padding:'14px 18px',
-                        border:`1.5px solid ${cleared ? dc.color+'66' : locked ? '#e0e0e0' : dc.color+'33'}`,
+                        border: isTutGlow ? '2px solid #ffd54f' : `1.5px solid ${cleared ? dc.color+'66' : locked ? '#e0e0e0' : dc.color+'33'}`,
                         display:'flex', alignItems:'center', justifyContent:'space-between', gap:10,
                         cursor: locked ? 'default' : 'pointer', opacity: locked ? 0.55 : 1,
-                        boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>
+                        boxShadow: isTutGlow ? '0 0 0 3px rgba(255,213,79,0.35),0 1px 4px rgba(0,0,0,0.06)' : '0 1px 4px rgba(0,0,0,0.06)'}}>
                 <span style={{fontWeight:'bold', fontSize:14, color: locked ? '#aaa' : dc.color}}>
                   <Furi t={sec.titleRuby} />
                 </span>
@@ -7258,6 +7278,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
                   {cleared ? '⭐' : locked ? '🔒' : '📖'}
                 </span>
               </div>
+                ); })()}
             );
           })}
         </>
@@ -7737,7 +7758,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
       {/* 覚えようビュー */}
       {view === 'kiso' && (
-        <KisoSection kisoProgress={kisoProgress} kisoBonusLog={kisoBonusLog} onKisoComplete={onKisoComplete} diffFilter={kisoDiffFilter} onDiffFilterChange={setKisoDiffFilter} kisoView={kisoView} onKisoViewChange={setKisoView} profileLevel={profileLevel} />
+        <KisoSection kisoProgress={kisoProgress} kisoBonusLog={kisoBonusLog} onKisoComplete={onKisoComplete} diffFilter={kisoDiffFilter} onDiffFilterChange={setKisoDiffFilter} kisoView={kisoView} onKisoViewChange={setKisoView} profileLevel={profileLevel} tutorialStep={tutorialStep} />
       )}
 
       {/* テストビュー */}
