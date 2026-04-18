@@ -6534,9 +6534,10 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
   const isCorrect = selected === q?.ans;
   const correct = scores.filter(Boolean).length;
 
-  // Cancel TTS on unmount
+  // 再生中Audioを管理（アンマウント時に停止）
+  const audioRef = React.useRef(null);
   React.useEffect(() => {
-    return () => { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){} };
+    return () => { try { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } } catch(e){} };
   }, []);
 
   // Countdown timer — only runs when qPhase === 'active'
@@ -6560,34 +6561,25 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // ---- TTS helper ----
-  function stripFuri(t) {
-    return (t || '').replace(/\{([^|]+)\|[^}]+\}/g, '$1');
-  }
-
+  // ---- 音声再生 ----
   function speakAndStart(questionData, onDone) {
     try {
-      if (!window.speechSynthesis) { setTimeout(onDone, 500); return; }
-      window.speechSynthesis.cancel();
-      const text = stripFuri(questionData.situation) + '　' + stripFuri(questionData.question);
-      const u1 = new SpeechSynthesisUtterance(text);
-      u1.lang = 'ja-JP';
-      u1.rate = 0.78;
-      u1.pitch = 1.05;
-      u1.onerror = () => { setTimeout(onDone, 200); };
-      u1.onend = () => {
-        try {
-          const u2 = new SpeechSynthesisUtterance('用意、スタート！');
-          u2.lang = 'ja-JP';
-          u2.rate = 0.9;
-          u2.pitch = 1.1;
-          u2.onerror = () => { setTimeout(onDone, 100); };
-          u2.onend = () => { onDone(); };
-          window.speechSynthesis.speak(u2);
-        } catch(e) { onDone(); }
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      const audio = new Audio(`sounds/reflex_${questionData.id}.mp3`);
+      audioRef.current = audio;
+      audio.onended = () => {
+        audioRef.current = null;
+        setTimeout(onDone, 350); // 少し間を置いてカウントダウン開始
       };
-      window.speechSynthesis.speak(u1);
-    } catch(e) { setTimeout(onDone, 500); }
+      audio.onerror = () => {
+        audioRef.current = null;
+        setTimeout(onDone, 300);
+      };
+      audio.play().catch(() => {
+        audioRef.current = null;
+        setTimeout(onDone, 300);
+      });
+    } catch(e) { setTimeout(onDone, 300); }
   }
 
   // ---- Actions ----
@@ -6607,7 +6599,7 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
 
   function handleAnswer(idx) {
     if (answered || qPhase !== 'active') return;
-    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){}
+    try { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } } catch(e){}
     setSelected(idx);
     setQPhase('answered');
     setShowExplanation(true);
@@ -6617,7 +6609,7 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
   }
 
   function nextQ() {
-    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){}
+    try { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } } catch(e){}
     if (qIdx + 1 >= shuffled.length) {
       setPhase('result');
       return;
