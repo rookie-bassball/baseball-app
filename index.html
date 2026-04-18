@@ -4708,7 +4708,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ 練習 ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 1;
+          const isGlowing = tutorialStep === 1 || tutorialStep === 2 || tutorialStep === 3;
           const sub = targetMenus.length > 0
             ? `${doneCount}/${targetMenus.length} 達成`
             : `${totalPracticed}/${threshold} 種目`;
