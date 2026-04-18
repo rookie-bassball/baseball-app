@@ -1092,6 +1092,15 @@
         padding: 0 12px 10px;
         pointer-events: none;
       }
+      /* ホームで光るアイコンがあるときは上部に表示（下段アイコンと重ならないよう） */
+      .tutorial-banner-top {
+        position: fixed;
+        left: 0; right: 0;
+        top: env(safe-area-inset-top, 0px);
+        z-index: 4000;
+        padding: 10px 12px 0;
+        pointer-events: none;
+      }
       .tutorial-card {
         background: white;
         border-radius: 20px;
@@ -3218,8 +3227,12 @@ function TutorialBanner({ step, onSkip, grade, currentTab }) {
   }
   const msgLines = rawMsg.split('\n');
 
+  // ホームでアイコンを光らせているとき → 上部表示（下段アイコンと重ならないよう）
+  // それ以外（非ホームタブ等） → 下部表示
+  const bannerClass = (info.arrow && isOnHome) ? 'tutorial-banner-top' : 'tutorial-banner';
+
   return (
-    <div className="tutorial-banner">
+    <div className={bannerClass}>
       <div className="tutorial-card">
         <img src="images/tutorial_mascot.png" alt="マスコット" className="tutorial-mascot"
           onError={e => { e.target.src='icons/icon-192.png'; }} />
