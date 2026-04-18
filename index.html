@@ -3609,10 +3609,10 @@ function App() {
     if (grade) saveGrade(grade);
     markOnboardingDone();
     setOnboardingDone(true);
-    // チュートリアル開始：step1 → 練習タブへ誘導
+    // チュートリアル開始：step1 → ホームから練習アイコンへ誘導
     saveTutorialStep(1);
     setTutorialStep(1);
-    setTab('practice');
+    setTab('home');
     playSound('upgrade.mp3');
   }
 
@@ -3801,7 +3801,7 @@ function App() {
     localStorage.removeItem(TUTORIAL_KEY);
     setOnboardingDone(false);
     setTutorialStep(null);
-    setTab('practice');
+    setTab('home');
   }
 
   // スタンプ帳へのハンコを手動で押す
