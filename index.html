@@ -7259,10 +7259,8 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
             const state = getSectionState(idx);
             const cleared = state === 'cleared';
             const locked = state === 'locked';
+            const isTutGlow = tutorialStep === 6 && idx === 0 && state === 'unlocked';
             return (
-              {(() => {
-                const isTutGlow = tutorialStep === 6 && idx === 0 && state === 'unlocked';
-                return (
               <div key={sec.key} onClick={()=>{ if(!locked) { playSound('menu_select.mp3', 0.35); openSection(sec); } }}
                 className={isTutGlow ? 'tutorial-icon-glow' : ''}
                 style={{background: cleared ? '#e8f5e9' : locked ? '#f5f5f5' : 'white',
@@ -7278,7 +7276,6 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
                   {cleared ? '⭐' : locked ? '🔒' : '📖'}
                 </span>
               </div>
-                ); })()}
             );
           })}
         </>
