@@ -6323,6 +6323,422 @@ function CutoffDiagram() {
   );
 }
 
+// ===== 瞬間判断クイズ =====
+const DEFENSE_SITUATIONS = [
+  {
+    id:'ds01', title:'ショートゴロ・ゲッツー',
+    outs:0, runners:[1],
+    situation:'{0アウト|ノーアウト}、ランナー{1塁|いちるい}。ショートゴロが{転|ころ}がった！',
+    question:'ゲッツーを{取|と}るには、まずどこへ{投|な}げる？',
+    choices:['{2塁|にるい}（セカンドへ）','{1塁|いちるい}（ファーストへ）','{3塁|さんるい}（サードへ）'],
+    ans:0, highlight:'2b',
+    explanation:'{1塁|いちるい}ランナーをアウトにするため、まず{2塁|にるい}へ{投|な}げる！そのまま{1塁|いちるい}へ{転送|てんそう}でゲッツー！'
+  },
+  {
+    id:'ds02', title:'バント処理（ランナー3塁）',
+    outs:0, runners:[3],
+    situation:'{0アウト|ノーアウト}、ランナー{3塁|さんるい}。バントをした！{3塁|さんるい}ランナーが{走|はし}る！',
+    question:'{3塁|さんるい}ランナーをアウトにするには？',
+    choices:['ホームへ{投|な}げる','{1塁|いちるい}へ{投|な}げる','{2塁|にるい}へ{投|な}げる'],
+    ans:0, highlight:'home',
+    explanation:'バントで{3塁|さんるい}ランナーがホームへ{走|はし}る！バントのボールをホームへすぐ{投|な}げてアウト！'
+  },
+  {
+    id:'ds03', title:'ピッチャーゴロ・1塁カバー',
+    outs:1, runners:[],
+    situation:'1アウト、ランナーなし。ファーストが{前|まえ}に{出|で}てゴロを{取|と}った！',
+    question:'{1塁|いちるい}ベースをカバーするのはだれ？',
+    choices:['ピッチャー','セカンド','サード'],
+    ans:0, highlight:'p',
+    explanation:'ファーストが{前|まえ}に{出|で}たら、ピッチャーが{1塁|いちるい}ベースをカバーしにいく！これは{基本|きほん}の{動|うご}き！'
+  },
+  {
+    id:'ds04', title:'外野フライ・タッチアップ',
+    outs:1, runners:[3],
+    situation:'1アウト、ランナー{3塁|さんるい}。深い外野フライが{上|あ}がった！',
+    question:'ランナーはどうすればホームに{帰|かえ}れる？',
+    choices:['フライをキャッチしてから{走|はし}る（タッチアップ）','すぐに{走|はし}り{出|だ}す','そのまま{動|うご}かない'],
+    ans:0, highlight:'home',
+    explanation:'フライのときは「タッチアップ」！フライがキャッチされた{後|あと}に{走|はし}り{出|だ}すよ。{先|さき}に{走|はし}るとアウトになる！'
+  },
+  {
+    id:'ds05', title:'外野からの中継プレー',
+    outs:0, runners:[2],
+    situation:'{0アウト|ノーアウト}、ランナー{2塁|にるい}。レフトへのヒット！ランナーがホームへ{走|はし}る！',
+    question:'{遠|とお}い{外野|がいや}からホームへ{速|はや}く{投|な}げるには？',
+    choices:['ショートに{中継|ちゅうけい}させてホームへ','外野手が{直接|ちょくせつ}ホームへ{投|な}げる','ファーストに{投|な}げる'],
+    ans:0, highlight:'ss',
+    explanation:'カットマン（ショートやセカンド）が{中継|ちゅうけい}してホームへ！{遠|とお}い{距離|きょり}は{中継|ちゅうけい}した{方|ほう}が{速|はや}くて{正確|せいかく}！'
+  },
+  {
+    id:'ds06', title:'満塁・内野ゴロ',
+    outs:1, runners:[1,2,3],
+    situation:'1アウト、ランナー{満塁|まんるい}。サードゴロが{転|ころ}がった！',
+    question:'まずどこへ{投|な}げればゲッツー？',
+    choices:['ホームへ{投|な}げる','{1塁|いちるい}へ{投|な}げる','{2塁|にるい}へ{投|な}げる'],
+    ans:0, highlight:'home',
+    explanation:'{満塁|まんるい}はホームへ{投|な}げてアウト → {1塁|いちるい}へ{転送|てんそう}でゲッツー！「ホームゲッツー」と{言|い}うよ。'
+  },
+  {
+    id:'ds07', title:'バント処理（1・2塁）',
+    outs:0, runners:[1,2],
+    situation:'{0アウト|ノーアウト}、ランナー{1塁|いちるい}・{2塁|にるい}。バントをした！',
+    question:'{2塁|にるい}ランナーをアウトにするには？',
+    choices:['{3塁|さんるい}（サード）へ{投|な}げる','ホームへ{投|な}げる','{1塁|いちるい}へ{投|な}げる'],
+    ans:0, highlight:'3b',
+    explanation:'ランナー1・2塁のバントでは{2塁|にるい}ランナーが{3塁|さんるい}へ{走|はし}る。サードへ{投|な}げてアウトにしよう！'
+  },
+  {
+    id:'ds08', title:'盗塁',
+    outs:1, runners:[1],
+    situation:'1アウト、ランナー{1塁|いちるい}。ランナーが{走|はし}った！（{盗塁|とうるい}！）',
+    question:'キャッチャーはどこへ{投|な}げる？',
+    choices:['{2塁|にるい}へ{投|な}げる','{1塁|いちるい}へ{戻|もど}す','{3塁|さんるい}へ{投|な}げる'],
+    ans:0, highlight:'2b',
+    explanation:'{1塁|いちるい}ランナーが{2塁|にるい}を{盗塁|とうるい}しようとしている！キャッチャーはすぐ{2塁|にるい}へ{送球|そうきゅう}してアウトにしよう！'
+  },
+  {
+    id:'ds09', title:'ピッチャーゴロ（満塁）',
+    outs:0, runners:[1,2,3],
+    situation:'{0アウト|ノーアウト}、{満塁|まんるい}。ピッチャーゴロが{転|ころ}がった！',
+    question:'いちばん{確実|かくじつ}なのは？',
+    choices:['ホームへ{投|な}げてフォースアウト','すべての{塁|るい}を{確認|かくにん}してから{判断|はんだん}','{2塁|にるい}へ{投|な}げる'],
+    ans:0, highlight:'home',
+    explanation:'{満塁|まんるい}は{全員|ぜんいん}フォース{状態|じょうたい}！まずホームへ{投|な}げてアウト、その後{1塁|いちるい}へ{転送|てんそう}でゲッツーが{理想|りそう}！'
+  },
+  {
+    id:'ds10', title:'2アウト・ランナー3塁',
+    outs:2, runners:[3],
+    situation:'2アウト、ランナー{3塁|さんるい}。{内野|ないや}ゴロが{転|ころ}がった！',
+    question:'このとき{内野手|ないやしゅ}はどこへ{投|な}げる？',
+    choices:['{1塁|いちるい}へ{投|な}げる（フォースアウト）','ホームへ{投|な}げてタッチアウト','{3塁|さんるい}ランナーをタッチアウト'],
+    ans:0, highlight:'1b',
+    explanation:'2アウトなら{1塁|いちるい}へ{投|な}げてフォースアウトが{確実|かくじつ}！ランナーよりも{先|さき}に{1塁|いちるい}へ{届|とど}けばアウト！'
+  },
+];
+
+function DefenseField({ runners = [], highlight = null, showHighlight = false }) {
+  const W = 260, H = 195;
+  const HOME  = [130, 178];
+  const FIRST = [196, 112];
+  const SEC   = [130,  46];
+  const THIRD = [ 64, 112];
+  const MOUND = [130, 115];
+
+  const FIELDERS = { p:[130,115], c:[130,182], '1b':[201,107], '2b':[172,83], '3b':[59,107], ss:[90,76], lf:[44,36], cf:[130,18], rf:[216,36] };
+  const BASE_HIGHLIGHTS = { home:HOME, '1b':FIRST, '2b':SEC, '3b':THIRD };
+
+  function RunnerDot({ cx, cy }) {
+    return <circle cx={cx} cy={cy} r={7} fill="#ef5350" stroke="white" strokeWidth="1.5" />;
+  }
+
+  function HighlightCircle({ cx, cy, r = 11 }) {
+    if (!showHighlight) return null;
+    return (
+      <>
+        <circle cx={cx} cy={cy} r={r+3} fill="rgba(255,213,79,0.35)" />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#ffd54f" strokeWidth="2.5" strokeDasharray="5 2" />
+      </>
+    );
+  }
+
+  const hlBase = showHighlight && BASE_HIGHLIGHTS[highlight];
+  const hlFielder = showHighlight && FIELDERS[highlight];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{maxWidth:260, display:'block', margin:'0 auto', borderRadius:10}}>
+      {/* Sky/background */}
+      <rect width={W} height={H} fill="#c8e6c9" rx="10" />
+      {/* Outfield arc */}
+      <path d={`M 20 ${HOME[1]} Q ${HOME[0]} 5 ${W-20} ${HOME[1]}`} fill="#a5d6a7" stroke="none" />
+      {/* Foul lines */}
+      <line x1={HOME[0]} y1={HOME[1]} x2={20} y2={HOME[1]-80} stroke="white" strokeWidth="1.5" opacity="0.7" />
+      <line x1={HOME[0]} y1={HOME[1]} x2={W-20} y2={HOME[1]-80} stroke="white" strokeWidth="1.5" opacity="0.7" />
+      {/* Infield dirt */}
+      <polygon points={`${HOME[0]},${HOME[1]} ${FIRST[0]},${FIRST[1]} ${SEC[0]},${SEC[1]} ${THIRD[0]},${THIRD[1]}`}
+        fill="#d4a574" stroke="none" />
+      {/* Infield grass circle */}
+      <circle cx={130} cy={112} r={48} fill="#88c57a" />
+      {/* Diamond lines */}
+      <polygon points={`${HOME[0]},${HOME[1]} ${FIRST[0]},${FIRST[1]} ${SEC[0]},${SEC[1]} ${THIRD[0]},${THIRD[1]}`}
+        fill="none" stroke="white" strokeWidth="1.5" />
+      {/* Pitcher mound */}
+      <circle cx={MOUND[0]} cy={MOUND[1]} r={6} fill="#c09060" stroke="#a07040" strokeWidth="1" />
+      {/* Bases */}
+      {[[HOME,'H'],[FIRST,'1'],[SEC,'2'],[THIRD,'3']].map(([[bx,by],lbl],i)=>{
+        const isHL = hlBase && hlBase[0]===bx && hlBase[1]===by;
+        return (
+          <g key={i}>
+            <rect x={bx-7} y={by-7} width={14} height={14} rx="2"
+              fill={isHL ? '#ffd54f' : 'white'} stroke={isHL ? '#ff6f00' : '#9e9e9e'} strokeWidth={isHL ? 2 : 1.5} />
+            <text x={bx} y={by+4} textAnchor="middle" fontSize="8" fontWeight="bold" fill={isHL ? '#e65100' : '#555'}>{lbl}</text>
+          </g>
+        );
+      })}
+      {/* Fielder highlight (non-base positions) */}
+      {hlFielder && !hlBase && <HighlightCircle cx={hlFielder[0]} cy={hlFielder[1]} r={11} />}
+      {hlFielder && !hlBase && (
+        <text x={hlFielder[0]} y={hlFielder[1]+4} textAnchor="middle" fontSize="9" fontWeight="bold"
+          fill={showHighlight ? '#e65100' : '#555'}>
+          {highlight==='p'?'P':highlight==='ss'?'SS':highlight==='c'?'C':highlight.toUpperCase()}
+        </text>
+      )}
+      {/* Runners */}
+      {runners.includes(1) && <RunnerDot cx={FIRST[0]+10} cy={FIRST[1]-10} />}
+      {runners.includes(2) && <RunnerDot cx={SEC[0]+10}   cy={SEC[1]-10}   />}
+      {runners.includes(3) && <RunnerDot cx={THIRD[0]-10} cy={THIRD[1]-10} />}
+      {/* (Out count shown outside SVG, not here) */}
+    </svg>
+  );
+}
+
+function CountdownCircle({ timeLeft, total = 5 }) {
+  const r = 18, circ = 2 * Math.PI * r;
+  const frac = timeLeft / total;
+  const dash = circ * frac;
+  const color = timeLeft <= 1 ? '#ef5350' : timeLeft <= 2 ? '#ff9800' : '#43a047';
+  return (
+    <svg width="50" height="50" viewBox="0 0 50 50" style={{display:'block'}}>
+      <circle cx="25" cy="25" r={r} fill="none" stroke="#e0e0e0" strokeWidth="4" />
+      <circle cx="25" cy="25" r={r} fill="none" stroke={color} strokeWidth="4"
+        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+        transform="rotate(-90 25 25)" style={{transition:'stroke-dasharray 0.2s linear, stroke 0.2s'}} />
+      <text x="25" y="30" textAnchor="middle" fontSize="16" fontWeight="bold" fill={color}>{timeLeft}</text>
+    </svg>
+  );
+}
+
+function DefenseQuizSession({ situations, onBack, onComplete }) {
+  const [phase, setPhase] = React.useState('intro'); // 'intro'|'q'|'result'
+  const [qIdx, setQIdx] = React.useState(0);
+  const [timeLeft, setTimeLeft] = React.useState(5);
+  const [selected, setSelected] = React.useState(null); // null = no answer yet
+  const [timedOut, setTimedOut] = React.useState(false);
+  const [scores, setScores] = React.useState([]);
+  const [showExplanation, setShowExplanation] = React.useState(false);
+
+  const shuffled = React.useMemo(() => {
+    const arr = [...situations];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, []);
+
+  const q = shuffled[qIdx];
+  const answered = selected !== null || timedOut;
+  const isCorrect = selected === q?.ans;
+  const correct = scores.filter(Boolean).length;
+
+  // onComplete when result phase is entered (scores is complete by then)
+  React.useEffect(() => {
+    if (phase !== 'result') return;
+    const allCorrect = scores.every(Boolean) && scores.length === shuffled.length;
+    onComplete({ diff:'reflex', key:'session', isPerfect: allCorrect });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // 5-second countdown while question is active
+  React.useEffect(() => {
+    if (phase !== 'q' || answered) return;
+    if (timeLeft <= 0) { setTimedOut(true); playSound('quiz_wrong.mp3', 1.0); return; }
+    const t = setTimeout(() => setTimeLeft(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timeLeft, answered]);
+
+  function startQuiz() {
+    setPhase('q');
+    setQIdx(0);
+    setTimeLeft(5);
+    setSelected(null);
+    setTimedOut(false);
+    setScores([]);
+    setShowExplanation(false);
+    playSound('quiz_question.mp3', 1.0);
+  }
+
+  function handleAnswer(idx) {
+    if (answered) return;
+    setSelected(idx);
+    setShowExplanation(true);
+    const correct = idx === q.ans;
+    if (correct) playSound('quiz_correct.mp3', 1.0);
+    else playSound('quiz_wrong.mp3', 1.0);
+    setScores(s => [...s, correct]);
+  }
+
+  function nextQ() {
+    if (qIdx + 1 >= shuffled.length) {
+      setPhase('result'); // useEffect fires onComplete after render with complete scores
+      return;
+    }
+    setQIdx(i => i+1);
+    setTimeLeft(5);
+    setSelected(null);
+    setTimedOut(false);
+    setShowExplanation(false);
+    playSound('quiz_question.mp3', 1.0);
+  }
+
+  if (phase === 'intro') {
+    return (
+      <div style={{padding:'4px 0'}}>
+        <div style={{background:'linear-gradient(135deg,#1565c0,#0d47a1)', borderRadius:16, padding:'20px 16px', marginBottom:16, color:'white', textAlign:'center'}}>
+          <div style={{fontSize:28, marginBottom:6}}>⚡</div>
+          <div style={{fontWeight:'bold', fontSize:18, marginBottom:4}}><ruby>瞬間判断<rt>しゅんかんはんだん</rt></ruby>クイズ</div>
+          <div style={{fontSize:12, opacity:0.9, lineHeight:1.7}}>
+            <ruby>守備<rt>しゅび</rt></ruby>の<ruby>状況<rt>じょうきょう</rt></ruby>を<ruby>見<rt>み</rt></ruby>て、<ruby>5秒以内<rt>ごびょういない</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えよう！
+          </div>
+        </div>
+        <div style={{display:'flex', flexDirection:'column', gap:10, marginBottom:16}}>
+          {[
+            ['⚾', 'グラウンドのイラストを見て状況を確認しよう'],
+            ['⏱', '5秒以内にタップして答えよう！'],
+            ['🔴', '赤い丸がランナーの位置だよ'],
+            ['⭐', '正解でポイントゲット！'],
+          ].map(([em, txt]) => (
+            <div key={em} style={{display:'flex', alignItems:'center', gap:10, background:'#e3f2fd', borderRadius:10, padding:'10px 12px'}}>
+              <span style={{fontSize:18, flexShrink:0}}>{em}</span>
+              <span style={{fontSize:12, color:'#1565c0'}}>{txt}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{background:'#fff3e0', borderRadius:10, padding:'10px 12px', marginBottom:16, fontSize:12, color:'#e65100'}}>
+          全{situations.length}問。時間切れは不正解になるよ。何度でも挑戦できる！
+        </div>
+        <button onClick={startQuiz}
+          style={{width:'100%', padding:'16px', background:'linear-gradient(135deg,#1565c0,#0d47a1)', border:'none',
+                  borderRadius:14, color:'white', fontWeight:'bold', fontSize:17, cursor:'pointer',
+                  boxShadow:'0 4px 12px rgba(21,101,192,0.4)'}}>
+          ⚡ スタート！
+        </button>
+      </div>
+    );
+  }
+
+  if (phase === 'q') {
+    return (
+      <div style={{padding:'4px 0'}}>
+        {/* Header: progress + timer */}
+        <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
+          <div style={{flex:1, background:'#e0e0e0', borderRadius:10, height:8}}>
+            <div style={{width:`${((qIdx+1)/shuffled.length)*100}%`, background:'#1565c0', height:8, borderRadius:10, transition:'width 0.3s'}} />
+          </div>
+          <span style={{fontSize:12, color:'#888', fontWeight:'bold', flexShrink:0}}>{qIdx+1}/{shuffled.length}</span>
+          {!answered && <CountdownCircle timeLeft={timeLeft} total={5} />}
+          {answered && <div style={{fontSize:22}}>{isCorrect ? '⭕' : '❌'}</div>}
+        </div>
+
+        {/* Field SVG */}
+        <div style={{background:'white', borderRadius:14, padding:'10px', marginBottom:10, boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
+          <DefenseField runners={q.runners} highlight={q.highlight} showHighlight={answered} />
+          {/* Out indicators */}
+          <div style={{display:'flex', justifyContent:'center', gap:6, marginTop:6}}>
+            {[0,1,2].map(i=>(
+              <div key={i} style={{width:16, height:16, borderRadius:'50%',
+                background: i < q.outs ? '#ef5350' : 'transparent',
+                border:'2px solid ' + (i < q.outs ? '#ef5350' : '#bbb'),
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:9, color:'white', fontWeight:'bold'}}>
+                {i < q.outs ? i+1 : ''}
+              </div>
+            ))}
+            <span style={{fontSize:11, color:'#888', marginLeft:4}}>{q.outs}アウト</span>
+            {q.runners.length > 0 && (
+              <span style={{fontSize:11, color:'#ef5350', marginLeft:4}}>
+                ランナー{q.runners.map(r=>['','1塁','2塁','3塁'][r]).join('・')}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Situation text */}
+        <div style={{background:'#e3f2fd', borderRadius:12, padding:'10px 14px', marginBottom:10, fontSize:13, color:'#0d47a1', fontWeight:'bold', lineHeight:1.7}}>
+          <Furi t={q.situation} />
+        </div>
+
+        {/* Question */}
+        <div style={{fontWeight:'bold', fontSize:14, color:'#1a237e', marginBottom:10, textAlign:'center', lineHeight:1.6}}>
+          <Furi t={q.question} />
+        </div>
+
+        {/* Choices */}
+        <div style={{display:'flex', flexDirection:'column', gap:8, marginBottom:10}}>
+          {q.choices.map((c, i) => {
+            let bg = 'white', border = '2px solid #e0e0e0', color = '#333';
+            if (answered) {
+              if (i === q.ans) { bg = '#e8f5e9'; border = '2px solid #2e7d32'; color = '#2e7d32'; }
+              else if (i === selected) { bg = '#ffebee'; border = '2px solid #c62828'; color = '#c62828'; }
+            }
+            return (
+              <button key={i} onClick={() => handleAnswer(i)}
+                style={{padding:'13px 14px', borderRadius:12, background:bg, border, color,
+                        fontWeight:'bold', fontSize:13, cursor: answered ? 'default' : 'pointer',
+                        textAlign:'left', transition:'all 0.15s'}}>
+                {String.fromCharCode(65+i)}. <Furi t={c} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Time out message */}
+        {timedOut && !selected && (
+          <div style={{textAlign:'center', color:'#c62828', fontWeight:'bold', fontSize:13, marginBottom:8}}>
+            ⏱ 時間切れ！ こたえは「<Furi t={q.choices[q.ans]} />」だよ
+          </div>
+        )}
+
+        {/* Explanation */}
+        {answered && showExplanation && (
+          <div style={{background:'#fffde7', borderRadius:10, padding:'10px 12px', marginBottom:10, fontSize:12, color:'#f57f17', lineHeight:1.7}}>
+            💡 <Furi t={q.explanation} />
+          </div>
+        )}
+
+        {/* Next button */}
+        {answered && (
+          <button onClick={nextQ}
+            style={{width:'100%', padding:'13px', background:'linear-gradient(135deg,#1565c0,#0d47a1)',
+                    border:'none', borderRadius:14, color:'white', fontWeight:'bold', fontSize:15, cursor:'pointer'}}>
+            {qIdx + 1 < shuffled.length ? 'つぎへ →' : 'けっかをみる →'}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (phase === 'result') {
+    const total = shuffled.length;
+    const allCorrect = scores.every(Boolean) && scores.length === total;
+    return (
+      <div style={{textAlign:'center', padding:'4px 0'}}>
+        <div style={{fontSize:52, marginBottom:8}}>{allCorrect ? '🎉' : correct >= Math.ceil(total/2) ? '⭐' : '😢'}</div>
+        <div style={{fontWeight:'bold', fontSize:22, color: correct >= Math.ceil(total/2) ? '#1565c0' : '#c62828', marginBottom:4}}>
+          {allCorrect ? 'かんぺき！' : correct >= Math.ceil(total/2) ? 'よくできました！' : 'もういちど！'}
+        </div>
+        <div style={{fontSize:15, color:'#555', marginBottom:20}}>
+          {total}もんちゅう <span style={{fontWeight:'bold', fontSize:24, color:'#1565c0'}}>{correct}</span>もんせいかい
+        </div>
+        <div style={{display:'flex', flexDirection:'column', gap:10}}>
+          <button onClick={startQuiz}
+            style={{padding:'14px', background:'linear-gradient(135deg,#1565c0,#0d47a1)',
+                    border:'none', borderRadius:14, color:'white', fontWeight:'bold', fontSize:15, cursor:'pointer'}}>
+            🔄 もういちどチャレンジ！
+          </button>
+          <button onClick={onBack}
+            style={{padding:'14px', background:'linear-gradient(135deg,#546e7a,#37474f)',
+                    border:'none', borderRadius:14, color:'white', fontWeight:'bold', fontSize:15, cursor:'pointer'}}>
+            ← もどる
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 // ===== 学習タブ =====
 function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep, onKisoEnter, onViewStateChange }) {
   const [view, setView] = React.useState('top'); // 'top' | 'kiso' | 'test' | 'homework'
@@ -6360,6 +6776,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
       { key:'easy',   label:'やさしい', emoji:'🟢', color:'#2e7d32', bg:'#e8f5e9' },
       { key:'normal', label:'ふつう',    emoji:'🟡', color:'#e65100', bg:'#fff3e0' },
       { key:'hard',   label:'むずかしい', emoji:'🔴', color:'#c62828', bg:'#ffebee' },
+      { key:'reflex', label:'瞬間判断',  emoji:'⚡', color:'#1565c0', bg:'#e3f2fd' },
     ];
 
     const allSections = {
@@ -7136,6 +7553,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
           ]
         },
       ],
+      reflex: [], // 瞬間判断クイズはDefenseQuizSessionで独立管理
     };
 
     // view/setView はQuizTabから props経由で受け取る（kisoView / onKisoViewChange）
@@ -7229,21 +7647,54 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
     // Render list view
     if (view === 'list') {
+      // 瞬間判断タブが選ばれたらDefenseQuizSessionを直接表示
+      if (diffFilter === 'reflex') {
+        return (
+          <>
+            <div style={{display:'flex', gap:6, marginBottom:16, flexWrap:'wrap'}}>
+              {diffConfig.map(d=>{
+                const hardLocked = d.key === 'hard' && (profileLevel || 1) < KISO_HARD_UNLOCK_LEVEL;
+                return (
+                  <button key={d.key}
+                    onClick={()=>{ if(hardLocked) return; playSound('menu_select.mp3', 0.35); onDiffFilterChange(d.key); onKisoViewChange('list'); }}
+                    style={{flex:1, padding:'7px 3px',
+                            border:`2px solid ${hardLocked ? '#e0e0e0' : diffFilter===d.key ? d.color : '#e0e0e0'}`,
+                            borderRadius:10, fontWeight:'bold', fontSize:11,
+                            cursor: hardLocked ? 'default' : 'pointer',
+                            background: hardLocked ? '#f5f5f5' : diffFilter===d.key ? d.bg : 'white',
+                            color: hardLocked ? '#bbb' : diffFilter===d.key ? d.color : '#888',
+                            transition:'all 0.15s', minWidth:0}}
+                  >
+                    {hardLocked ? '🔒' : d.emoji} {d.label}
+                    {hardLocked && <div style={{fontSize:9, color:'#bbb', fontWeight:'normal', marginTop:2}}>Lv.{KISO_HARD_UNLOCK_LEVEL}で解放</div>}
+                  </button>
+                );
+              })}
+            </div>
+            <DefenseQuizSession
+              situations={DEFENSE_SITUATIONS}
+              onBack={() => { onDiffFilterChange('easy'); onKisoViewChange('list'); }}
+              onComplete={({ diff, key, isPerfect }) => setTimeout(() => onKisoComplete({ diff, key, isPerfect }), 0)}
+            />
+          </>
+        );
+      }
+
       return (
         <>
-          <div style={{display:'flex', gap:6, marginBottom:16}}>
+          <div style={{display:'flex', gap:6, marginBottom:16, flexWrap:'wrap'}}>
             {diffConfig.map(d=>{
               const hardLocked = d.key === 'hard' && (profileLevel || 1) < KISO_HARD_UNLOCK_LEVEL;
               return (
                 <button key={d.key}
                   onClick={()=>{ if(hardLocked) return; playSound('menu_select.mp3', 0.35); onDiffFilterChange(d.key); onKisoViewChange('list'); }}
-                  style={{flex:1, padding:'8px 4px',
+                  style={{flex:1, padding:'7px 3px',
                           border:`2px solid ${hardLocked ? '#e0e0e0' : diffFilter===d.key ? d.color : '#e0e0e0'}`,
-                          borderRadius:10, fontWeight:'bold', fontSize:12,
+                          borderRadius:10, fontWeight:'bold', fontSize:11,
                           cursor: hardLocked ? 'default' : 'pointer',
                           background: hardLocked ? '#f5f5f5' : diffFilter===d.key ? d.bg : 'white',
                           color: hardLocked ? '#bbb' : diffFilter===d.key ? d.color : '#888',
-                          transition:'all 0.15s', position:'relative'}}
+                          transition:'all 0.15s', minWidth:0}}
                 >
                   {hardLocked ? '🔒' : d.emoji} {d.label}
                   {hardLocked && (
