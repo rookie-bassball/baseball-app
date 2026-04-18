@@ -6563,23 +6563,23 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
 
   // ---- 音声再生 ----
   function speakAndStart(questionData, onDone) {
+    function playStart() {
+      try {
+        const startAudio = new Audio('sounds/reflex_start.mp3');
+        audioRef.current = startAudio;
+        startAudio.onended = () => { audioRef.current = null; onDone(); };
+        startAudio.onerror = () => { audioRef.current = null; onDone(); };
+        startAudio.play().catch(() => { audioRef.current = null; onDone(); });
+      } catch(e) { onDone(); }
+    }
     try {
       if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
       const audio = new Audio(`sounds/reflex_${questionData.id}.mp3`);
       audioRef.current = audio;
-      audio.onended = () => {
-        audioRef.current = null;
-        setTimeout(onDone, 350); // 少し間を置いてカウントダウン開始
-      };
-      audio.onerror = () => {
-        audioRef.current = null;
-        setTimeout(onDone, 300);
-      };
-      audio.play().catch(() => {
-        audioRef.current = null;
-        setTimeout(onDone, 300);
-      });
-    } catch(e) { setTimeout(onDone, 300); }
+      audio.onended = () => { audioRef.current = null; playStart(); };
+      audio.onerror  = () => { audioRef.current = null; playStart(); };
+      audio.play().catch(() => { audioRef.current = null; playStart(); });
+    } catch(e) { playStart(); }
   }
 
   // ---- Actions ----
