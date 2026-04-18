@@ -6509,10 +6509,13 @@ function CountdownCircle({ timeLeft, total = 5 }) {
 }
 
 function DefenseQuizSession({ situations, onBack, onComplete }) {
-  const [phase, setPhase] = React.useState('intro'); // 'intro'|'q'|'result'
+  // phase: 'intro' | 'q' | 'result'
+  // qPhase: 'speaking' (読み上げ中) | 'active' (カウントダウン中) | 'answered'
+  const [phase, setPhase] = React.useState('intro');
+  const [qPhase, setQPhase] = React.useState('speaking');
   const [qIdx, setQIdx] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(5);
-  const [selected, setSelected] = React.useState(null); // null = no answer yet
+  const [selected, setSelected] = React.useState(null);
   const [timedOut, setTimedOut] = React.useState(false);
   const [scores, setScores] = React.useState([]);
   const [showExplanation, setShowExplanation] = React.useState(false);
@@ -6531,7 +6534,25 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
   const isCorrect = selected === q?.ans;
   const correct = scores.filter(Boolean).length;
 
-  // onComplete when result phase is entered (scores is complete by then)
+  // Cancel TTS on unmount
+  React.useEffect(() => {
+    return () => { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){} };
+  }, []);
+
+  // Countdown timer — only runs when qPhase === 'active'
+  React.useEffect(() => {
+    if (phase !== 'q' || qPhase !== 'active' || answered) return;
+    if (timeLeft <= 0) {
+      setTimedOut(true);
+      setQPhase('answered');
+      playSound('quiz_wrong.mp3', 1.0);
+      return;
+    }
+    const t = setTimeout(() => setTimeLeft(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, qPhase, timeLeft, answered]);
+
+  // onComplete fires after result render (scores fully updated by then)
   React.useEffect(() => {
     if (phase !== 'result') return;
     const allCorrect = scores.every(Boolean) && scores.length === shuffled.length;
@@ -6539,48 +6560,81 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // 5-second countdown while question is active
-  React.useEffect(() => {
-    if (phase !== 'q' || answered) return;
-    if (timeLeft <= 0) { setTimedOut(true); playSound('quiz_wrong.mp3', 1.0); return; }
-    const t = setTimeout(() => setTimeLeft(n => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [phase, timeLeft, answered]);
+  // ---- TTS helper ----
+  function stripFuri(t) {
+    return (t || '').replace(/\{([^|]+)\|[^}]+\}/g, '$1');
+  }
 
+  function speakAndStart(questionData, onDone) {
+    try {
+      if (!window.speechSynthesis) { setTimeout(onDone, 500); return; }
+      window.speechSynthesis.cancel();
+      const text = stripFuri(questionData.situation) + '　' + stripFuri(questionData.question);
+      const u1 = new SpeechSynthesisUtterance(text);
+      u1.lang = 'ja-JP';
+      u1.rate = 0.78;
+      u1.pitch = 1.05;
+      u1.onerror = () => { setTimeout(onDone, 200); };
+      u1.onend = () => {
+        try {
+          const u2 = new SpeechSynthesisUtterance('用意、スタート！');
+          u2.lang = 'ja-JP';
+          u2.rate = 0.9;
+          u2.pitch = 1.1;
+          u2.onerror = () => { setTimeout(onDone, 100); };
+          u2.onend = () => { onDone(); };
+          window.speechSynthesis.speak(u2);
+        } catch(e) { onDone(); }
+      };
+      window.speechSynthesis.speak(u1);
+    } catch(e) { setTimeout(onDone, 500); }
+  }
+
+  // ---- Actions ----
   function startQuiz() {
+    const q0 = shuffled[0];
     setPhase('q');
+    setQPhase('speaking');
     setQIdx(0);
     setTimeLeft(5);
     setSelected(null);
     setTimedOut(false);
     setScores([]);
     setShowExplanation(false);
-    playSound('quiz_question.mp3', 1.0);
+    playSound('quiz_question.mp3', 0.5);
+    speakAndStart(q0, () => setQPhase('active'));
   }
 
   function handleAnswer(idx) {
-    if (answered) return;
+    if (answered || qPhase !== 'active') return;
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){}
     setSelected(idx);
+    setQPhase('answered');
     setShowExplanation(true);
-    const correct = idx === q.ans;
-    if (correct) playSound('quiz_correct.mp3', 1.0);
-    else playSound('quiz_wrong.mp3', 1.0);
-    setScores(s => [...s, correct]);
+    const ok = idx === q.ans;
+    playSound(ok ? 'quiz_correct.mp3' : 'quiz_wrong.mp3', 1.0);
+    setScores(s => [...s, ok]);
   }
 
   function nextQ() {
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e){}
     if (qIdx + 1 >= shuffled.length) {
-      setPhase('result'); // useEffect fires onComplete after render with complete scores
+      setPhase('result');
       return;
     }
-    setQIdx(i => i+1);
+    const nextIdx = qIdx + 1;
+    const nextQ_ = shuffled[nextIdx];
+    setQIdx(nextIdx);
+    setQPhase('speaking');
     setTimeLeft(5);
     setSelected(null);
     setTimedOut(false);
     setShowExplanation(false);
-    playSound('quiz_question.mp3', 1.0);
+    playSound('quiz_question.mp3', 0.5);
+    speakAndStart(nextQ_, () => setQPhase('active'));
   }
 
+  // ---- Renders ----
   if (phase === 'intro') {
     return (
       <div style={{padding:'4px 0'}}>
@@ -6588,15 +6642,15 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
           <div style={{fontSize:28, marginBottom:6}}>⚡</div>
           <div style={{fontWeight:'bold', fontSize:18, marginBottom:4}}><ruby>瞬間判断<rt>しゅんかんはんだん</rt></ruby>クイズ</div>
           <div style={{fontSize:12, opacity:0.9, lineHeight:1.7}}>
-            <ruby>守備<rt>しゅび</rt></ruby>の<ruby>状況<rt>じょうきょう</rt></ruby>を<ruby>見<rt>み</rt></ruby>て、<ruby>5秒以内<rt>ごびょういない</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えよう！
+            もんだいを<ruby>読<rt>よ</rt></ruby>み<ruby>上<rt>あ</rt></ruby>げるので、よく<ruby>聞<rt>き</rt></ruby>いてから<ruby>答<rt>こた</rt></ruby>えよう！
           </div>
         </div>
         <div style={{display:'flex', flexDirection:'column', gap:10, marginBottom:16}}>
           {[
-            ['⚾', 'グラウンドのイラストを見て状況を確認しよう'],
-            ['⏱', '5秒以内にタップして答えよう！'],
+            ['🔊', '問題を読み上げます。聞きながら準備しよう！'],
+            ['🟢', '「用意、スタート！」でカウントダウン開始'],
+            ['⏱', '5秒以内にタップして答えよう'],
             ['🔴', '赤い丸がランナーの位置だよ'],
-            ['⭐', '正解でポイントゲット！'],
           ].map(([em, txt]) => (
             <div key={em} style={{display:'flex', alignItems:'center', gap:10, background:'#e3f2fd', borderRadius:10, padding:'10px 12px'}}>
               <span style={{fontSize:18, flexShrink:0}}>{em}</span>
@@ -6605,76 +6659,108 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
           ))}
         </div>
         <div style={{background:'#fff3e0', borderRadius:10, padding:'10px 12px', marginBottom:16, fontSize:12, color:'#e65100'}}>
-          全{situations.length}問。時間切れは不正解になるよ。何度でも挑戦できる！
+          ※ 音量をオンにしてからスタートしよう！全{situations.length}問チャレンジ。
         </div>
         <button onClick={startQuiz}
           style={{width:'100%', padding:'16px', background:'linear-gradient(135deg,#1565c0,#0d47a1)', border:'none',
                   borderRadius:14, color:'white', fontWeight:'bold', fontSize:17, cursor:'pointer',
                   boxShadow:'0 4px 12px rgba(21,101,192,0.4)'}}>
-          ⚡ スタート！
+          🔊 スタート！
         </button>
       </div>
     );
   }
 
   if (phase === 'q') {
+    const isSpeaking = qPhase === 'speaking';
+    const isActive   = qPhase === 'active';
     return (
       <div style={{padding:'4px 0'}}>
-        {/* Header: progress + timer */}
+        {/* Header */}
         <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
           <div style={{flex:1, background:'#e0e0e0', borderRadius:10, height:8}}>
             <div style={{width:`${((qIdx+1)/shuffled.length)*100}%`, background:'#1565c0', height:8, borderRadius:10, transition:'width 0.3s'}} />
           </div>
           <span style={{fontSize:12, color:'#888', fontWeight:'bold', flexShrink:0}}>{qIdx+1}/{shuffled.length}</span>
-          {!answered && <CountdownCircle timeLeft={timeLeft} total={5} />}
-          {answered && <div style={{fontSize:22}}>{isCorrect ? '⭕' : '❌'}</div>}
+          {isSpeaking && (
+            <div style={{display:'flex', alignItems:'center', gap:4, background:'#e3f2fd', borderRadius:20, padding:'4px 10px', flexShrink:0}}>
+              <span style={{fontSize:14}}>🔊</span>
+              <span style={{fontSize:11, color:'#1565c0', fontWeight:'bold'}}>よんでいます…</span>
+            </div>
+          )}
+          {isActive && <CountdownCircle timeLeft={timeLeft} total={5} />}
+          {answered && <div style={{fontSize:24}}>{isCorrect ? '⭕' : '❌'}</div>}
         </div>
+
+        {/* Reading indicator bar */}
+        {isSpeaking && (
+          <div style={{background:'linear-gradient(135deg,#e3f2fd,#bbdefb)', borderRadius:12, padding:'10px 14px', marginBottom:10,
+                       display:'flex', alignItems:'center', gap:8, border:'1.5px solid #90caf9'}}>
+            <span style={{fontSize:20}}>🔊</span>
+            <div>
+              <div style={{fontWeight:'bold', fontSize:13, color:'#1565c0'}}>もんだいを読み上げています…</div>
+              <div style={{fontSize:11, color:'#555', marginTop:2}}>聞きながら準備しよう！「用意、スタート！」でカウント開始</div>
+            </div>
+          </div>
+        )}
+
+        {/* "Ready Go!" indicator */}
+        {isActive && !answered && (
+          <div style={{background:'linear-gradient(135deg,#e8f5e9,#c8e6c9)', borderRadius:12, padding:'8px 14px', marginBottom:10,
+                       textAlign:'center', border:'1.5px solid #66bb6a'}}>
+            <span style={{fontWeight:'bold', fontSize:13, color:'#2e7d32'}}>⚡ 用意、スタート！ — 答えをタップしよう！</span>
+          </div>
+        )}
 
         {/* Field SVG */}
         <div style={{background:'white', borderRadius:14, padding:'10px', marginBottom:10, boxShadow:'0 1px 6px rgba(0,0,0,0.08)'}}>
           <DefenseField runners={q.runners} highlight={q.highlight} showHighlight={answered} />
-          {/* Out indicators */}
-          <div style={{display:'flex', justifyContent:'center', gap:6, marginTop:6}}>
-            {[0,1,2].map(i=>(
-              <div key={i} style={{width:16, height:16, borderRadius:'50%',
-                background: i < q.outs ? '#ef5350' : 'transparent',
-                border:'2px solid ' + (i < q.outs ? '#ef5350' : '#bbb'),
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:9, color:'white', fontWeight:'bold'}}>
-                {i < q.outs ? i+1 : ''}
-              </div>
-            ))}
-            <span style={{fontSize:11, color:'#888', marginLeft:4}}>{q.outs}アウト</span>
-            {q.runners.length > 0 && (
-              <span style={{fontSize:11, color:'#ef5350', marginLeft:4}}>
-                ランナー{q.runners.map(r=>['','1塁','2塁','3塁'][r]).join('・')}
-              </span>
-            )}
+          <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap:8, marginTop:6, flexWrap:'wrap'}}>
+            <div style={{display:'flex', gap:4}}>
+              {[0,1,2].map(i=>(
+                <div key={i} style={{width:16, height:16, borderRadius:'50%',
+                  background: i < q.outs ? '#ef5350' : 'transparent',
+                  border:'2px solid ' + (i < q.outs ? '#ef5350' : '#ccc')}} />
+              ))}
+            </div>
+            <span style={{fontSize:11, color:'#666'}}>{q.outs}アウト</span>
+            {q.runners.length > 0
+              ? <span style={{fontSize:11, color:'#ef5350', fontWeight:'bold'}}>
+                  🔴 ランナー{q.runners.map(r=>['','1塁','2塁','3塁'][r]).join('・')}
+                </span>
+              : <span style={{fontSize:11, color:'#888'}}>ランナーなし</span>
+            }
           </div>
         </div>
 
         {/* Situation text */}
-        <div style={{background:'#e3f2fd', borderRadius:12, padding:'10px 14px', marginBottom:10, fontSize:13, color:'#0d47a1', fontWeight:'bold', lineHeight:1.7}}>
+        <div style={{background:'#e3f2fd', borderRadius:12, padding:'10px 14px', marginBottom:10,
+                     fontSize:13, color:'#0d47a1', fontWeight:'bold', lineHeight:1.8}}>
           <Furi t={q.situation} />
         </div>
 
         {/* Question */}
-        <div style={{fontWeight:'bold', fontSize:14, color:'#1a237e', marginBottom:10, textAlign:'center', lineHeight:1.6}}>
+        <div style={{fontWeight:'bold', fontSize:15, color:'#1a237e', marginBottom:12, textAlign:'center', lineHeight:1.6}}>
           <Furi t={q.question} />
         </div>
 
-        {/* Choices */}
+        {/* Choices — visible always, tappable only during 'active' */}
         <div style={{display:'flex', flexDirection:'column', gap:8, marginBottom:10}}>
           {q.choices.map((c, i) => {
-            let bg = 'white', border = '2px solid #e0e0e0', color = '#333';
+            let bg = 'white', border = '2px solid #e0e0e0', color = '#333', opacity = 1;
+            if (isSpeaking) { bg = '#f5f5f5'; color = '#aaa'; opacity = 0.7; }
             if (answered) {
-              if (i === q.ans) { bg = '#e8f5e9'; border = '2px solid #2e7d32'; color = '#2e7d32'; }
-              else if (i === selected) { bg = '#ffebee'; border = '2px solid #c62828'; color = '#c62828'; }
+              if (i === q.ans) { bg = '#e8f5e9'; border = '2px solid #2e7d32'; color = '#2e7d32'; opacity = 1; }
+              else if (i === selected) { bg = '#ffebee'; border = '2px solid #c62828'; color = '#c62828'; opacity = 1; }
+              else { opacity = 0.5; }
             }
             return (
-              <button key={i} onClick={() => handleAnswer(i)}
-                style={{padding:'13px 14px', borderRadius:12, background:bg, border, color,
-                        fontWeight:'bold', fontSize:13, cursor: answered ? 'default' : 'pointer',
+              <button key={i}
+                onClick={() => handleAnswer(i)}
+                disabled={isSpeaking || answered}
+                style={{padding:'13px 14px', borderRadius:12, background:bg, border, color, opacity,
+                        fontWeight:'bold', fontSize:13,
+                        cursor: isSpeaking || answered ? 'default' : 'pointer',
                         textAlign:'left', transition:'all 0.15s'}}>
                 {String.fromCharCode(65+i)}. <Furi t={c} />
               </button>
@@ -6682,16 +6768,17 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
           })}
         </div>
 
-        {/* Time out message */}
-        {timedOut && !selected && (
+        {/* Time out */}
+        {timedOut && (
           <div style={{textAlign:'center', color:'#c62828', fontWeight:'bold', fontSize:13, marginBottom:8}}>
             ⏱ 時間切れ！ こたえは「<Furi t={q.choices[q.ans]} />」だよ
           </div>
         )}
 
         {/* Explanation */}
-        {answered && showExplanation && (
-          <div style={{background:'#fffde7', borderRadius:10, padding:'10px 12px', marginBottom:10, fontSize:12, color:'#f57f17', lineHeight:1.7}}>
+        {answered && (
+          <div style={{background:'#fffde7', borderRadius:10, padding:'10px 12px', marginBottom:10,
+                       fontSize:12, color:'#f57f17', lineHeight:1.8}}>
             💡 <Furi t={q.explanation} />
           </div>
         )}
