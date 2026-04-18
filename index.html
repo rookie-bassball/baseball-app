@@ -1515,11 +1515,13 @@ const TUTORIAL_STEPS = [
     tabMsg:'{光|ひか}っているハンコをおそう！\nスタンプをおしてみよう！📮',
     msg:'{練習|れんしゅう}2つ{完了|かんりょう}！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
   { step:5, target:'quiz',       arrow:true,
+    tabMsg:'「{覚|おぼ}えよう」をタップして\n「やさしい」からクイズにちょうせんしよう！📚',
     msg:'よくできました！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
   { step:6, target:null,         arrow:false, homeTab:'quiz',
     homeMsg:'{光|ひか}っている「{学習|がくしゅう}」アイコンをおして\n{学習|がくしゅう}の{画面|がめん}へいこう！📚',
-    msg:'{光|ひか}っている「{覚|おぼ}えよう」をタップして\nクイズに{挑戦|ちょうせん}してみよう！📚' },
+    msg:'「{覚|おぼ}えよう」をタップして\n「やさしい」からクイズにちょうせんしよう！📚' },
   { step:7, target:'badge',      arrow:true,
+    awayMsg:'よくできました！🎉\nホーム{画面|がめん}に{戻|もど}って\n{光|ひか}っているバッジアイコンをおそう！🎖',
     msg:'よくできました！\n{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
   { step:8, target:'collection', arrow:true,
     msg:'{光|ひか}っている「カード」アイコンをタップしてみよう！🪙' },
@@ -3217,7 +3219,8 @@ function TutorialBanner({ step, onSkip, grade, currentTab }) {
       showArrowHint = true;
     } else {
       // ホーム外 → ホームに戻るよう案内（ホームFABが金色に光っている）
-      rawMsg = 'ホーム{画面|がめん}に{戻|もど}ろう！\n{光|ひか}っているホームボタンをおしてね！🏠';
+      // step固有の awayMsg があればそれを使う（「よくできました！」等）
+      rawMsg = info.awayMsg || 'ホーム{画面|がめん}に{戻|もど}ろう！\n{光|ひか}っているホームボタンをおしてね！🏠';
       showArrowHint = true;
     }
   } else {
@@ -3791,6 +3794,8 @@ function App() {
     }
     // checkAndAwardBadges calls updateData internally — do NOT call updateData separately
     checkAndAwardBadges(nd);
+    // チュートリアル step6：覚えよう完了でステップを進める
+    if (tutorialStep === 6) advanceTutorial(6);
   }
 
   // 宿題完了ボタン（PIN設定済みならPINモーダルへ）
@@ -4225,7 +4230,7 @@ function App() {
         <div className="content">
           {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} tutorialStep={tutorialStep} />}
-          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => advanceTutorial(6)} />}
+          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => {}} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
           {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
