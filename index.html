@@ -1491,18 +1491,23 @@ function saveTutorialStep(s) {
 
 // チュートリアルステップ定義
 // 流れ：練習×2 → スタンプ → 学習（覚えよう） → バッジ → カード → 完了
+// homeMsg: ホーム画面にいるときに表示するメッセージ（arrow:falseのステップ用）
+// msg:     対象タブに入ったときに表示するメッセージ
 const TUTORIAL_STEPS = [
   { step:1, target:'practice',   arrow:true,
     msg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをタップして\n{練習|れんしゅう}をはじめてみよう！⚾' },
-  { step:2, target:null,         arrow:false,
+  { step:2, target:null,         arrow:false, homeTab:'practice',
+    homeMsg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをおして\n{練習|れんしゅう}の{画面|がめん}へいこう！⚾',
     msg:'「{素振|すぶ}り」をタップして\n「15」といれて「スタンプをおす！」をおしてみよう！🏏' },
-  { step:3, target:null,         arrow:false,
+  { step:3, target:null,         arrow:false, homeTab:'practice',
+    homeMsg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをおして\n{練習|れんしゅう}の{画面|がめん}へいこう！⚾',
     msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「スタンプをおす！」をおしてみよう！⚾' },
   { step:4, target:'stamp',      arrow:true,
     msg:'{練習|れんしゅう}2つ{完了|かんりょう}！スタンプがおせるよ！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
   { step:5, target:'quiz',       arrow:true,
     msg:'よくできました！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
-  { step:6, target:null,         arrow:false,
+  { step:6, target:null,         arrow:false, homeTab:'quiz',
+    homeMsg:'{光|ひか}っている「{学習|がくしゅう}」アイコンをおして\n{学習|がくしゅう}の{画面|がめん}へいこう！📚',
     msg:'{光|ひか}っている「{覚|おぼ}えよう」をタップして\nクイズに{挑戦|ちょうせん}してみよう！📚' },
   { step:7, target:'badge',      arrow:true,
     msg:'よくできました！\n{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
@@ -3169,7 +3174,7 @@ function playHankoSound() {
 }
 
 // ===== チュートリアルバナー =====
-function TutorialBanner({ step, onSkip, grade }) {
+function TutorialBanner({ step, onSkip, grade, currentTab }) {
   const info = TUTORIAL_STEPS.find(s => s.step === step);
   if (!info) return null;
 
@@ -3182,7 +3187,15 @@ function TutorialBanner({ step, onSkip, grade }) {
     return () => clearTimeout(t);
   }, [step]);
 
-  const msgLines = info.msg.split('\n');
+  // ホーム画面かつ homeMsg があるステップ → homeMsg（「練習アイコンをおして」等）を表示
+  // それ以外 → step固有のmsg（「素振りをタップして」等）を表示
+  const isOnHome = currentTab === 'home';
+  const useHomeMsg = !info.arrow && isOnHome && !!info.homeMsg;
+  const rawMsg = useHomeMsg ? info.homeMsg : info.msg;
+  const msgLines = rawMsg.split('\n');
+
+  // 矢印ヒント：arrow:true（元々）OR ホームでhomeMsgを表示中（アイコンを光らせているから）
+  const showArrowHint = info.arrow || useHomeMsg;
 
   return (
     <div className="tutorial-banner">
@@ -3195,7 +3208,7 @@ function TutorialBanner({ step, onSkip, grade }) {
               <Furi t={processFuri(l, maxGrade)} />
             </div>
           ))}
-          {info.arrow && (
+          {showArrowHint && (
             <div style={{fontSize:11, color:'#f9a825', fontWeight:800, marginTop:4, display:'flex', alignItems:'center', gap:3}}>
               <span style={{animation:'tutorialBounce 0.7s ease-in-out infinite alternate', display:'inline-block'}}>👆</span>
               <Furi t="{光|ひか}っているアイコンをおしてね！" />
@@ -4147,7 +4160,7 @@ function App() {
 
       {/* チュートリアルバナー：全タブで表示（画面下部固定） */}
       {tutorialStep && onboardingDone && (
-        <TutorialBanner step={tutorialStep} onSkip={skipTutorial} grade={getGrade()} />
+        <TutorialBanner step={tutorialStep} onSkip={skipTutorial} grade={getGrade()} currentTab={tab} />
       )}
 
       {/* ホームFAB（ホーム以外のタブで表示・スマホ専用） */}
