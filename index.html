@@ -1522,6 +1522,7 @@ const TUTORIAL_STEPS = [
     kisoListMsg:'{光|ひか}っているポジションをタップして\nクイズをはじめよう！⚾',
     msg:'「{覚|おぼ}えよう」をタップして\n「やさしい」からクイズにちょうせんしよう！📚' },
   { step:7, target:'badge',      arrow:true,
+    tabMsg:'{光|ひか}っているバッジを{押|お}して\nポイントを{受|う}け{取|と}ろう！🎁',
     awayMsg:'よくできました！🎉\nホーム{画面|がめん}に{戻|もど}って\n{光|ひか}っているバッジアイコンをおそう！🎖',
     msg:'よくできました！\n{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
   { step:8, target:'collection', arrow:true,
@@ -3983,7 +3984,6 @@ function App() {
 
   // バッジ手動受け取り
   function handleClaimBadge(badgeId) {
-    // バッジ受け取りはチュートリアル進行に影響しない
     const badge = BADGES.find(b => b.id === badgeId);
     if (!badge) return;
     const claimed = data.claimedBadges || [];
@@ -3996,6 +3996,8 @@ function App() {
     // 受け取りで新バッジ条件が満たされる場合もあるのでcheckを通す
     checkAndAwardBadges(newData);
     playSound('get_card.mp3');
+    // チュートリアル step7：バッジ受け取り → step8（カードタブ案内）へ進む
+    advanceTutorial(7);
   }
 
   const navItems = [
