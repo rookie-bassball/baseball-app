@@ -1512,7 +1512,7 @@ const TUTORIAL_STEPS = [
     homeMsg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをおして\n{練習|れんしゅう}の{画面|がめん}へいこう！⚾',
     msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「スタンプをおす！」をおしてみよう！⚾' },
   { step:4, target:'stamp',      arrow:true,
-    tabMsg:'{光|ひか}っているハンコをおそう！\nスタンプをおしてみよう！📮',
+    tabMsg:'{光|ひか}っているスタンプをおそう！\nスタンプをおしてみよう！📮',
     msg:'{練習|れんしゅう}2つ{完了|かんりょう}！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
   { step:5, target:'quiz',       arrow:true,
     tabMsg:'「{覚|おぼ}えよう」をタップして\n「やさしい」からクイズにちょうせんしよう！📚',
@@ -1955,7 +1955,7 @@ const BADGES = [
   { id:'first',         name:'はじめの一歩',   nameRuby:'はじめの{一歩|いっぽ}',         emoji:'👟', bonus:8,  category:'はじめの記念',
     cond:'初めて練習を記録', condRuby:'{初|はじ}めて{練習|れんしゅう}を{記録|きろく}',
     reqFn:d=>Object.values(d.totalStats||{}).reduce((a,b)=>a+b,0)>=1 },
-  { id:'first_stamp',   name:'はじめてのハンコ', nameRuby:'はじめてのハンコ',             emoji:'🔴', bonus:5,   category:'はじめの記念',
+  { id:'first_stamp',   name:'はじめてのスタンプ', nameRuby:'はじめてのスタンプ',             emoji:'🔴', bonus:5,   category:'はじめの記念',
     cond:'初めてスタンプを押す', condRuby:'{初|はじ}めてスタンプを{押|お}す',
     reqFn:d=>Object.keys(d.stamps||{}).length>=1 },
   { id:'first_quiz',    name:'初テスト',        nameRuby:'{初|はじ}テスト',                emoji:'📝', bonus:8,  category:'はじめの記念',
@@ -5419,8 +5419,8 @@ function StampTab({ data, today, threshold, goalReached, canStampToday, onPressH
 
   // 今日のスタンプエリアのメッセージ
   const todayMsg = stampedToday  ? '今日のスタンプ、押せたね！' :
-                   canStampToday ? `目標の ${threshold} 種目達成！ハンコを押そう！` :
-                   goalReached   ? '目標達成！ハンコを押せます！' :
+                   canStampToday ? `目標の ${threshold} 種目達成！スタンプを押そう！` :
+                   goalReached   ? '目標達成！スタンプを押せます！' :
                                    `今日はまだ目標未達成（目標：${threshold} 種目）`;
 
   return (
@@ -5437,7 +5437,7 @@ function StampTab({ data, today, threshold, goalReached, canStampToday, onPressH
             </div>
           </div>
           <div style={{textAlign:'center', color:'rgba(255,255,255,0.85)', fontSize:12, fontWeight:600, marginTop:4}}>
-            {stampedToday ? '今日のスタンプ、押せたね！🌟' : canStampToday ? '目標達成！ハンコを押そう！🎉' : `🔥 ${data.streak || 0}日連続 · 今月 ${stampedDays}日スタンプ済み`}
+            {stampedToday ? '今日のスタンプ、押せたね！🌟' : canStampToday ? '目標達成！スタンプを押そう！🎉' : `🔥 ${data.streak || 0}日連続 · 今月 ${stampedDays}日スタンプ済み`}
           </div>
         </div>
       </div>
@@ -5461,7 +5461,7 @@ function StampTab({ data, today, threshold, goalReached, canStampToday, onPressH
             <div className="hanko-pressed"><HankoSeal size="md" /></div>
           ) : canStampToday ? (
             <button className="hanko-btn" onClick={onPressHanko}>
-              <i className="fa-solid fa-stamp" /> ハンコを押す！
+              <i className="fa-solid fa-stamp" /> スタンプを押す！
             </button>
           ) : (
             <div style={{fontSize:13, color:'#aaa', textAlign:'center'}}>
@@ -5513,7 +5513,7 @@ function StampTab({ data, today, threshold, goalReached, canStampToday, onPressH
           );
         })}
       </div>
-      <div className="stamp-legend"><HankoSeal size="sm" /> = ハンコを押した日　　目標：毎日 {threshold} 種目</div>
+      <div className="stamp-legend"><HankoSeal size="sm" /> = スタンプを押した日　　目標：毎日 {threshold} 種目</div>
     </>
   );
 }
