@@ -1527,9 +1527,9 @@ const TUTORIAL_STEPS = [
     msg:'よくできました！\n{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
   { step:8, target:'collection', arrow:true,
     tabMsg:'レベル1の「{蒼嵐|そうらん}はると」カードを\nゲットしよう！🪙',
-    msg:'{光|ひか}っている「カード」アイコンをタップしてみよう！🪙' },
+    msg:'{光|ひか}っている「お{店|みせ}」アイコンをタップしてみよう！🪙' },
   { step:9, target:null,         arrow:false,
-    msg:'🎉 チュートリアルはこれで{終|お}わりだよ！\n{毎日|まいにち}コツコツ{練習|れんしゅう}をつづけよう⚾' },
+    msg:'🎉 {取|と}ったカードはここに{表示|ひょうじ}されるよ！\nチュートリアルはこれで{終|お}わりだよ！⚾' },
 ];
 
 // ===== 振り仮名グレード制御 =====
@@ -4685,14 +4685,33 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         </div>
       </div>
 
+      {/* ─── バナー下 背景エリア ─── */}
+      <div style={{
+        position: 'relative',
+        backgroundImage: 'url("images/home_bg.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 35%',
+        borderRadius: 20,
+        overflow: 'hidden',
+        marginTop: 8,
+      }}>
+        {/* 暗オーバーレイ（コントラスト確保） */}
+        <div style={{
+          position:'absolute', inset:0,
+          background:'linear-gradient(170deg,rgba(3,10,45,0.50) 0%,rgba(0,5,22,0.72) 100%)',
+          pointerEvents:'none', zIndex:0,
+        }} />
+        <div style={{position:'relative', zIndex:1, padding:'12px 0 8px', display:'flex', flexDirection:'column', gap:10}}>
+
       {/* ─── ステータスストリップ ─── */}
       <div style={{
-        background: 'white',
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         borderRadius: 18,
         padding: '10px 14px',
-        marginBottom: 10,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
-        border: '1px solid rgba(0,0,0,0.05)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+        border: '1px solid rgba(255,255,255,0.6)',
       }}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-around'}}>
 
@@ -4754,7 +4773,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
       </div>
 
       {/* ─── ① 上段アイコン（練習・学習・お店）─── */}
-      <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:10}}>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10}}>
 
         {/* ─ 練習 ─ */}
         {(() => {
@@ -4844,8 +4863,9 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         if (n === 0) {
           return (
             <div style={{
-              background:'linear-gradient(145deg,#f3e5f5,#ede7f6)',
-              borderRadius:18, padding:'14px 16px', marginBottom:10,
+              background:'rgba(243,229,245,0.92)',
+              backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)',
+              borderRadius:18, padding:'14px 16px',
               border:'1.5px solid rgba(142,36,170,0.15)',
               display:'flex', flexDirection:'column', alignItems:'center', gap:8,
               boxShadow:'0 2px 10px rgba(0,0,0,0.06)',
@@ -4873,7 +4893,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         const getCardImg = (key) => `images/card_${key}.png`;
 
         return (
-          <div style={{marginBottom:10}}>
+          <div>
             {/* 3D carousel */}
             <div
               style={{
@@ -5025,7 +5045,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
                     style={{
                       width: i === safeIdx % 10 ? 16 : 5,
                       height:5, borderRadius:999,
-                      background: i === safeIdx % 10 ? '#5c35ae' : 'rgba(0,0,0,0.15)',
+                      background: i === safeIdx % 10 ? '#ffd54f' : 'rgba(255,255,255,0.4)',
                       transition:'width 0.25s, background 0.25s',
                       cursor:'pointer',
                     }}
@@ -5172,6 +5192,9 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
           <div style={{fontSize:9, fontWeight:700, color:'#90a4ae'}}>音・名前</div>
         </button>
       </div>
+
+        </div>{/* end z:1 inner */}
+      </div>{/* end home_bg wrapper */}
     </>
   );
 }
