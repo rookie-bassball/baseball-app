@@ -1526,9 +1526,10 @@ const TUTORIAL_STEPS = [
     awayMsg:'よくできました！🎉\nホーム{画面|がめん}に{戻|もど}って\n{光|ひか}っているバッジアイコンをおそう！🎖',
     msg:'よくできました！\n{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
   { step:8, target:'collection', arrow:true,
+    tabMsg:'レベル1の「{蒼嵐|そうらん}はると」カードを\nゲットしよう！🪙',
     msg:'{光|ひか}っている「カード」アイコンをタップしてみよう！🪙' },
   { step:9, target:null,         arrow:false,
-    msg:'🎉 チュートリアル{完了|かんりょう}！\nデータをリセットして{本番|ほんばん}スタート！\n{毎日|まいにち}コツコツがんばろう⚾' },
+    msg:'🎉 チュートリアルはこれで{終|お}わりだよ！\n{毎日|まいにち}コツコツ{練習|れんしゅう}をつづけよう⚾' },
 ];
 
 // ===== 振り仮名グレード制御 =====
@@ -4242,7 +4243,7 @@ function App() {
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} tutorialStep={tutorialStep} />}
           {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => {}} onViewStateChange={setKisoViewState} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
-          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} />}
+          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} tutorialStep={tutorialStep} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
           {tab === 'profile' && <ProfileTab data={data} streak={data.streak} totalStats={data.totalStats} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} />}
         </div>
@@ -5524,14 +5525,15 @@ function StampTab({ data, today, threshold, goalReached, canStampToday, onPressH
 const STAT_LABELS = { meet:'ミート', power:'パワー', speed:'走力', arm:'肩力', defense:'守備力' };
 const STAT_ORDER  = ['meet','power','speed','arm','defense'];
 
-function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStats, onUpgrade, availablePoints, onDetail }) {
+function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStats, onUpgrade, availablePoints, onDetail, isTutGlow }) {
   const lvInfo     = getLevelInfo(lv);
   const borderCls  = getCardBorderClass(lv);
   const imgFile    = `images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`;
 
   if (!isOwned) {
     return (
-      <div className={`pcard ${borderCls} pcard-locked`}>
+      <div className={`pcard ${borderCls} pcard-locked${isTutGlow ? ' tutorial-icon-glow' : ''}`}
+        style={isTutGlow ? {outline:'2px solid #ffd54f', outlineOffset:2} : {}}>
         <div className="pcard-header" style={{background: typeInfo.headerBg, color: typeInfo.headerColor}}>
           <span>{typeInfo.emoji} {typeInfo.label}</span>
           <i className="fa-solid fa-lock" />
@@ -5697,13 +5699,21 @@ function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoint
   );
 }
 
-function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays, initialView }) {
+function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays, initialView, tutorialStep }) {
   const totalCards = CARD_LEVELS.length * CARD_TYPES.length;
   const ownedCount = CARD_LEVELS.reduce((sum, lv) =>
     sum + CARD_TYPES.filter(t => isCardOwned(lv, t.id)).length, 0);
   const [openLevels, setOpenLevels] = React.useState(new Set());
   const [detailCard, setDetailCard] = React.useState(null); // { lv, typeInfo }
   const [activeView, setActiveView] = React.useState(initialView || 'shop');
+
+  // チュートリアル step8: Lv1グループを自動展開
+  React.useEffect(() => {
+    if (tutorialStep === 8) {
+      setOpenLevels(prev => new Set([...prev, 1]));
+      setActiveView('shop');
+    }
+  }, [tutorialStep]);
 
   // ホームから遷移時に initialView に追従
   React.useEffect(() => { if (initialView) setActiveView(initialView); }, [initialView]);
@@ -5998,6 +6008,7 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                   const base = CARD_BASE_STATS[key] || {};
                   const currentStats = (cardUpgrades[key]) || base;
                   const owned = isCardOwned(lv, typeInfo.id);
+                  const isTutGlow = tutorialStep === 8 && lv === 1 && typeInfo.id === 'meet' && !owned;
                   return (
                     <PlayerCard
                       key={typeInfo.id}
@@ -6011,6 +6022,7 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                       onUpgrade={(stat) => onUpgradeStat(lv, typeInfo.id, stat)}
                       availablePoints={availablePoints}
                       onDetail={owned ? () => setDetailCard({ lv, typeInfo }) : undefined}
+                      isTutGlow={isTutGlow}
                     />
                   );
                 })}
