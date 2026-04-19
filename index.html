@@ -4651,9 +4651,25 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
   });
 
   return (
-    <>
-      {/* ─── バナー画像 ─── */}
-      <div className="mobile-game-top home-banner">
+    <div style={{
+      position: 'relative',
+      backgroundImage: 'url("images/home_bg.png")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center top',
+      /* mainのpadding(20px上 16px左右)を打ち消して端まで拡張 */
+      margin: '-20px -16px 0',
+      padding: '0 16px 12px',
+    }}>
+      {/* 暗オーバーレイ */}
+      <div style={{
+        position:'absolute', inset:0,
+        background:'linear-gradient(170deg,rgba(3,10,45,0.48) 0%,rgba(0,5,22,0.70) 100%)',
+        pointerEvents:'none', zIndex:0,
+      }} />
+      <div style={{position:'relative', zIndex:1}}>
+
+      {/* ─── バナー画像（左右マージン相殺で端まで表示）─── */}
+      <div className="mobile-game-top home-banner" style={{margin:'0 -16px'}}>
         <img
           src="images/home_banner.png"
           alt="ROOKIE BASEBALL"
@@ -4685,23 +4701,8 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         </div>
       </div>
 
-      {/* ─── バナー下 背景エリア ─── */}
-      <div style={{
-        position: 'relative',
-        backgroundImage: 'url("images/home_bg.png")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center 35%',
-        borderRadius: 20,
-        overflow: 'hidden',
-        marginTop: 8,
-      }}>
-        {/* 暗オーバーレイ（コントラスト確保） */}
-        <div style={{
-          position:'absolute', inset:0,
-          background:'linear-gradient(170deg,rgba(3,10,45,0.50) 0%,rgba(0,5,22,0.72) 100%)',
-          pointerEvents:'none', zIndex:0,
-        }} />
-        <div style={{position:'relative', zIndex:1, padding:'12px 0 8px', display:'flex', flexDirection:'column', gap:10}}>
+      {/* ─── バナー下コンテンツ ─── */}
+      <div style={{display:'flex', flexDirection:'column', gap:10, paddingTop:8}}>
 
       {/* ─── ステータスストリップ ─── */}
       <div style={{
@@ -5193,9 +5194,9 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         </button>
       </div>
 
-        </div>{/* end z:1 inner */}
-      </div>{/* end home_bg wrapper */}
-    </>
+      </div>{/* end flex column */}
+      </div>{/* end position:relative z:1 */}
+    </div>{/* end home_bg wrapper */}
   );
 }
 
