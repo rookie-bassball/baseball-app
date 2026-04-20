@@ -3933,12 +3933,12 @@ function App() {
     }
   }, [profileLevel]);
 
-  // チュートリアル：タブ遷移で自動進行（step1: 練習, step5: 学習, step7: バッジ）
+  // チュートリアル：タブ遷移で自動進行（step1: 練習, step5: 学習）
+  // step7（バッジ）は handleClaimBadge 内で advanceTutorial(7) を呼ぶ（タブ遷移では進めない）
   React.useEffect(() => {
     if (!onboardingDone || !tutorialStep) return;
     if (tutorialStep === 1 && tab === 'practice') advanceTutorial(1);
     if (tutorialStep === 5 && tab === 'quiz')     advanceTutorial(5);
-    if (tutorialStep === 7 && tab === 'badge')    advanceTutorial(7);
   }, [tab, tutorialStep]);
 
   function handleQuizComplete(earnedPts, difficulty, isPerfect) {
@@ -4659,6 +4659,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
       /* mainのpadding(20px上 16px左右)を打ち消して端まで拡張 */
       margin: '-20px -16px 0',
       padding: '0 16px 12px',
+      minHeight: '100dvh',
     }}>
       {/* 暗オーバーレイ */}
       <div style={{
@@ -6869,8 +6870,8 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
   React.useEffect(() => {
     if (!onViewStateChange) return;
     if (view !== 'kiso') { onViewStateChange(null); return; }
-    if (kisoView === 'list') { onViewStateChange('list'); }
-    else { onViewStateChange('active'); } // reading/quiz/result中はバナーを非表示
+    if (kisoView === 'list' || kisoView === 'result') { onViewStateChange('list'); }
+    else { onViewStateChange('active'); } // reading/quiz中はバナーを非表示
   }, [view, kisoView]);
 
   // ヘッダーの「もどる」ボタン処理（文脈に応じて適切な画面に戻る）
