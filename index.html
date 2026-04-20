@@ -3195,7 +3195,7 @@ function TutorialBanner({ step, onSkip, grade, currentTab, kisoViewState }) {
 
   const maxGrade = GRADE_MAX[grade] ?? 2;
 
-  // step9 は3秒後に自動スキップ（skipTutorial内でデータリセットが走る）
+  // step9 は3秒後に自動スキップ
   React.useEffect(() => {
     if (step !== 9) return;
     const t = setTimeout(() => onSkip(), 3000);
@@ -3681,13 +3681,8 @@ function App() {
   }
 
   function skipTutorial() {
-    // step9（チュートリアル自然完了）のみデータリセットして本番モードへ
-    if (tutorialStep === 9) {
-      const empty = { records:{}, totalStats:{}, streak:0, lastDate:null, firstDate:null,
-        stamps:{}, ownedCards:[], cardUpgrades:{}, earnedBadges:[], claimedBadges:[],
-        quizBonus:{}, quizDone:{}, homeworkBonus:{}, kisoProgress:{}, kisoBonusLog:{}, kisoBonus:{} };
-      updateData(empty);
-    }
+    // チュートリアル完了 or スキップ → tutorialStep をクリアするだけ
+    // ※データリセットは行わない（チュートリアル中に貯めたデータはそのまま引き継ぐ）
     saveTutorialStep(null);
     setTutorialStep(null);
   }
