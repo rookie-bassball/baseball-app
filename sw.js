@@ -1,5 +1,5 @@
 // Service Worker for ROOKIE BASEBALL
-const CACHE_NAME = 'rookie-baseball-v7';
+const CACHE_NAME = 'rookie-baseball-v8';
 
 // ベースパスを動的に取得（Netlify: "/" / GitHub Pages: "/repo-name/"）
 const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
@@ -124,5 +124,12 @@ self.addEventListener('fetch', event => {
         });
       })
     );
+  }
+});
+
+// 更新トーストの「更新する」ボタンから SKIP_WAITING を受け取って即アクティベート
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
