@@ -5549,6 +5549,20 @@ function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStat
   const lvInfo     = getLevelInfo(lv);
   const borderCls  = getCardBorderClass(lv);
   const imgFile    = `images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`;
+  const cname      = getCardName(cardKey(lv, typeInfo.id));
+
+  // 選手名表示（カード内共通）
+  const nameRow = cname ? (
+    <div style={{
+      textAlign:'center', padding:'3px 4px 2px', background:'#f8f9ff',
+      borderTop:'1px solid #eee',
+    }}>
+      <ruby style={{fontSize:12, fontWeight:900, color:'#1a237e', lineHeight:1.15}}>
+        {cname.last}<rt style={{fontSize:8, fontWeight:400, color:'#666'}}>{cname.lastKana}</rt>
+      </ruby>
+      <span style={{fontSize:11, color:'#333', marginLeft:3, fontWeight:700}}>{cname.first}</span>
+    </div>
+  ) : null;
 
   if (!isOwned) {
     return (
@@ -5561,6 +5575,7 @@ function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStat
         <div className="pcard-body">
           <img className="pcard-img-locked" src={imgFile} alt="" />
         </div>
+        {nameRow}
         <div className="pcard-foot" style={{paddingTop:6}}>
           <div style={{textAlign:'center', fontSize:12, color:'#888', fontWeight:700, marginBottom:4}}>{cost} pt</div>
           {canAfford
@@ -5581,6 +5596,7 @@ function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStat
       <div className="pcard-body">
         <img className="pcard-img" src={imgFile} alt={typeInfo.label} />
       </div>
+      {nameRow}
       <div className="pcard-foot">
         <div className="pcard-stats">
           {STAT_ORDER.map(s => (
@@ -8559,8 +8575,14 @@ function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
                       {/* タイプ絵文字 */}
                       <span style={{fontSize:20, marginRight:12, flexShrink:0}}>{typeInfo.emoji}</span>
                       {/* 名称 */}
-                      <span style={{flex:1, fontSize:14, fontWeight:700, color:'#222'}}>
-                        レベル{lv}　{typeInfo.label}
+                      <span style={{flex:1, display:'flex', flexDirection:'column', gap:1}}>
+                        {(() => { const cn = getCardName(cardKey(lv, typeInfo.id)); return cn ? (
+                          <span style={{fontSize:14, fontWeight:900, color:'#1a237e'}}>
+                            <ruby>{cn.last}<rt style={{fontSize:9, fontWeight:400}}>{cn.lastKana}</rt></ruby>
+                            <span style={{marginLeft:4, fontSize:13}}>{cn.first}</span>
+                          </span>
+                        ) : null; })()}
+                        <span style={{fontSize:11, color:'#666', fontWeight:600}}>{typeInfo.label}</span>
                       </span>
                       {/* レベルバッジ */}
                       <span style={{
