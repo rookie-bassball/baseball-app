@@ -1108,6 +1108,103 @@
         0%, 100% { box-shadow: 0 0 0 0 rgba(255,213,79,0.7); }
         50%       { box-shadow: 0 0 0 10px rgba(255,213,79,0); }
       }
+      /* ===== ① 練習完了演出 ===== */
+      .celebration-overlay {
+        position: fixed; inset: 0; z-index: 6000;
+        background: rgba(0,0,0,0.55);
+        display: flex; align-items: center; justify-content: center;
+        animation: celebFadeIn 0.25s ease;
+      }
+      @keyframes celebFadeIn { from { opacity:0 } to { opacity:1 } }
+      .celebration-card {
+        background: white; border-radius: 28px;
+        padding: 28px 32px 24px; text-align: center; width: 280px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        animation: celebPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        position: relative; overflow: hidden;
+      }
+      @keyframes celebPop {
+        from { transform: scale(0.6); opacity:0 }
+        to   { transform: scale(1);   opacity:1 }
+      }
+      .celebration-emoji { font-size: 48px; margin-bottom: 8px; line-height: 1; }
+      .celebration-title { font-size: 22px; font-weight: 900; color: #1a237e; margin-bottom: 4px; }
+      .celebration-menu  { font-size: 14px; color: #666; margin-bottom: 12px; }
+      .celebration-pts   {
+        font-size: 32px; font-weight: 900; color: #e65100;
+        background: linear-gradient(135deg,#fff3e0,#ffe0b2);
+        border-radius: 14px; padding: 8px 20px; display: inline-block;
+        margin-bottom: 6px; letter-spacing: 1px;
+      }
+      .celebration-total { font-size: 12px; color: #888; margin-top: 4px; }
+      .celebration-mascot { width: 60px; height: 60px; margin: 12px auto 0; display: block; border-radius: 12px; }
+      /* 紙吹雪パーティクル */
+      .confetti-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+      .confetti-piece {
+        position: absolute; width: 8px; height: 8px; border-radius: 2px;
+        animation: confettiFall linear forwards;
+      }
+      @keyframes confettiFall {
+        0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+        100% { transform: translateY(280px) rotate(720deg); opacity: 0; }
+      }
+
+      /* ===== ② 週間サマリー ===== */
+      .weekly-row {
+        display: flex; gap: 5px; justify-content: center; align-items: flex-end;
+        padding: 6px 0 2px;
+      }
+      .weekly-day-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+      .weekly-bar-wrap { width: 28px; height: 48px; display: flex; align-items: flex-end; justify-content: center; }
+      .weekly-bar {
+        width: 18px; border-radius: 5px 5px 0 0;
+        min-height: 4px;
+        background: linear-gradient(180deg,#42a5f5,#1565c0);
+        transition: height 0.3s ease;
+      }
+      .weekly-bar.today { background: linear-gradient(180deg,#ffd54f,#f9a825); }
+      .weekly-bar.empty { background: #e8eaf6; }
+      .weekly-day-label { font-size: 10px; color: #999; font-weight: 600; }
+      .weekly-day-label.today { color: #1565c0; font-weight: 800; }
+      .weekly-summary-modal {
+        background: white; border-radius: 22px; padding: 24px 20px 20px;
+        width: 92%; max-width: 360px; max-height: 85vh; overflow-y: auto;
+      }
+
+      /* ===== ③ 図鑑 ===== */
+      .zukan-card-wrap { position: relative; }
+      .zukan-silhouette { filter: brightness(0) opacity(0.35) saturate(0); }
+      .zukan-question {
+        position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 4px;
+      }
+      .zukan-q-mark { font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.9); text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+      .zukan-no-name {
+        background: rgba(0,0,0,0.55); color: white; font-size: 10px;
+        font-weight: 800; padding: 2px 6px; border-radius: 6px; letter-spacing: 0.5px;
+      }
+      .zukan-owned-badge {
+        position: absolute; top: 4px; right: 4px; background: #43a047;
+        color: white; font-size: 8px; font-weight: 900; border-radius: 6px;
+        padding: 2px 5px; line-height: 1.3; z-index: 1;
+      }
+
+      /* ===== ④ チュートリアル指マーク ===== */
+      .tutorial-pointer {
+        position: fixed;
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 4001;
+        font-size: 30px;
+        pointer-events: none;
+        animation: pointerBounce 0.55s ease-in-out infinite alternate;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+      }
+      @keyframes pointerBounce {
+        from { transform: translateX(-50%) translateY(0px); }
+        to   { transform: translateX(-50%) translateY(-10px); }
+      }
+
       /* ===== PWAインストールバナー ===== */
       .pwa-install-banner {
         position: fixed;
@@ -3269,6 +3366,184 @@ function playHankoSound() {
   playSound('hanko.mp3', 1.0);
 }
 
+// ===== ① 練習完了演出 =====
+const CONFETTI_COLORS = ['#ffd54f','#42a5f5','#ef5350','#66bb6a','#ab47bc','#ff7043'];
+function CelebrationOverlay({ data, onClose }) {
+  const { menuName, menuEmoji, pts, totalToday } = data;
+  React.useEffect(() => {
+    const t = setTimeout(onClose, 2500);
+    return () => clearTimeout(t);
+  }, []);
+  const pieces = React.useMemo(() => Array.from({length:18}, (_, i) => ({
+    id: i,
+    left: `${5 + Math.random()*90}%`,
+    delay: `${Math.random()*0.6}s`,
+    duration: `${0.9 + Math.random()*0.8}s`,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    size: `${6 + Math.random()*6}px`,
+  })), []);
+  return (
+    <div className="celebration-overlay" onClick={onClose}>
+      <div className="celebration-card">
+        <div className="confetti-wrap">
+          {pieces.map(p => (
+            <div key={p.id} className="confetti-piece" style={{
+              left:p.left, background:p.color,
+              width:p.size, height:p.size,
+              animationDuration:p.duration, animationDelay:p.delay,
+            }} />
+          ))}
+        </div>
+        <div className="celebration-emoji">{menuEmoji}</div>
+        <div className="celebration-title">今日もよくやった！⚾</div>
+        <div className="celebration-menu">{menuName} 完了！</div>
+        {pts > 0 && <div className="celebration-pts">+{pts} pt</div>}
+        <div className="celebration-total">今日の合計 {totalToday} pt</div>
+        <img src="images/tutorial_mascot.png" className="celebration-mascot" alt="" />
+      </div>
+    </div>
+  );
+}
+
+// ===== ② 週間サマリー =====
+const DAY_LABELS = ['日','月','火','水','木','金','土'];
+function WeeklyBar({ todayStr, records }) {
+  // 今日含む直近7日間
+  const days = React.useMemo(() => {
+    const result = [];
+    const base = new Date(todayStr + 'T00:00:00');
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(base); d.setDate(base.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const pts = Math.min(DAILY_POINT_CAP, calcDayPoints(records[key] || {}));
+      result.push({ key, label: DAY_LABELS[d.getDay()], pts, isToday: i === 0 });
+    }
+    return result;
+  }, [todayStr, records]);
+  const maxPts = Math.max(...days.map(d => d.pts), 1);
+  return (
+    <div className="weekly-row">
+      {days.map(d => (
+        <div key={d.key} className="weekly-day-col">
+          <div className="weekly-bar-wrap">
+            <div
+              className={`weekly-bar${d.isToday ? ' today' : d.pts === 0 ? ' empty' : ''}`}
+              style={{height: d.pts === 0 ? '4px' : `${Math.max(10, Math.round((d.pts / maxPts) * 40))}px`}}
+            />
+          </div>
+          <div className={`weekly-day-label${d.isToday ? ' today' : ''}`}>{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WeeklySummaryModal({ todayStr, records, onClose }) {
+  const days = React.useMemo(() => {
+    const result = [];
+    const base = new Date(todayStr + 'T00:00:00');
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(base); d.setDate(base.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const rec = records[key] || {};
+      const pts = Math.min(DAILY_POINT_CAP, calcDayPoints(rec));
+      const menus = Object.entries(rec).filter(([,v]) => v > 0);
+      result.push({ key, label: DAY_LABELS[d.getDay()], pts, menus, isToday: i === 0,
+        dateLabel: `${d.getMonth()+1}/${d.getDate()}` });
+    }
+    return result;
+  }, [todayStr, records]);
+  const weekPts  = days.reduce((s, d) => s + d.pts, 0);
+  const pracDays = days.filter(d => d.pts > 0).length;
+  const menuMap  = {};
+  days.forEach(d => d.menus.forEach(([id, cnt]) => { menuMap[id] = (menuMap[id]||0) + cnt; }));
+  const topMenus = Object.entries(menuMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="weekly-summary-modal" onClick={e => e.stopPropagation()}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
+          <div style={{fontWeight:900, fontSize:17, color:'#1a237e'}}>📅 今週の練習</div>
+          <button onClick={onClose} style={{background:'#eee',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer',fontSize:14}}>✕</button>
+        </div>
+        {/* サマリー数字 */}
+        <div style={{display:'flex', gap:8, marginBottom:16}}>
+          {[
+            { label:'練習日数', value:`${pracDays}日`, color:'#1565c0' },
+            { label:'合計pt',   value:`${weekPts}pt`,  color:'#e65100' },
+            { label:'1日最大',  value:`${Math.max(...days.map(d=>d.pts))}pt`, color:'#2e7d32' },
+          ].map(s => (
+            <div key={s.label} style={{flex:1, background:'#f5f6ff', borderRadius:12, padding:'10px 6px', textAlign:'center'}}>
+              <div style={{fontSize:10, color:'#888', marginBottom:3}}>{s.label}</div>
+              <div style={{fontSize:18, fontWeight:900, color:s.color}}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+        {/* 棒グラフ */}
+        <WeeklyBar todayStr={todayStr} records={records} />
+        {/* 日別詳細 */}
+        <div style={{marginTop:14, display:'flex', flexDirection:'column', gap:6}}>
+          {days.map(d => (
+            <div key={d.key} style={{
+              display:'flex', alignItems:'center', gap:8, padding:'7px 10px',
+              background: d.isToday ? '#e8eaf6' : '#fafafa',
+              borderRadius:10, border: d.isToday ? '1.5px solid #9fa8da' : '1.5px solid #f0f0f0',
+            }}>
+              <div style={{width:34, textAlign:'center'}}>
+                <div style={{fontSize:11, fontWeight:800, color: d.isToday?'#1a237e':'#666'}}>{d.label}</div>
+                <div style={{fontSize:10, color:'#aaa'}}>{d.dateLabel}</div>
+              </div>
+              <div style={{flex:1}}>
+                {d.pts > 0 ? (
+                  <div style={{display:'flex', flexWrap:'wrap', gap:3}}>
+                    {d.menus.map(([id, cnt]) => {
+                      const m = MENUS.find(x => x.id === id);
+                      return m ? <span key={id} style={{fontSize:11,background:'#e3f2fd',borderRadius:6,padding:'1px 6px',color:'#1565c0',fontWeight:700}}>{m.icon.type==='emoji'?m.icon.val:''}{m.name} {cnt}{m.unit}</span> : null;
+                    })}
+                  </div>
+                ) : <span style={{fontSize:11,color:'#bbb'}}>練習なし</span>}
+              </div>
+              <div style={{fontSize:14, fontWeight:900, color: d.pts>0?'#e65100':'#ccc', minWidth:36, textAlign:'right'}}>
+                {d.pts > 0 ? `${d.pts}pt` : '—'}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* よく練習したメニュー */}
+        {topMenus.length > 0 && (
+          <div style={{marginTop:14, padding:'12px 14px', background:'#fff8e1', borderRadius:12}}>
+            <div style={{fontWeight:800, fontSize:12, color:'#f57f17', marginBottom:6}}>⭐ 今週よく練習したメニュー</div>
+            {topMenus.map(([id, cnt]) => {
+              const m = MENUS.find(x => x.id === id);
+              return m ? (
+                <div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#555',padding:'2px 0'}}>
+                  <span>{m.name}</span><span style={{fontWeight:700,color:'#e65100'}}>{cnt}{m.unit}</span>
+                </div>
+              ) : null;
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ===== ④ チュートリアル指マーク =====
+// ボトムナビ(profile除く6アイテム)の並び順
+const BOTTOM_NAV_ORDER = ['home','practice','quiz','stamp','collection','badge'];
+function TutorialPointer({ tutorialStep, currentTab, onboardingDone }) {
+  if (!tutorialStep || !onboardingDone) return null;
+  const info = TUTORIAL_STEPS.find(s => s.step === tutorialStep);
+  if (!info || !info.arrow || !info.target) return null;
+  // ホームにいるときのみ：ターゲットタブのナビアイコンを指す
+  if (currentTab !== 'home') return null;
+  const idx = BOTTOM_NAV_ORDER.indexOf(info.target);
+  if (idx < 0) return null;
+  const pct = ((idx + 0.5) / BOTTOM_NAV_ORDER.length) * 100;
+  return (
+    <div className="tutorial-pointer" style={{left:`${pct}%`}}>👇</div>
+  );
+}
+
 // ===== PWA インストールバナー =====
 const PWA_INSTALL_DISMISSED_KEY = 'baseball_pwa_install_dismissed';
 
@@ -3797,6 +4072,7 @@ function App() {
   const [inputVal, setInputVal] = useState('');
   const [stampAnim, setStampAnim]   = useState(null);  // 練習記録時のアニメ
   const [hankoAnim, setHankoAnim]   = useState(false); // スタンプ帳のハンコアニメ
+  const [celebration, setCelebration] = useState(null); // 練習完了演出 { menuName, menuEmoji, pts, totalToday }
   const [badgeQueue, setBadgeQueue]   = useState([]);   // バッジ通知キュー
   const [badgeNotify, setBadgeNotify] = useState(null); // 現在表示中のバッジ通知
   const [levelUpNotify, setLevelUpNotify] = useState(null); // レベルアップ通知 { level, title }
@@ -3949,6 +4225,11 @@ function App() {
     setPinInput('');
     setPinError('');
     setTimeout(() => setStampAnim(null), 900);
+    // 練習完了演出：記録後に表示
+    const newDayPts = Math.min(DAILY_POINT_CAP, calcDayPoints(newRec[today] || {}));
+    const addedPts  = calcMenuPoints(menu.id, num);
+    const menuEmoji = menu.icon.type === 'emoji' ? menu.icon.val : (menu.icon.type === 'fa' ? '⚾' : '⚾');
+    setCelebration({ menuName: menu.name, menuEmoji, pts: addedPts, totalToday: newDayPts });
   }
 
   // 練習記録ボタン（閾値超えかつPIN設定済みならPINモーダルへ）
@@ -4415,6 +4696,12 @@ function App() {
       {/* SW更新トースト */}
       <PWAUpdateToast />
 
+      {/* チュートリアル指マーク */}
+      {onboardingDone && <TutorialPointer tutorialStep={tutorialStep} currentTab={tab} onboardingDone={onboardingDone} />}
+
+      {/* 練習完了演出 */}
+      {celebration && <CelebrationOverlay data={celebration} onClose={() => setCelebration(null)} />}
+
 
       {/* ホームFAB（ホーム以外のタブで表示・スマホ専用） */}
       {tab !== 'home' && (() => {
@@ -4436,7 +4723,7 @@ function App() {
       {/* メインコンテンツ */}
       <main className={`main${tab === 'home' ? ' main-home' : ''}`}>
         <div className="content">
-          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} />}
+          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} records={data.records || {}} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} tutorialStep={tutorialStep} />}
           {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => {}} onViewStateChange={setKisoViewState} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
@@ -4814,7 +5101,7 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
 }
 
 // ===== ホームタブ（モバイル専用トップ画面）=====
-function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, profileProgress, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange, todayRec, openModal, unclaimedBadgeCount, tutorialStep, onNavigateToShop, onNavigateToMyCards, cardUpgrades }) {
+function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, profileProgress, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange, todayRec, openModal, unclaimedBadgeCount, tutorialStep, onNavigateToShop, onNavigateToMyCards, cardUpgrades, records }) {
   const d = new Date(today);
   const DAY_NAMES = ['日','月','火','水','木','金','土'];
   const dateLabel = `${d.getMonth()+1}月${d.getDate()}日（${DAY_NAMES[d.getDay()]}）`;
@@ -4822,6 +5109,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [cardIdx, setCardIdx] = React.useState(0);
   const touchStartX = React.useRef(null);
+  const [weeklyOpen, setWeeklyOpen] = React.useState(false);
 
   // 今日のターゲットメニュー
   const rec = todayRec || {};
@@ -4970,6 +5258,24 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         </div>
       </div>
+
+      {/* ─── 週間サマリーバー ─── */}
+      <div
+        onClick={() => setWeeklyOpen(true)}
+        style={{
+          background:'rgba(255,255,255,0.12)', backdropFilter:'blur(10px)',
+          WebkitBackdropFilter:'blur(10px)',
+          borderRadius:14, padding:'8px 14px 6px', marginBottom:10,
+          cursor:'pointer', border:'1px solid rgba(255,255,255,0.3)',
+        }}
+      >
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:2}}>
+          <span style={{fontSize:11, fontWeight:800, color:'rgba(255,255,255,0.8)'}}>📅 今週の練習</span>
+          <span style={{fontSize:10, color:'rgba(255,255,255,0.5)'}}>くわしくみる ›</span>
+        </div>
+        <WeeklyBar todayStr={today} records={records||{}} />
+      </div>
+      {weeklyOpen && <WeeklySummaryModal todayStr={today} records={records||{}} onClose={() => setWeeklyOpen(false)} />}
 
       {/* ─── ① 上段アイコン（練習・学習・お店）─── */}
       <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10}}>
@@ -5942,6 +6248,7 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
   const ownedCount = CARD_LEVELS.reduce((sum, lv) =>
     sum + CARD_TYPES.filter(t => isCardOwned(lv, t.id)).length, 0);
   const [openLevels, setOpenLevels] = React.useState(new Set());
+  const [zukanOpenLevels, setZukanOpenLevels] = React.useState(new Set());
   const [detailCard, setDetailCard] = React.useState(null); // { lv, typeInfo }
   const [activeView, setActiveView] = React.useState(initialView || 'shop');
 
@@ -6011,14 +6318,15 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
         {[
           { id:'shop',    label:'🛒 お店',      sub:'カードをゲット' },
           { id:'mycards', label:'🃏 マイカード', sub:`${ownedCount}枚所持` },
+          { id:'zukan',   label:'📖 図鑑',       sub:`${ownedCount}/${totalCards}枚` },
         ].map(v => (
           <button key={v.id}
             style={{
-              flex:1, padding:'10px 8px', borderRadius:14,
+              flex:1, padding:'10px 4px', borderRadius:14,
               border: activeView === v.id ? '2px solid #6a1b9a' : '2px solid #e0e0e0',
               background: activeView === v.id ? 'linear-gradient(135deg,#6a1b9a,#8e24aa)' : 'white',
               color: activeView === v.id ? 'white' : '#555',
-              fontWeight:800, fontSize:13, cursor:'pointer',
+              fontWeight:800, fontSize:12, cursor:'pointer',
               WebkitTapHighlightColor:'transparent',
               transition:'all 0.15s',
               boxShadow: activeView === v.id ? '0 3px 10px rgba(106,27,154,0.35)' : 'none',
@@ -6270,6 +6578,89 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
         );
       })}
     </>} {/* end activeView === 'shop' */}
+
+    {/* ─── 図鑑ビュー ─── */}
+    {activeView === 'zukan' && <>
+      <div style={{marginBottom:12, padding:'10px 14px', background:'linear-gradient(135deg,#1a237e,#283593)', borderRadius:14, color:'white'}}>
+        <div style={{fontWeight:900, fontSize:14, marginBottom:2}}>📖 図鑑</div>
+        <div style={{fontSize:12, opacity:0.85}}>
+          <span style={{fontWeight:800, fontSize:18}}>{ownedCount}</span>
+          <span style={{opacity:0.7}}>/{totalCards}枚</span>
+          <span style={{marginLeft:10, opacity:0.7}}>コンプリートを目指そう！</span>
+        </div>
+        <div style={{marginTop:6, height:6, background:'rgba(255,255,255,0.2)', borderRadius:99, overflow:'hidden'}}>
+          <div style={{height:'100%', width:`${Math.round(ownedCount/totalCards*100)}%`, background:'linear-gradient(90deg,#ffd54f,#ff9800)', borderRadius:99, transition:'width 0.5s'}} />
+        </div>
+      </div>
+      {CARD_LEVELS.map(lv => {
+        const lvInfo = getLevelInfo(lv);
+        const open = zukanOpenLevels.has(lv);
+        const owned = CARD_TYPES.filter(t => isCardOwned(lv, t.id));
+        return (
+          <div key={lv} style={{marginBottom:8}}>
+            <div
+              onClick={() => setZukanOpenLevels(prev => { const n = new Set(prev); n.has(lv) ? n.delete(lv) : n.add(lv); return n; })}
+              style={{
+                display:'flex', alignItems:'center', justifyContent:'space-between',
+                padding:'8px 14px', borderRadius:12, cursor:'pointer',
+                background: lvInfo.bg, color: lvInfo.color,
+                border: `2px solid ${lvInfo.color}`,
+              }}
+            >
+              <span style={{fontWeight:900, fontSize:13, textShadow:'0 1px 3px rgba(0,0,0,0.4)'}}>
+                Lv.{lv} {renderLvStars(lv,'sm')} {lvInfo.label}
+              </span>
+              <span style={{fontSize:12, fontWeight:700, opacity:0.9}}>
+                {owned.length}/{CARD_TYPES.length}枚 {open ? '▲' : '▼'}
+              </span>
+            </div>
+            {open && (
+              <div className="level-cards-row" style={{paddingTop:8}}>
+                {CARD_TYPES.map(typeInfo => {
+                  const key2 = cardKey(lv, typeInfo.id);
+                  const isOwned = isCardOwned(lv, typeInfo.id);
+                  const imgFile = `images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`;
+                  const cname = getCardName(key2);
+                  return (
+                    <div key={typeInfo.id} className={`pcard ${getCardBorderClass(lv)} zukan-card-wrap`}>
+                      <div className="pcard-header" style={{background: typeInfo.headerBg, color: typeInfo.headerColor, fontSize:10}}>
+                        <span>{typeInfo.emoji} {typeInfo.label}</span>
+                        {isOwned && <span className="zukan-owned-badge">✓ 所持</span>}
+                      </div>
+                      <div className="pcard-body" style={{position:'relative'}}>
+                        <img
+                          className={`pcard-img${isOwned ? '' : ' zukan-silhouette'}`}
+                          src={imgFile} alt=""
+                        />
+                        {!isOwned && (
+                          <div className="zukan-question">
+                            <div className="zukan-q-mark">？</div>
+                            <div className="zukan-no-name">未取得</div>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{textAlign:'center', padding:'4px 4px 6px', background:'#f8f9ff', borderTop:'1px solid #eee'}}>
+                        {isOwned && cname ? (
+                          <ruby style={{fontSize:11, fontWeight:900, color:'#1a237e'}}>
+                            {cname.last}<rt style={{fontSize:8}}>{cname.lastKana}</rt>
+                          </ruby>
+                        ) : (
+                          <span style={{fontSize:11, color:'#bbb', fontWeight:700}}>？？？</span>
+                        )}
+                        {isOwned && cname && (
+                          <span style={{fontSize:10, color:'#555', marginLeft:3}}>{cname.first}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>}
+
   </>);
 }
 
