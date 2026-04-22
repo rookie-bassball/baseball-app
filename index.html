@@ -3619,20 +3619,29 @@ function OnboardingModal({ onComplete }) {
     onComplete({ name: name.trim(), targets: recTargets, grade });
   }
 
+  // モーダル表示中はbodyのスクロールを抑止（iOS対応）
+  React.useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   const overlayStyle = {
     position: 'fixed', inset: 0, background: 'rgba(10,20,60,0.85)',
-    zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '16px',
+    zIndex: 9000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+    padding: '12px 16px', overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
   };
   const cardStyle = {
-    background: 'white', borderRadius: 24, padding: '28px 24px 24px',
+    background: 'white', borderRadius: 24, padding: '20px 20px 20px',
     maxWidth: 420, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
-    position: 'relative', maxHeight: '90vh', overflowY: 'auto',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18,
+    position: 'relative', marginTop: 'auto', marginBottom: 'auto',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
   };
   const mascotStyle = {
-    width: 80, height: 80, borderRadius: '50%',
+    width: 64, height: 64, borderRadius: '50%',
     border: '3px solid #e8eaf6', objectFit: 'cover',
+    flexShrink: 0,
   };
   const btnPrimary = {
     background: 'linear-gradient(135deg,#1a237e,#3f51b5)',
@@ -3650,7 +3659,7 @@ function OnboardingModal({ onComplete }) {
     background: active ? 'linear-gradient(135deg,#1a237e,#3f51b5)' : '#f0f4ff',
     color: active ? 'white' : '#333',
     border: active ? '2px solid #1a237e' : '2px solid #e0e0e0',
-    borderRadius: 14, padding: '12px 14px',
+    borderRadius: 12, padding: '10px 12px',
     fontSize: 14, fontWeight: active ? 800 : 600,
     cursor: 'pointer', width: '100%', textAlign: 'left',
     display: 'flex', alignItems: 'center', gap: 10,
@@ -3677,7 +3686,7 @@ function OnboardingModal({ onComplete }) {
         {/* ===== STEP 0: ようこそ ===== */}
         {step === 0 && (
           <>
-            <img src="icons/icon-192.png" alt="ROOKIE" style={mascotStyle} />
+            <img src="icons/icon-192.png" alt="ROOKIE" style={{...mascotStyle, width:80, height:80}} />
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 22, fontWeight: 900, color: '#1a237e', marginBottom: 6 }}>
                 ようこそ！ ROOKIE ⚾
@@ -3712,7 +3721,6 @@ function OnboardingModal({ onComplete }) {
                 onChange={e => setName(e.target.value)}
                 placeholder="たとえば「たろう」"
                 maxLength={12}
-                autoFocus
                 style={{
                   width: '100%', padding: '12px 16px', fontSize: 17,
                   border: '2px solid #c5cae9', borderRadius: 12,
