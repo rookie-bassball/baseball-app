@@ -1070,44 +1070,9 @@
 
       /* ===== ホーム 3アイコングリッド ===== */
       /* ホーム アイコンセル（新デザイン：白カード） */
-      .tutorial-icon-glow {
-        animation: tutorialIconPulse 1s ease-in-out infinite;
-      }
-      @keyframes tutorialIconPulse {
-        0%, 100% { box-shadow: 0 3px 14px rgba(0,0,0,0.09), 0 0 0 0 rgba(255,213,79,0.8); }
-        50%       { box-shadow: 0 3px 14px rgba(0,0,0,0.09), 0 0 0 10px rgba(255,213,79,0); }
-      }
-      /* 練習メニューカード チュートリアルグロー */
-      .tutorial-menu-glow {
-        border: 2px solid #ffd54f !important;
-        animation: tutorialMenuPulse 1s ease-in-out infinite;
-      }
-      @keyframes tutorialMenuPulse {
-        0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 0 0 0 rgba(255,213,79,0.8); }
-        50%       { box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 0 0 8px rgba(255,213,79,0); }
-      }
       /* ホームアイコンセル タップ時 */
       .home-grid-cell:active { transform: scale(0.94); }
 
-      /* ===== チュートリアル ===== */
-      .tutorial-tab-glow {
-        position: relative;
-        color: #ffd54f !important;
-        animation: tutorialTabPulse 1s ease-in-out infinite;
-      }
-      .tutorial-tab-glow::after {
-        content: '';
-        position: absolute;
-        inset: 4px;
-        border-radius: 14px;
-        background: rgba(255,213,79,0.18);
-        animation: tutorialTabPulse 1s ease-in-out infinite;
-        pointer-events: none;
-      }
-      @keyframes tutorialTabPulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(255,213,79,0.7); }
-        50%       { box-shadow: 0 0 0 10px rgba(255,213,79,0); }
-      }
       /* ===== ① 練習完了演出 ===== */
       .celebration-overlay {
         position: fixed; inset: 0; z-index: 6000;
@@ -1173,7 +1138,7 @@
 
       /* ===== ③ 図鑑 ===== */
       .zukan-card-wrap { position: relative; }
-      .zukan-silhouette { filter: brightness(0) opacity(0.35) saturate(0); }
+      .zukan-silhouette { filter: opacity(0.3) saturate(0.1) brightness(1.05); }
       .zukan-question {
         position: absolute; inset: 0; display: flex; flex-direction: column;
         align-items: center; justify-content: center; gap: 4px;
@@ -1187,22 +1152,6 @@
         position: absolute; top: 4px; right: 4px; background: #43a047;
         color: white; font-size: 8px; font-weight: 900; border-radius: 6px;
         padding: 2px 5px; line-height: 1.3; z-index: 1;
-      }
-
-      /* ===== ④ チュートリアル指マーク ===== */
-      .tutorial-pointer {
-        position: fixed;
-        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-        transform: translateX(-50%);
-        z-index: 4001;
-        font-size: 30px;
-        pointer-events: none;
-        animation: pointerBounce 0.55s ease-in-out infinite alternate;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
-      }
-      @keyframes pointerBounce {
-        from { transform: translateX(-50%) translateY(0px); }
-        to   { transform: translateX(-50%) translateY(-10px); }
       }
 
       /* ===== PWAインストールバナー ===== */
@@ -1665,51 +1614,6 @@ function saveDailyTargets(obj)    { localStorage.setItem(TARGETS_STORAGE_KEY, JS
 const ONBOARDING_KEY = 'baseball_app_onboarding_v1';
 
 // チュートリアル進捗（リセット連動）
-const TUTORIAL_KEY = 'baseball_app_tutorial_v1';
-function getTutorialStep() {
-  const v = localStorage.getItem(TUTORIAL_KEY);
-  if (!v || v === 'done') return null;
-  return parseInt(v) || null;
-}
-function saveTutorialStep(s) {
-  if (s === null) localStorage.setItem(TUTORIAL_KEY, 'done');
-  else localStorage.setItem(TUTORIAL_KEY, String(s));
-}
-
-// チュートリアルステップ定義
-// 流れ：練習×2 → スタンプ → 学習（覚えよう） → バッジ → カード → 完了
-// homeMsg: ホーム画面にいるときに表示するメッセージ（arrow:falseのステップ用）
-// msg:     対象タブに入ったときに表示するメッセージ
-const TUTORIAL_STEPS = [
-  { step:1, target:'practice',   arrow:true,
-    msg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをタップして\n{練習|れんしゅう}をはじめてみよう！⚾' },
-  { step:2, target:null,         arrow:false, homeTab:'practice',
-    homeMsg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをおして\n{練習|れんしゅう}の{画面|がめん}へいこう！⚾',
-    msg:'「{素振|すぶ}り」をタップして\n「15」といれて「スタンプをおす！」をおしてみよう！🏏' },
-  { step:3, target:null,         arrow:false, homeTab:'practice',
-    homeMsg:'{光|ひか}っている「{練習|れんしゅう}」アイコンをおして\n{練習|れんしゅう}の{画面|がめん}へいこう！⚾',
-    msg:'つぎは「シャドーピッチング」をタップして\n「10」といれて「スタンプをおす！」をおしてみよう！⚾' },
-  { step:4, target:'stamp',      arrow:true,
-    tabMsg:'{光|ひか}っているスタンプをおそう！\nスタンプをおしてみよう！📮',
-    msg:'{練習|れんしゅう}2つ{完了|かんりょう}！\n{光|ひか}っている「スタンプ」アイコンをタップしてみよう！📮' },
-  { step:5, target:'quiz',       arrow:true,
-    tabMsg:'「{覚|おぼ}えよう」をタップして\n「やさしい」からクイズにちょうせんしよう！📚',
-    msg:'よくできました！\n{光|ひか}っている「{学習|がくしゅう}」アイコンをタップしてみよう！📚' },
-  { step:6, target:null,         arrow:false, homeTab:'quiz',
-    homeMsg:'{光|ひか}っている「{学習|がくしゅう}」アイコンをおして\n{学習|がくしゅう}の{画面|がめん}へいこう！📚',
-    kisoListMsg:'{光|ひか}っているポジションをタップして\nクイズをはじめよう！⚾',
-    msg:'「{覚|おぼ}えよう」をタップして\n「やさしい」からクイズにちょうせんしよう！📚' },
-  { step:7, target:'badge',      arrow:true,
-    tabMsg:'{光|ひか}っているバッジを{押|お}して\nポイントを{受|う}け{取|と}ろう！🎁',
-    awayMsg:'よくできました！🎉\nホーム{画面|がめん}に{戻|もど}って\n{光|ひか}っているバッジアイコンをおそう！🎖',
-    msg:'よくできました！\n{光|ひか}っている「バッジ」アイコンをタップしてみよう！🎖' },
-  { step:8, target:'collection', arrow:true,
-    tabMsg:'レベル1の「{蒼嵐|そうらん}はると」カードを\nゲットしよう！🪙',
-    msg:'{光|ひか}っている「お{店|みせ}」アイコンをタップしてみよう！🪙' },
-  { step:9, target:null,         arrow:false,
-    msg:'🎉 {取|と}ったカードはここに{表示|ひょうじ}されるよ！\nチュートリアルはこれで{終|お}わりだよ！⚾' },
-];
-
 // ===== 振り仮名グレード制御 =====
 const GRADE_KEY = 'baseball_app_grade';
 // 漢字ごとの習得学年（小1=1 〜 小6=6、中学以上=7）
@@ -3408,15 +3312,22 @@ function CelebrationOverlay({ data, onClose }) {
 // ===== ② 週間サマリー =====
 const DAY_LABELS = ['日','月','火','水','木','金','土'];
 function WeeklyBar({ todayStr, records }) {
-  // 今日含む直近7日間
+  // 今週の月〜日
   const days = React.useMemo(() => {
     const result = [];
     const base = new Date(todayStr + 'T00:00:00');
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(base); d.setDate(base.getDate() - i);
+    const todayKey = todayStr;
+    // 今週の月曜日を求める
+    const dayOfWeek = base.getDay(); // 0=日, 1=月, ..., 6=土
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - daysFromMonday);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const pts = Math.min(DAILY_POINT_CAP, calcDayPoints(records[key] || {}));
-      result.push({ key, label: DAY_LABELS[d.getDay()], pts, isToday: i === 0 });
+      const isToday = key === todayKey;
+      result.push({ key, label: DAY_LABELS[d.getDay()], pts, isToday });
     }
     return result;
   }, [todayStr, records]);
@@ -3442,13 +3353,20 @@ function WeeklySummaryModal({ todayStr, records, onClose }) {
   const days = React.useMemo(() => {
     const result = [];
     const base = new Date(todayStr + 'T00:00:00');
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(base); d.setDate(base.getDate() - i);
+    const todayKey = todayStr;
+    // 今週の月曜日を求める
+    const dayOfWeek = base.getDay(); // 0=日, 1=月, ..., 6=土
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - daysFromMonday);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const rec = records[key] || {};
       const pts = Math.min(DAILY_POINT_CAP, calcDayPoints(rec));
       const menus = Object.entries(rec).filter(([,v]) => v > 0);
-      result.push({ key, label: DAY_LABELS[d.getDay()], pts, menus, isToday: i === 0,
+      const isToday = key === todayKey;
+      result.push({ key, label: DAY_LABELS[d.getDay()], pts, menus, isToday,
         dateLabel: `${d.getMonth()+1}/${d.getDate()}` });
     }
     return result;
@@ -3530,20 +3448,6 @@ function WeeklySummaryModal({ todayStr, records, onClose }) {
 // ===== ④ チュートリアル指マーク =====
 // ボトムナビ(profile除く6アイテム)の並び順
 const BOTTOM_NAV_ORDER = ['home','practice','quiz','stamp','collection','badge'];
-function TutorialPointer({ tutorialStep, currentTab, onboardingDone }) {
-  if (!tutorialStep || !onboardingDone) return null;
-  const info = TUTORIAL_STEPS.find(s => s.step === tutorialStep);
-  if (!info || !info.arrow || !info.target) return null;
-  // ホームにいるときのみ：ターゲットタブのナビアイコンを指す
-  if (currentTab !== 'home') return null;
-  const idx = BOTTOM_NAV_ORDER.indexOf(info.target);
-  if (idx < 0) return null;
-  const pct = ((idx + 0.5) / BOTTOM_NAV_ORDER.length) * 100;
-  return (
-    <div className="tutorial-pointer" style={{left:`${pct}%`}}>👇</div>
-  );
-}
-
 // ===== PWA インストールバナー =====
 const PWA_INSTALL_DISMISSED_KEY = 'baseball_pwa_install_dismissed';
 
@@ -3655,97 +3559,6 @@ function PWAUpdateToast() {
         <div style={{opacity:0.8}}>更新して最新版を使おう</div>
       </div>
       <button className="pwa-update-btn" onClick={handleReload}>更新する</button>
-    </div>
-  );
-}
-
-// ===== チュートリアルバナー =====
-function TutorialBanner({ step, onSkip, grade, currentTab, kisoViewState }) {
-  const info = TUTORIAL_STEPS.find(s => s.step === step);
-  if (!info) return null;
-
-  const maxGrade = GRADE_MAX[grade] ?? 2;
-
-  // step9 は3秒後に自動スキップ
-  React.useEffect(() => {
-    if (step !== 9) return;
-    const t = setTimeout(() => onSkip(), 3000);
-    return () => clearTimeout(t);
-  }, [step]);
-
-  const isOnHome = currentTab === 'home';
-
-  // メッセージ決定ロジック
-  // ① arrow:true + 対象タブ内（tabMsgあり） → tabMsg（「ハンコをおそう」等）
-  // ② arrow:true + ホーム     → step固有のmsg（「スタンプアイコンをタップ」等）
-  // ③ arrow:true + ホーム以外（対象タブでもない）→ 「ホーム画面に戻ろう」
-  // ④ arrow:false + ホーム + homeMsg あり → homeMsg（「練習アイコンをおして」等）
-  // ⑤ arrow:false + 対象タブ内 → step固有のmsg（「素振りをタップして」等）
-  let rawMsg, showArrowHint;
-  if (info.arrow) {
-    if (info.tabMsg && currentTab === info.target) {
-      // 対象タブに既にいる → タブ内の具体的な操作を案内
-      rawMsg = info.tabMsg;
-      showArrowHint = false;
-    } else if (isOnHome) {
-      // ホームに着いた → 光っているアイコンを押すよう案内
-      rawMsg = info.msg;
-      showArrowHint = true;
-    } else {
-      // ホーム外 → ホームに戻るよう案内（ホームFABが金色に光っている）
-      // step固有の awayMsg があればそれを使う（「よくできました！」等）
-      rawMsg = info.awayMsg || 'ホーム{画面|がめん}に{戻|もど}ろう！\n{光|ひか}っているホームボタンをおしてね！🏠';
-      showArrowHint = true;
-    }
-  } else {
-    if (isOnHome && !!info.homeMsg) {
-      // ホームから対象タブへ誘導
-      rawMsg = info.homeMsg;
-      showArrowHint = true;
-    } else if (info.kisoListMsg && kisoViewState === 'list') {
-      // kiso ポジション一覧表示中 → 光っているポジションをタップするよう案内
-      rawMsg = info.kisoListMsg;
-      showArrowHint = false;
-    } else {
-      // 対象タブ内での具体的な操作案内
-      rawMsg = info.msg;
-      showArrowHint = false;
-    }
-  }
-  const msgLines = rawMsg.split('\n');
-
-  // ホームでアイコンを光らせているとき → 上部表示（下段アイコンと重ならないよう）
-  // それ以外（非ホームタブ等） → 下部表示
-  const bannerClass = (info.arrow && isOnHome) ? 'tutorial-banner-top' : 'tutorial-banner';
-
-  return (
-    <div className={bannerClass}>
-      <div className="tutorial-card">
-        <img src="images/tutorial_mascot.png" alt="マスコット" className="tutorial-mascot"
-          onError={e => { e.target.src='icons/icon-192.png'; }} />
-        <div style={{flex:1}}>
-          {msgLines.map((l, i) => (
-            <div key={i} className="tutorial-msg" style={{fontWeight: i===0 ? 900 : 700, fontSize: i===0 ? 14 : 12.5, color: i===0 ? '#1a237e' : '#555'}}>
-              <Furi t={processFuri(l, maxGrade)} />
-            </div>
-          ))}
-          {showArrowHint && (
-            <div style={{fontSize:11, color:'#f9a825', fontWeight:800, marginTop:4, display:'flex', alignItems:'center', gap:3}}>
-              <span style={{animation:'tutorialBounce 0.7s ease-in-out infinite alternate', display:'inline-block'}}>👆</span>
-              <Furi t="{光|ひか}っているアイコンをおしてね！" />
-            </div>
-          )}
-          {/* ステップドット */}
-          <div className="tutorial-step-dots" style={{justifyContent:'flex-start', marginTop:6}}>
-            {TUTORIAL_STEPS.map(s => (
-              <div key={s.step} className={`tutorial-dot ${s.step === step ? 'active' : ''}`} />
-            ))}
-          </div>
-        </div>
-        {step !== 9 && (
-          <button className="tutorial-skip" onClick={onSkip}>スキップ</button>
-        )}
-      </div>
     </div>
   );
 }
@@ -4089,8 +3902,6 @@ function App() {
   const [dailyTargets,  setDailyTargetsSt]= useState(getDailyTargets);
   // オンボーディング
   const [onboardingDone, setOnboardingDone] = useState(isOnboardingDone);
-  // チュートリアル
-  const [tutorialStep, setTutorialStep] = useState(getTutorialStep);
   // kiso内部ビュー状態（null=kiso外, 'list'=ポジション一覧, 'active'=読み/クイズ/結果中）
   const [kisoViewState, setKisoViewState] = React.useState(null);
 
@@ -4133,30 +3944,8 @@ function App() {
     if (grade) saveGrade(grade);
     markOnboardingDone();
     setOnboardingDone(true);
-    // チュートリアル開始：step1 → ホームから練習アイコンへ誘導
-    saveTutorialStep(1);
-    setTutorialStep(1);
     setTab('home');
     playSound('upgrade.mp3');
-  }
-
-  function advanceTutorial(fromStep) {
-    if (tutorialStep !== fromStep) return;
-    const next = fromStep + 1;
-    if (next > 9) {
-      saveTutorialStep(null);
-      setTutorialStep(null);
-    } else {
-      saveTutorialStep(next);
-      setTutorialStep(next);
-    }
-  }
-
-  function skipTutorial() {
-    // チュートリアル完了 or スキップ → tutorialStep をクリアするだけ
-    // ※データリセットは行わない（チュートリアル中に貯めたデータはそのまま引き継ぐ）
-    saveTutorialStep(null);
-    setTutorialStep(null);
   }
 
   function openModal(menu) {
@@ -4201,9 +3990,6 @@ function App() {
 
   // 練習記録の実際の保存処理（PINあり・なし両経路から呼ばれる）
   function doStamp(num, menu) {
-    // チュートリアル：特定メニューの記録でのみ次のステップへ進む
-    if (tutorialStep === 2 && menu.id === 'swing')  advanceTutorial(2); // step2: 素振り → step3へ
-    if (tutorialStep === 3 && menu.id === 'shadow') advanceTutorial(3); // step3: シャドー → step4へ
     const newRec = { ...data.records };
     if (!newRec[today]) newRec[today] = {};
     newRec[today][menu.id] = (newRec[today][menu.id] || 0) + num;
@@ -4275,8 +4061,6 @@ function App() {
     }
     // checkAndAwardBadges calls updateData internally — do NOT call updateData separately
     checkAndAwardBadges(nd);
-    // チュートリアル step6：覚えよう完了でステップを進める
-    if (tutorialStep === 6) advanceTutorial(6);
   }
 
   // 宿題完了ボタン（PIN設定済みならPINモーダルへ）
@@ -4322,17 +4106,14 @@ function App() {
     updateData(empty);
     savePlayerName('');
     setPlayerNameSt('');
-    // オンボーディング・チュートリアルもリセット → また最初から案内する
+    // オンボーディングもリセット → また最初から案内する
     localStorage.removeItem(ONBOARDING_KEY);
-    localStorage.removeItem(TUTORIAL_KEY);
     setOnboardingDone(false);
-    setTutorialStep(null);
     setTab('home');
   }
 
   // スタンプ帳へのハンコを手動で押す
   function handlePressHanko() {
-    advanceTutorial(4); // step4: スタンプ → step5へ
     const newStamps = { ...data.stamps, [today]: true };
     checkAndAwardBadges({ ...data, stamps: newStamps });
     playHankoSound();
@@ -4405,14 +4186,6 @@ function App() {
     }
   }, [profileLevel]);
 
-  // チュートリアル：タブ遷移で自動進行（step1: 練習, step5: 学習）
-  // step7（バッジ）は handleClaimBadge 内で advanceTutorial(7) を呼ぶ（タブ遷移では進めない）
-  React.useEffect(() => {
-    if (!onboardingDone || !tutorialStep) return;
-    if (tutorialStep === 1 && tab === 'practice') advanceTutorial(1);
-    if (tutorialStep === 5 && tab === 'quiz')     advanceTutorial(5);
-  }, [tab, tutorialStep]);
-
   function handleQuizComplete(earnedPts, difficulty, isPerfect) {
     const currentBonus = (data.quizBonus || {})[today] || 0;
     const capped = Math.max(0, Math.min(earnedPts, QUIZ_DAILY_CAP - currentBonus));
@@ -4434,8 +4207,6 @@ function App() {
     if ((data.ownedCards || []).includes(key)) return;
     const newOwned = [...(data.ownedCards || []), key];
     checkAndAwardBadges({ ...data, ownedCards: newOwned });
-    advanceTutorial(8); // step8: カード購入 → step9（完了）へ
-    if (tutorialStep === 8) setTab('home'); // 完了バナーをホームで表示するために移動
     playSound('get_card.mp3');
   }
   function handleUpgradeStat(lv, typeId, stat) {
@@ -4469,8 +4240,6 @@ function App() {
     // 受け取りで新バッジ条件が満たされる場合もあるのでcheckを通す
     checkAndAwardBadges(newData);
     playSound('get_card.mp3');
-    // チュートリアル step7：バッジ受け取り → step8（カードタブ案内）へ進む
-    advanceTutorial(7);
   }
 
   const navItems = [
@@ -4667,12 +4436,10 @@ function App() {
       {/* ボトムナビ（スマホ専用・6タブ）*/}
       <div className="bottom-nav">
         {navItems.filter(n => n.id !== 'profile').map(n => {
-          const tutTarget = TUTORIAL_STEPS.find(s => s.step === tutorialStep)?.target;
-          const isGlowing = tutTarget === n.id;
           return (
             <div
               key={n.id}
-              className={`bottom-nav-item ${tab === n.id ? 'active' : ''} ${isGlowing ? 'tutorial-tab-glow' : ''}`}
+              className={`bottom-nav-item ${tab === n.id ? 'active' : ''}`}
               onClick={() => setTab(n.id)}
             >
               <i className={`fa-solid ${n.icon}`} />
@@ -4685,49 +4452,33 @@ function App() {
         })}
       </div>
 
-      {/* チュートリアルバナー：全タブで表示（クイズ中のみ非表示） */}
-      {tutorialStep && onboardingDone && kisoViewState !== 'active' && (
-        <TutorialBanner step={tutorialStep} onSkip={skipTutorial} grade={getGrade()} currentTab={tab} kisoViewState={kisoViewState} />
-      )}
-
-      {/* PWAインストールバナー（チュートリアル中は出さない） */}
-      {!tutorialStep && onboardingDone && <PWAInstallBanner />}
+      {/* PWAインストールバナー */}
+      {onboardingDone && <PWAInstallBanner />}
 
       {/* SW更新トースト */}
       <PWAUpdateToast />
-
-      {/* チュートリアル指マーク */}
-      {onboardingDone && <TutorialPointer tutorialStep={tutorialStep} currentTab={tab} onboardingDone={onboardingDone} />}
 
       {/* 練習完了演出 */}
       {celebration && <CelebrationOverlay data={celebration} onClose={() => setCelebration(null)} />}
 
 
       {/* ホームFAB（ホーム以外のタブで表示・スマホ専用） */}
-      {tab !== 'home' && (() => {
-        // チュートリアル「ホームに戻って」ステップではFABをゴールドにして目立たせる
-        const tutInfo = tutorialStep && onboardingDone
-          ? TUTORIAL_STEPS.find(s => s.step === tutorialStep)
-          : null;
-        const fabGlow = tutInfo && tutInfo.arrow; // arrow:trueは「ホームに戻って」系
-        return (
-          <div className={`home-fab mobile-only${fabGlow ? ' tutorial-icon-glow' : ''}`}
-            style={fabGlow ? {background:'linear-gradient(135deg,#f9a825,#ffd54f)', color:'#5d4037', border:'2px solid #f9a825'} : {}}
-            onClick={() => { playSound('menu_select.mp3', 0.35); setTab('home'); }}>
-            <i className="fa-solid fa-house" />
-            <span className="home-fab-label">{fabGlow ? 'ホームへ' : 'ホーム'}</span>
-          </div>
-        );
-      })()}
+      {tab !== 'home' && (
+        <div className="home-fab mobile-only"
+          onClick={() => { playSound('menu_select.mp3', 0.35); setTab('home'); }}>
+          <i className="fa-solid fa-house" />
+          <span className="home-fab-label">ホーム</span>
+        </div>
+      )}
 
       {/* メインコンテンツ */}
       <main className={`main${tab === 'home' ? ' main-home' : ''}`}>
         <div className="content">
-          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} tutorialStep={tutorialStep} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} records={data.records || {}} />}
-          {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} tutorialStep={tutorialStep} />}
-          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} tutorialStep={tutorialStep} onKisoEnter={() => {}} onViewStateChange={setKisoViewState} />}
+          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} onNavigateToShop={() => { setCollectionView('shop'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} records={data.records || {}} />}
+          {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} />}
+          {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} onKisoEnter={() => {}} onViewStateChange={setKisoViewState} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
-          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} tutorialStep={tutorialStep} />}
+          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
           {tab === 'profile' && <ProfileTab data={data} streak={data.streak} totalStats={data.totalStats} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} />}
         </div>
@@ -5101,7 +4852,7 @@ function SettingsModal({ onClose, onReset, soundOn, playerName, dailyTargets, on
 }
 
 // ===== ホームタブ（モバイル専用トップ画面）=====
-function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, profileProgress, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange, todayRec, openModal, unclaimedBadgeCount, tutorialStep, onNavigateToShop, onNavigateToMyCards, cardUpgrades, records }) {
+function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, nextBadge, canStampToday, totalPracticed, threshold, profileLevel, profileTitle, profileProgress, ownedCards, onNavigate, onNavigateToCard, onReset, soundOn, playerName, dailyTargets, onSoundToggle, onNameSave, onTargetsChange, todayRec, openModal, unclaimedBadgeCount, onNavigateToShop, onNavigateToMyCards, cardUpgrades, records }) {
   const d = new Date(today);
   const DAY_NAMES = ['日','月','火','水','木','金','土'];
   const dateLabel = `${d.getMonth()+1}月${d.getDate()}日（${DAY_NAMES[d.getDay()]}）`;
@@ -5282,18 +5033,16 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ 練習 ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 1 || tutorialStep === 2 || tutorialStep === 3;
           const sub = targetMenus.length > 0
             ? `${doneCount}/${targetMenus.length} 達成`
             : `${totalPracticed}/${threshold} 種目`;
           return (
             <button
-              className={isGlowing ? 'tutorial-icon-glow' : ''}
-              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+              style={{background:'white', border:'1.5px solid rgba(0,0,0,0.07)',
                 borderRadius:20, padding:'10px 4px 9px',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:4,
                 cursor:'pointer', WebkitTapHighlightColor:'transparent',
-                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 3px 14px rgba(0,0,0,0.09)' : '0 3px 14px rgba(0,0,0,0.09)',
+                boxShadow:'0 3px 14px rgba(0,0,0,0.09)',
               }}
               onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('practice'); }}
             >
@@ -5309,16 +5058,12 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
         })()}
 
         {/* ─ 学習 ─ */}
-        {(() => {
-          const isGlowing = tutorialStep === 5;
-          return (
         <button
-          className={isGlowing ? 'tutorial-icon-glow' : ''}
-          style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+          style={{background:'white', border:'1.5px solid rgba(0,0,0,0.07)',
             borderRadius:20, padding:'10px 4px 9px',
             display:'flex', flexDirection:'column', alignItems:'center', gap:4,
             cursor:'pointer', WebkitTapHighlightColor:'transparent',
-            boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 3px 14px rgba(0,0,0,0.09)' : '0 3px 14px rgba(0,0,0,0.09)',
+            boxShadow:'0 3px 14px rgba(0,0,0,0.09)',
           }}
           onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('quiz'); }}
         >
@@ -5330,21 +5075,17 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
           <div style={{fontSize:12, fontWeight:900, color:'#01579b', marginTop:1}}>学習</div>
           <div style={{fontSize:10, fontWeight:700, color:'#039be5'}}>覚えよう・テスト</div>
         </button>
-          );
-        })()}
 
         {/* ─ お店 ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 8;
           const sub = (ownedCards||[]).length > 0 ? `${(ownedCards||[]).length}枚所持` : 'カードをゲット';
           return (
             <button
-              className={isGlowing ? 'tutorial-icon-glow' : ''}
-              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+              style={{background:'white', border:'1.5px solid rgba(0,0,0,0.07)',
                 borderRadius:20, padding:'10px 4px 9px',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:4,
                 cursor:'pointer', WebkitTapHighlightColor:'transparent',
-                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 3px 14px rgba(0,0,0,0.09)' : '0 3px 14px rgba(0,0,0,0.09)',
+                boxShadow:'0 3px 14px rgba(0,0,0,0.09)',
               }}
               onClick={() => { playSound('menu_select.mp3', 0.35); onNavigateToShop(); }}
             >
@@ -5569,7 +5310,6 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ スタンプ ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 4;
           const pressed = stampedToday;
           const canStamp = canStampToday && !stampedToday;
           const labelColor = pressed ? '#c62828' : canStamp ? '#2e7d32' : '#555';
@@ -5577,12 +5317,11 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
           const subText    = pressed ? '押したよ！' : canStamp ? '押せるよ！' : `🔥${streak||0}日`;
           return (
             <button
-              className={isGlowing ? 'tutorial-icon-glow' : ''}
-              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+              style={{background:'white', border:'1.5px solid rgba(0,0,0,0.07)',
                 borderRadius:17, padding:'8px 2px 7px',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:3,
                 cursor:'pointer', WebkitTapHighlightColor:'transparent',
-                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 2px 10px rgba(0,0,0,0.08)' : '0 2px 10px rgba(0,0,0,0.08)',
+                boxShadow:'0 2px 10px rgba(0,0,0,0.08)',
               }}
               onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('stamp'); }}
             >
@@ -5605,16 +5344,14 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 
         {/* ─ バッジ ─ */}
         {(() => {
-          const isGlowing = tutorialStep === 7;
           const hasBadge = (unclaimedBadgeCount || 0) > 0;
           return (
             <button
-              className={isGlowing ? 'tutorial-icon-glow' : ''}
-              style={{background:'white', border: isGlowing ? '2px solid #ffd54f' : '1.5px solid rgba(0,0,0,0.07)',
+              style={{background:'white', border:'1.5px solid rgba(0,0,0,0.07)',
                 borderRadius:17, padding:'8px 2px 7px',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:3,
                 cursor:'pointer', WebkitTapHighlightColor:'transparent',
-                boxShadow: isGlowing ? '0 0 0 3px rgba(255,213,79,0.35),0 2px 10px rgba(0,0,0,0.08)' : '0 2px 10px rgba(0,0,0,0.08)',
+                boxShadow:'0 2px 10px rgba(0,0,0,0.08)',
               }}
               onClick={() => { playSound('menu_select.mp3', 0.35); onNavigate('badge'); }}
             >
@@ -5705,7 +5442,7 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
 }
 
 // ===== 練習タブ =====
-function PracticeTab({ today, todayRec, openModal, totalPracticed, threshold, canStampToday, stampedToday, onGoToStamp, todayPoints, streak, stamps, availablePoints, nextBadge, dailyTargets, tutorialStep }) {
+function PracticeTab({ today, todayRec, openModal, totalPracticed, threshold, canStampToday, stampedToday, onGoToStamp, todayPoints, streak, stamps, availablePoints, nextBadge, dailyTargets }) {
   const dateLabel = formatDate(today);
   const pct       = Math.min(100, Math.round(totalPracticed / threshold * 100));
   const remaining = Math.max(0, threshold - totalPracticed);
@@ -5742,12 +5479,9 @@ function PracticeTab({ today, todayRec, openModal, totalPracticed, threshold, ca
             const target    = targets[menu.id] || 0;
             const targetMet = !target || val >= target;
             const isUnmet   = target > 0 && !done; // 目標あり・未記録
-            const isTutorialGlow =
-              (tutorialStep === 2 && menu.id === 'swing'  && !done) ||
-              (tutorialStep === 3 && menu.id === 'shadow' && !done);
             const cls = done ? 'done' : isUnmet ? 'target-unmet' : '';
             return (
-              <div key={menu.id} className={`menu-card ${cls}${isTutorialGlow ? ' tutorial-menu-glow' : ''}`} onClick={() => openModal(menu)}>
+              <div key={menu.id} className={`menu-card ${cls}`} onClick={() => openModal(menu)}>
                 {done && <div className="done-badge">✅</div>}
                 <div className="menu-icon-circle" style={{background: done ? '#c5e1a5' : menu.color}}>
                   <MenuIcon icon={menu.icon} size={26} color="#fff" />
@@ -6053,7 +5787,7 @@ function StampTab({ data, today, threshold, goalReached, canStampToday, onPressH
 const STAT_LABELS = { meet:'ミート', power:'パワー', speed:'走力', arm:'肩力', defense:'守備力' };
 const STAT_ORDER  = ['meet','power','speed','arm','defense'];
 
-function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStats, onUpgrade, availablePoints, onDetail, isTutGlow }) {
+function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStats, onUpgrade, availablePoints, onDetail }) {
   const lvInfo     = getLevelInfo(lv);
   const borderCls  = getCardBorderClass(lv);
   const imgFile    = `images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`;
@@ -6074,8 +5808,7 @@ function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStat
 
   if (!isOwned) {
     return (
-      <div className={`pcard ${borderCls} pcard-locked${isTutGlow ? ' tutorial-icon-glow' : ''}`}
-        style={isTutGlow ? {outline:'2px solid #ffd54f', outlineOffset:2} : {}}>
+      <div className={`pcard ${borderCls} pcard-locked`}>
         <div className="pcard-header" style={{background: typeInfo.headerBg, color: typeInfo.headerColor}}>
           <span>{typeInfo.emoji} {typeInfo.label}</span>
           <i className="fa-solid fa-lock" />
@@ -6243,7 +5976,7 @@ function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoint
   );
 }
 
-function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays, initialView, tutorialStep }) {
+function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays, initialView }) {
   const totalCards = CARD_LEVELS.length * CARD_TYPES.length;
   const ownedCount = CARD_LEVELS.reduce((sum, lv) =>
     sum + CARD_TYPES.filter(t => isCardOwned(lv, t.id)).length, 0);
@@ -6251,14 +5984,6 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
   const [zukanOpenLevels, setZukanOpenLevels] = React.useState(new Set());
   const [detailCard, setDetailCard] = React.useState(null); // { lv, typeInfo }
   const [activeView, setActiveView] = React.useState(initialView || 'shop');
-
-  // チュートリアル step8: Lv1グループを自動展開
-  React.useEffect(() => {
-    if (tutorialStep === 8) {
-      setOpenLevels(prev => new Set([...prev, 1]));
-      setActiveView('shop');
-    }
-  }, [tutorialStep]);
 
   // ホームから遷移時に initialView に追従
   React.useEffect(() => { if (initialView) setActiveView(initialView); }, [initialView]);
@@ -6554,7 +6279,6 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                   const base = CARD_BASE_STATS[key] || {};
                   const currentStats = (cardUpgrades[key]) || base;
                   const owned = isCardOwned(lv, typeInfo.id);
-                  const isTutGlow = tutorialStep === 8 && lv === 1 && typeInfo.id === 'meet' && !owned;
                   return (
                     <PlayerCard
                       key={typeInfo.id}
@@ -6568,7 +6292,6 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                       onUpgrade={(stat) => onUpgradeStat(lv, typeInfo.id, stat)}
                       availablePoints={availablePoints}
                       onDetail={owned ? () => setDetailCard({ lv, typeInfo }) : undefined}
-                      isTutGlow={isTutGlow}
                     />
                   );
                 })}
@@ -7462,7 +7185,7 @@ function DefenseQuizSession({ situations, onBack, onComplete }) {
 }
 
 // ===== 学習タブ =====
-function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, tutorialStep, onKisoEnter, onViewStateChange }) {
+function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKisoBonus, quizDone, homeworkBonus, today, kisoProgress, kisoBonusLog, onKisoComplete, profileLevel, onKisoEnter, onViewStateChange }) {
   const [view, setView] = React.useState('top'); // 'top' | 'kiso' | 'test' | 'homework'
   // diffFilterをQuizTabレベルで管理（KisoSection remount時もリセットしない）
   const [kisoDiffFilter, setKisoDiffFilter] = React.useState('easy');
@@ -7493,7 +7216,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
   // --- 基礎 sub-tab ---
   // React.useMemo で安定した関数参照を保持 → QuizTab再レンダー時にremountしない
-  const KisoSection = React.useMemo(() => function KisoSection({ kisoProgress, kisoBonusLog, onKisoComplete, diffFilter, onDiffFilterChange, kisoView, onKisoViewChange, profileLevel, tutorialStep }) {
+  const KisoSection = React.useMemo(() => function KisoSection({ kisoProgress, kisoBonusLog, onKisoComplete, diffFilter, onDiffFilterChange, kisoView, onKisoViewChange, profileLevel }) {
     const diffConfig = [
       { key:'easy',   label:'やさしい', emoji:'🟢', color:'#2e7d32', bg:'#e8f5e9' },
       { key:'normal', label:'ふつう',    emoji:'🟡', color:'#e65100', bg:'#fff3e0' },
@@ -8432,16 +8155,14 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
             const state = getSectionState(idx);
             const cleared = state === 'cleared';
             const locked = state === 'locked';
-            const isTutGlow = tutorialStep === 6 && idx === 0 && state === 'unlocked';
             return (
               <div key={sec.key} onClick={()=>{ if(!locked) { playSound('menu_select.mp3', 0.35); openSection(sec); } }}
-                className={isTutGlow ? 'tutorial-icon-glow' : ''}
                 style={{background: cleared ? '#e8f5e9' : locked ? '#f5f5f5' : 'white',
                         borderRadius:14, marginBottom:10, padding:'14px 18px',
-                        border: isTutGlow ? '2px solid #ffd54f' : `1.5px solid ${cleared ? dc.color+'66' : locked ? '#e0e0e0' : dc.color+'33'}`,
+                        border: `1.5px solid ${cleared ? dc.color+'66' : locked ? '#e0e0e0' : dc.color+'33'}`,
                         display:'flex', alignItems:'center', justifyContent:'space-between', gap:10,
                         cursor: locked ? 'default' : 'pointer', opacity: locked ? 0.55 : 1,
-                        boxShadow: isTutGlow ? '0 0 0 3px rgba(255,213,79,0.35),0 1px 4px rgba(0,0,0,0.06)' : '0 1px 4px rgba(0,0,0,0.06)'}}>
+                        boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>
                 <span style={{fontWeight:'bold', fontSize:14, color: locked ? '#aaa' : dc.color}}>
                   <Furi t={sec.titleRuby} />
                 </span>
@@ -8828,16 +8549,13 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
           <div style={{display:'flex', flexDirection:'column', gap:16, marginTop:8}}>
             {/* 覚えようカード */}
             <button
-              className={tutorialStep === 6 ? 'tutorial-icon-glow' : ''}
               onClick={()=>{ playSound('menu_select.mp3', 0.35); setView('kiso'); if (onKisoEnter) onKisoEnter(); }}
               style={{
                 background:'linear-gradient(135deg, #1a237e 0%, #3f51b5 100%)',
-                border: tutorialStep === 6 ? '2.5px solid #ffd54f' : 'none',
+                border: 'none',
                 borderRadius:20, padding:'28px 24px',
                 cursor:'pointer', textAlign:'left',
-                boxShadow: tutorialStep === 6
-                  ? '0 0 0 4px rgba(255,213,79,0.4), 0 4px 16px rgba(26,35,126,0.25)'
-                  : '0 4px 16px rgba(26,35,126,0.25)',
+                boxShadow:'0 4px 16px rgba(26,35,126,0.25)',
                 transition:'transform 0.15s, box-shadow 0.15s',
               }}
             >
@@ -8928,7 +8646,7 @@ function QuizTab({ onQuizComplete, onHomeworkComplete, todayQuizBonus, todayKiso
 
       {/* 覚えようビュー */}
       {view === 'kiso' && (
-        <KisoSection kisoProgress={kisoProgress} kisoBonusLog={kisoBonusLog} onKisoComplete={onKisoComplete} diffFilter={kisoDiffFilter} onDiffFilterChange={setKisoDiffFilter} kisoView={kisoView} onKisoViewChange={setKisoView} profileLevel={profileLevel} tutorialStep={tutorialStep} />
+        <KisoSection kisoProgress={kisoProgress} kisoBonusLog={kisoBonusLog} onKisoComplete={onKisoComplete} diffFilter={kisoDiffFilter} onDiffFilterChange={setKisoDiffFilter} kisoView={kisoView} onKisoViewChange={setKisoView} profileLevel={profileLevel} />
       )}
 
       {/* テストビュー */}
