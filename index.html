@@ -6129,7 +6129,6 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
   const totalCards = CARD_LEVELS.length * CARD_TYPES.length;
   const ownedCount = CARD_LEVELS.reduce((sum, lv) =>
     sum + CARD_TYPES.filter(t => isCardOwned(lv, t.id)).length, 0);
-  const [openLevels, setOpenLevels] = React.useState(new Set());
   const [zukanOpenLevels, setZukanOpenLevels] = React.useState(new Set());
   const [detailCard, setDetailCard] = React.useState(null); // { lv, typeInfo }
   const [activeView, setActiveView] = React.useState(initialView || 'scout');
@@ -6165,15 +6164,6 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
     }
   }, [scoutResults]);
 
-  function toggleLevel(lv) {
-    const isOpening = !openLevels.has(lv);
-    if (isOpening) playSound('menu_select.mp3', 0.35); // 開くときだけ鳴らす
-    setOpenLevels(prev => {
-      const next = new Set(prev);
-      next.has(lv) ? next.delete(lv) : next.add(lv);
-      return next;
-    });
-  }
 
   return (
     <>
@@ -6209,7 +6199,6 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
           { id:'scout',   label:'🎴 スカウト',  sub:`${SCOUT_COST_SINGLE}pt〜` },
           { id:'mycards', label:'🃏 マイカード', sub:`${ownedCount}枚所持` },
           { id:'zukan',   label:'📖 図鑑',       sub:`${ownedCount}/${totalCards}枚` },
-          { id:'shop',    label:'🛒 お店',       sub:'ポイント購入' },
         ].map(v => (
           <button key={v.id}
             style={{
@@ -6240,14 +6229,14 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
 
         if (ownedGroups.length === 0) return (
           <div style={{textAlign:'center', padding:'48px 24px', color:'#999'}}>
-            <i className="fa-solid fa-id-card" style={{fontSize:48, color:'#ce93d8', marginBottom:16}} />
+            <div style={{fontSize:48, marginBottom:12}}>🎴</div>
             <div style={{fontSize:16, fontWeight:700, color:'#6a1b9a', marginBottom:8}}>まだカードがないよ！</div>
-            <div style={{fontSize:13}}>お店でポイントを使ってゲットしよう⚾</div>
+            <div style={{fontSize:13}}>スカウトでポイントを使って選手を獲得しよう⚾</div>
             <button style={{marginTop:16, background:'linear-gradient(135deg,#6a1b9a,#8e24aa)',
               color:'white', border:'none', borderRadius:12, padding:'12px 28px',
               fontSize:14, fontWeight:800, cursor:'pointer'}}
-              onClick={() => setActiveView('shop')}>
-              <i className="fa-solid fa-store" style={{marginRight:6}} />お店へ
+              onClick={() => setActiveView('scout')}>
+              🎴 スカウトする
             </button>
           </div>
         );
@@ -6330,125 +6319,6 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
       })()}
 
       {/* ─── お店ビュー（既存のレベルグループ）─── */}
-      {activeView === 'shop' && <>
-
-      {/* ポイントバー */}
-      <div className="collection-score-bar">
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6}}>
-          <span style={{fontWeight:700, color:'#333'}}><Furi t="{獲得|かくとく}ポイント" /></span>
-          <span style={{fontWeight:700, color:'#1565c0', fontSize:18}}>{totalEarnedPoints} pt</span>
-        </div>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <span style={{fontSize:12, color:'#555'}}>使用済み</span>
-          <span style={{fontSize:13, color:'#e53935', fontWeight:700}}>{totalEarnedPoints - availablePoints} pt</span>
-        </div>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:2}}>
-          <span style={{fontSize:12, color:'#555'}}>残りポイント</span>
-          <span style={{fontSize:16, color:'#2e7d32', fontWeight:900}}>{availablePoints} pt</span>
-        </div>
-        <div style={{fontSize:11, color:'#888', marginTop:6}}>
-          <Furi t="{練習|れんしゅう}と{学習|がくしゅう}でポイントを{貯|た}めて、カードを{購入|こうにゅう}・{強化|きょうか}しよう！" />
-        </div>
-      </div>
-
-      {/* コツコツ応援バナー（ロックされたカードがある場合のみ表示）*/}
-      {CARD_LEVELS.some(lv => (profileLevel || 1) < (CARD_LEVEL_UNLOCK[lv] || 1) && !CARD_TYPES.every(t => isCardOwned(lv, t.id))) && (
-        <div style={{
-          background: 'linear-gradient(135deg,#fff8e1,#fff3e0)',
-          border: '1.5px solid #ffe082',
-          borderRadius: 14, padding: '12px 16px',
-          display: 'flex', alignItems: 'flex-start', gap: 10,
-          marginBottom: 4,
-        }}>
-          <span style={{fontSize: 22, flexShrink: 0}}>🌱</span>
-          <div style={{fontSize: 13, color: '#5d4037', lineHeight: 1.65}}>
-            <div style={{fontWeight: 800, marginBottom: 3, color: '#e65100'}}>毎日コツコツが一番の近道！</div>
-            <div>1日にたくさんやらなくても大丈夫。<br />
-            <strong>毎日スタンプを1回押すだけ</strong>でレベルが上がり、<br />
-            強いカードが少しずつ解放されるよ⚾</div>
-            <div style={{marginTop:6, fontSize:12, color:'#8d6e63'}}>
-              📅 目安：15日→レベル10 / 30日→レベル20 / 60日→全開放
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* レベルグループ（8レベル × 5タイプ） */}
-      {CARD_LEVELS.map(lv => {
-        const cost      = CARD_PURCHASE_COSTS[lv] || 0;
-        const lvInfo    = getLevelInfo(lv);
-        const allOwned  = CARD_TYPES.every(t => isCardOwned(lv, t.id));
-        const isOpen    = openLevels.has(lv);
-        const reqLevel  = CARD_LEVEL_UNLOCK[lv] || 1;
-        const isLocked  = (profileLevel || 1) < reqLevel && !allOwned;
-        // ロック解除まで何日必要か（1日1スタンプ換算）
-        const daysNeeded = isLocked ? Math.max(0, (reqLevel - 1) * 5 - (stampDays || 0)) : 0;
-        return (
-          <div key={lv} className="level-row" style={{opacity: isLocked ? 0.72 : 1}}>
-            <div
-              className="level-row-head"
-              style={{background: isLocked ? '#e8e8e8' : lvInfo.bg,
-                borderLeft: `4px solid ${isLocked ? '#bdbdbd' : lvInfo.color}`,
-                cursor: isLocked ? 'default' : 'pointer', userSelect:'none',
-                flexDirection: 'column', alignItems: 'stretch', gap: 0}}
-              onClick={() => { if (!isLocked) toggleLevel(lv); }}
-            >
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-                <span className="lrh-left" style={{color: isLocked ? '#757575' : lvInfo.color, textShadow: isLocked ? 'none' : '0 1px 3px rgba(0,0,0,0.4)'}}>
-                  {isLocked ? '🔒' : ''} レベル{lv}
-                  <span style={{display:'inline-flex', alignItems:'center', letterSpacing:0, margin:'0 2px'}}>{renderLvStars(lv, 'sm')}</span>
-                  {lvInfo.label}
-                </span>
-                <span className="lrh-right">
-                  <span className="lrh-cost" style={{background: isLocked ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.28)',
-                    borderRadius:8, padding:'2px 9px', fontSize:12,
-                    color: isLocked ? '#757575' : 'white', fontWeight:700,
-                    textShadow: isLocked ? 'none' : '0 1px 2px rgba(0,0,0,0.5)'}}>
-                    {isLocked ? `あと${daysNeeded}日` : allOwned ? '✅ コンプリート' : `🪙 ${cost} pt`}
-                  </span>
-                  {!isLocked && <i className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`} style={{fontSize:11, color: lvInfo.color, opacity:0.85, textShadow:'0 1px 3px rgba(0,0,0,0.4)'}} />}
-                </span>
-              </div>
-              {isLocked && (
-                <div style={{
-                  fontSize: 11, color: '#888', paddingTop: 5,
-                  display: 'flex', alignItems: 'center', gap: 5,
-                }}>
-                  <span>🌱</span>
-                  <span>毎日スタンプを押すだけでOK！あと<strong style={{color:'#e65100'}}>{daysNeeded}日</strong>コツコツ続ければ解放されるよ</span>
-                </div>
-              )}
-            </div>
-            {isOpen && (
-              <div className="level-cards-row">
-                {CARD_TYPES.map(typeInfo => {
-                  const key = cardKey(lv, typeInfo.id);
-                  const base = CARD_BASE_STATS[key] || {};
-                  const currentStats = (cardUpgrades[key]) || base;
-                  const owned = isCardOwned(lv, typeInfo.id);
-                  return (
-                    <PlayerCard
-                      key={typeInfo.id}
-                      lv={lv}
-                      typeInfo={typeInfo}
-                      isOwned={owned}
-                      canAfford={lv === 50 ? false : availablePoints >= cost}
-                      cost={cost}
-                      onBuy={lv === 50 ? () => { playSound('menu_select.mp3', 0.35); setActiveView('scout'); } : () => onBuyCard(lv, typeInfo.id)}
-                      isScoutOnly={lv === 50}
-                      currentStats={currentStats}
-                      onUpgrade={(stat) => onUpgradeStat(lv, typeInfo.id, stat)}
-                      availablePoints={availablePoints}
-                      onDetail={owned ? () => setDetailCard({ lv, typeInfo }) : undefined}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </>} {/* end activeView === 'shop' */}
 
     {/* ─── スカウトビュー ─── */}
     {activeView === 'scout' && <>
