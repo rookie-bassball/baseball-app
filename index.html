@@ -1822,7 +1822,7 @@ function getRarity(lv) {
 }
 function getRarityBorderClass(lv) { return `rarity-${getRarity(lv)}`; }
 
-// スカウト：レアリティ基準でカードを抽選
+// スカウト：レアリティ基準でPLAYERSから抽選
 function pickScoutCard() {
   const r = Math.random() * 100;
   let rarity;
@@ -1831,10 +1831,9 @@ function pickScoutCard() {
   else if (r < 20) rarity = 'SR';
   else if (r < 50) rarity = 'R';
   else             rarity = 'N';
-  const levels = RARITY_CONFIG[rarity].levels;
-  const lv = levels[Math.floor(Math.random() * levels.length)];
-  const type = CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)];
-  return { lv, typeInfo: type, key: cardKey(lv, type.id), rarity };
+  const candidates = PLAYERS.filter(p => p.rarity === rarity);
+  const player = candidates[Math.floor(Math.random() * candidates.length)];
+  return { ...player, key: player.id }; // key は ownedCards への保存・compat 用
 }
 
 // タイプ別キャラクターセリフ
@@ -1965,6 +1964,153 @@ const CARD_NAMES = {
 };
 function getCardName(key) { return CARD_NAMES[key] || null; }
 
+// ===== ポジション設定 =====
+const POSITION_CONFIG = {
+  pitcher:   { label:'投手',   emoji:'⚾', color:'#880e4f', bg:'#fce4ec', headerBg:'linear-gradient(90deg,#880e4f,#e91e63)', headerColor:'#fff' },
+  catcher:   { label:'捕手',   emoji:'🥎', color:'#263238', bg:'#eceff1', headerBg:'linear-gradient(90deg,#263238,#546e7a)', headerColor:'#fff' },
+  infielder: { label:'内野手', emoji:'🧤', color:'#1b5e20', bg:'#e8f5e9', headerBg:'linear-gradient(90deg,#1b5e20,#66bb6a)', headerColor:'#fff' },
+  outfielder:{ label:'外野手', emoji:'🏃', color:'#e65100', bg:'#fff3e0', headerBg:'linear-gradient(90deg,#e65100,#ff9800)', headerColor:'#fff' },
+};
+
+// ===== 選手データ (全102名) =====
+// id = ownedCards に保存されるキー（既存カードは lv形式、新規は p001〜）
+// img = 画像ファイル名（images/card_{img}.png）
+const PLAYERS = [
+  // ─────────── N (40名) ───────────
+  // 既存12名 (lv01・lv05)
+  { id:'lv01_meet',    rarity:'N', pos:'infielder', img:'lv01_meet',    last:'蒼嵐',lastKana:'そうらん',  first:'はると',  stats:{meet:'D',power:'G',speed:'E',arm:'F',defense:'E'}, quote:'バットに当てることが全ての基本だ！' },
+  { id:'lv01_speed',   rarity:'N', pos:'outfielder',img:'lv01_speed',   last:'迅雷',lastKana:'じんらい',  first:'そうた',  stats:{meet:'F',power:'G',speed:'D',arm:'E',defense:'E'}, quote:'スタートの一歩が全てを決める！' },
+  { id:'lv01_defense', rarity:'N', pos:'infielder', img:'lv01_defense', last:'白嶽',lastKana:'はくたけ',  first:'ゆいと',  stats:{meet:'G',power:'G',speed:'E',arm:'E',defense:'D'}, quote:'一球も諦めない、それが守備の神髄！' },
+  { id:'lv01_arm',     rarity:'N', pos:'catcher',   img:'lv01_arm',     last:'玄武',lastKana:'げんぶ',    first:'りょう',  stats:{meet:'F',power:'E',speed:'F',arm:'D',defense:'F'}, quote:'俺の肩はチームの最終防衛線だ！' },
+  { id:'lv01_pitcher', rarity:'N', pos:'pitcher',   img:'lv01_pitcher', last:'紅蓮',lastKana:'ぐれん',    first:'かいと',  stats:{meet:'G',power:'E',speed:'F',arm:'D',defense:'G'}, quote:'ストライクゾーンを支配する！' },
+  { id:'lv01_all',     rarity:'N', pos:'outfielder',img:'lv01_all',     last:'天鳳',lastKana:'てんほう',  first:'けんと',  stats:{meet:'E',power:'E',speed:'E',arm:'E',defense:'E'}, quote:'万能こそ最強！どのポジションでも任せろ！' },
+  { id:'lv05_meet',    rarity:'N', pos:'infielder', img:'lv05_meet',    last:'疾風',lastKana:'はやて',    first:'しゅう',  stats:{meet:'C',power:'F',speed:'D',arm:'E',defense:'D'}, quote:'コンタクト率なら誰にも負けない！' },
+  { id:'lv05_speed',   rarity:'N', pos:'outfielder',img:'lv05_speed',   last:'朱雀',lastKana:'すざく',    first:'れん',    stats:{meet:'E',power:'G',speed:'C',arm:'D',defense:'D'}, quote:'誰よりも速く、誰よりも遠くへ！' },
+  { id:'lv05_defense', rarity:'N', pos:'infielder', img:'lv05_defense', last:'白虎',lastKana:'びゃっこ',  first:'ゆうと',  stats:{meet:'F',power:'G',speed:'D',arm:'D',defense:'C'}, quote:'グラウンドの全ての打球は俺のもの！' },
+  { id:'lv05_arm',     rarity:'N', pos:'catcher',   img:'lv05_arm',     last:'神楽',lastKana:'かぐら',    first:'こうた',  stats:{meet:'E',power:'D',speed:'E',arm:'C',defense:'E'}, quote:'強肩で走者を釘付けにする！' },
+  { id:'lv05_pitcher', rarity:'N', pos:'pitcher',   img:'lv05_pitcher', last:'写楽',lastKana:'しゃらく',  first:'りく',    stats:{meet:'G',power:'D',speed:'E',arm:'C',defense:'G'}, quote:'三振を取った瞬間が最高だ！' },
+  { id:'lv05_all',     rarity:'N', pos:'outfielder',img:'lv05_all',     last:'蒼龍',lastKana:'そうりゅう',first:'だいき',  stats:{meet:'D',power:'D',speed:'D',arm:'D',defense:'D'}, quote:'苦手なプレーなんて一つもない！' },
+  // 新規 N 投手 (p001-p007)
+  { id:'p001', rarity:'N', pos:'pitcher',   img:'lv01_pitcher', last:'山本',lastKana:'やまもと', first:'たつや',    stats:{meet:'G',power:'E',speed:'F',arm:'D',defense:'G'}, quote:'マウンドは俺の城！' },
+  { id:'p002', rarity:'N', pos:'pitcher',   img:'lv05_pitcher', last:'田辺',lastKana:'たなべ',   first:'りゅうき',  stats:{meet:'G',power:'F',speed:'E',arm:'D',defense:'F'}, quote:'ストライクゾーンを支配する！' },
+  { id:'p003', rarity:'N', pos:'pitcher',   img:'lv01_pitcher', last:'中川',lastKana:'なかがわ', first:'まなと',    stats:{meet:'F',power:'E',speed:'F',arm:'E',defense:'G'}, quote:'三振を取った瞬間が最高だ！' },
+  { id:'p004', rarity:'N', pos:'pitcher',   img:'lv05_pitcher', last:'岡田',lastKana:'おかだ',   first:'しんや',    stats:{meet:'G',power:'D',speed:'E',arm:'C',defense:'G'}, quote:'マウンドは俺の城！' },
+  { id:'p005', rarity:'N', pos:'pitcher',   img:'lv01_pitcher', last:'鈴本',lastKana:'すずもと', first:'えいじ',    stats:{meet:'G',power:'E',speed:'G',arm:'D',defense:'F'}, quote:'ストライクゾーンを支配する！' },
+  { id:'p006', rarity:'N', pos:'pitcher',   img:'lv05_pitcher', last:'三浦',lastKana:'みうら',   first:'つばき',    stats:{meet:'F',power:'F',speed:'E',arm:'D',defense:'G'}, quote:'三振を取った瞬間が最高だ！' },
+  { id:'p007', rarity:'N', pos:'pitcher',   img:'lv01_pitcher', last:'木村',lastKana:'きむら',   first:'ひとし',    stats:{meet:'G',power:'E',speed:'F',arm:'D',defense:'G'}, quote:'マウンドは俺の城！' },
+  // 新規 N 捕手 (p008-p014)
+  { id:'p008', rarity:'N', pos:'catcher',   img:'lv01_arm',     last:'石井',lastKana:'いしい',   first:'はるき',    stats:{meet:'F',power:'E',speed:'G',arm:'D',defense:'F'}, quote:'強肩で走者を釘付けにする！' },
+  { id:'p009', rarity:'N', pos:'catcher',   img:'lv05_arm',     last:'橋本',lastKana:'はしもと', first:'こうき',    stats:{meet:'E',power:'D',speed:'F',arm:'D',defense:'E'}, quote:'遠投百メートルは朝飯前！' },
+  { id:'p010', rarity:'N', pos:'catcher',   img:'lv01_arm',     last:'前田',lastKana:'まえだ',   first:'けんた',    stats:{meet:'F',power:'E',speed:'F',arm:'D',defense:'F'}, quote:'俺の肩はチームの最終防衛線だ！' },
+  { id:'p011', rarity:'N', pos:'catcher',   img:'lv05_arm',     last:'藤田',lastKana:'ふじた',   first:'そうすけ',  stats:{meet:'G',power:'E',speed:'F',arm:'C',defense:'F'}, quote:'強肩で走者を釘付けにする！' },
+  { id:'p012', rarity:'N', pos:'catcher',   img:'lv01_arm',     last:'坂本',lastKana:'さかもと', first:'れんと',    stats:{meet:'F',power:'D',speed:'G',arm:'D',defense:'E'}, quote:'遠投百メートルは朝飯前！' },
+  { id:'p013', rarity:'N', pos:'catcher',   img:'lv05_arm',     last:'近藤',lastKana:'こんどう', first:'たいせい',  stats:{meet:'E',power:'E',speed:'F',arm:'D',defense:'F'}, quote:'俺の肩はチームの最終防衛線だ！' },
+  { id:'p014', rarity:'N', pos:'catcher',   img:'lv01_arm',     last:'村上',lastKana:'むらかみ', first:'だいご',    stats:{meet:'F',power:'E',speed:'E',arm:'C',defense:'F'}, quote:'強肩で走者を釘付けにする！' },
+  // 新規 N 内野手 (p015-p021)
+  { id:'p015', rarity:'N', pos:'infielder', img:'lv01_meet',    last:'青木',lastKana:'あおき',   first:'まさひろ',  stats:{meet:'D',power:'G',speed:'E',arm:'F',defense:'E'}, quote:'バットに当てることが全ての基本だ！' },
+  { id:'p016', rarity:'N', pos:'infielder', img:'lv01_defense', last:'赤坂',lastKana:'あかさか', first:'とうま',    stats:{meet:'G',power:'G',speed:'E',arm:'E',defense:'D'}, quote:'一球も諦めない、それが守備の神髄！' },
+  { id:'p017', rarity:'N', pos:'infielder', img:'lv05_meet',    last:'黒田',lastKana:'くろだ',   first:'けいた',    stats:{meet:'C',power:'F',speed:'D',arm:'E',defense:'D'}, quote:'コンタクト率なら誰にも負けない！' },
+  { id:'p018', rarity:'N', pos:'infielder', img:'lv05_defense', last:'小川',lastKana:'おがわ',   first:'なおと',    stats:{meet:'F',power:'G',speed:'D',arm:'D',defense:'C'}, quote:'グラウンドの全ての打球は俺のもの！' },
+  { id:'p019', rarity:'N', pos:'infielder', img:'lv01_meet',    last:'林田',lastKana:'はやしだ', first:'しょうご',  stats:{meet:'D',power:'G',speed:'F',arm:'F',defense:'E'}, quote:'バットに当てることが全ての基本だ！' },
+  { id:'p020', rarity:'N', pos:'infielder', img:'lv01_defense', last:'松田',lastKana:'まつだ',   first:'ゆうたろう',stats:{meet:'F',power:'G',speed:'E',arm:'E',defense:'D'}, quote:'鉄壁の守りでチームを支える！' },
+  { id:'p021', rarity:'N', pos:'infielder', img:'lv05_meet',    last:'竹内',lastKana:'たけうち', first:'こうへい',  stats:{meet:'C',power:'F',speed:'E',arm:'F',defense:'D'}, quote:'コンタクト率なら誰にも負けない！' },
+  // 新規 N 外野手 (p022-p028)
+  { id:'p022', rarity:'N', pos:'outfielder',img:'lv01_speed',   last:'大島',lastKana:'おおしま', first:'りゅうせい',stats:{meet:'F',power:'G',speed:'D',arm:'E',defense:'E'}, quote:'スタートの一歩が全てを決める！' },
+  { id:'p023', rarity:'N', pos:'outfielder',img:'lv01_all',     last:'高橋',lastKana:'たかはし', first:'たかひろ',  stats:{meet:'E',power:'E',speed:'E',arm:'E',defense:'E'}, quote:'万能こそ最強！どのポジションでも任せろ！' },
+  { id:'p024', rarity:'N', pos:'outfielder',img:'lv05_speed',   last:'内田',lastKana:'うちだ',   first:'りょうた',  stats:{meet:'E',power:'G',speed:'C',arm:'D',defense:'D'}, quote:'誰よりも速く、誰よりも遠くへ！' },
+  { id:'p025', rarity:'N', pos:'outfielder',img:'lv05_all',     last:'加藤',lastKana:'かとう',   first:'ひなた',    stats:{meet:'D',power:'D',speed:'D',arm:'D',defense:'D'}, quote:'苦手なプレーなんて一つもない！' },
+  { id:'p026', rarity:'N', pos:'outfielder',img:'lv01_speed',   last:'清水',lastKana:'しみず',   first:'かいせい',  stats:{meet:'F',power:'G',speed:'D',arm:'F',defense:'E'}, quote:'俺の足は最強の武器だ！' },
+  { id:'p027', rarity:'N', pos:'outfielder',img:'lv01_all',     last:'渡辺',lastKana:'わたなべ', first:'たくと',    stats:{meet:'E',power:'E',speed:'E',arm:'F',defense:'E'}, quote:'チームの穴はどこでも埋めてみせる！' },
+  { id:'p028', rarity:'N', pos:'outfielder',img:'lv05_speed',   last:'吉田',lastKana:'よしだ',   first:'はなと',    stats:{meet:'F',power:'F',speed:'C',arm:'E',defense:'D'}, quote:'誰よりも速く、誰よりも遠くへ！' },
+
+  // ─────────── R (30名) ───────────
+  // 既存12名 (lv10・lv15)
+  { id:'lv10_meet',    rarity:'R', pos:'infielder', img:'lv10_meet',    last:'炎帝',lastKana:'えんてい',   first:'たいよう',stats:{meet:'B',power:'E',speed:'D',arm:'D',defense:'C'}, quote:'フルカウントからでも必ず当てる！' },
+  { id:'lv10_speed',   rarity:'R', pos:'outfielder',img:'lv10_speed',   last:'黒鷹',lastKana:'くろたか',   first:'あさひ',  stats:{meet:'D',power:'F',speed:'B',arm:'C',defense:'C'}, quote:'俺の足は最強の武器だ！' },
+  { id:'lv10_defense', rarity:'R', pos:'infielder', img:'lv10_defense', last:'閃光',lastKana:'せんこう',   first:'みなと',  stats:{meet:'E',power:'F',speed:'C',arm:'C',defense:'B'}, quote:'鉄壁の守りでチームを支える！' },
+  { id:'lv10_arm',     rarity:'R', pos:'catcher',   img:'lv10_arm',     last:'銀狼',lastKana:'ぎんろう',   first:'いつき',  stats:{meet:'D',power:'C',speed:'D',arm:'B',defense:'D'}, quote:'遠投百メートルは朝飯前！' },
+  { id:'lv10_pitcher', rarity:'R', pos:'pitcher',   img:'lv10_pitcher', last:'金剛',lastKana:'こんごう',   first:'つばさ',  stats:{meet:'F',power:'C',speed:'D',arm:'B',defense:'F'}, quote:'マウンドは俺の城！' },
+  { id:'lv10_all',     rarity:'R', pos:'outfielder',img:'lv10_all',     last:'烈火',lastKana:'れっか',     first:'まひろ',  stats:{meet:'C',power:'C',speed:'C',arm:'C',defense:'C'}, quote:'チームの穴はどこでも埋めてみせる！' },
+  { id:'lv15_meet',    rarity:'R', pos:'infielder', img:'lv15_meet',    last:'飛燕',lastKana:'ひえん',     first:'あきと',  stats:{meet:'A',power:'D',speed:'C',arm:'D',defense:'C'}, quote:'バットに当てることが全ての基本だ！' },
+  { id:'lv15_speed',   rarity:'R', pos:'outfielder',img:'lv15_speed',   last:'天狼',lastKana:'てんろう',   first:'ひろと',  stats:{meet:'C',power:'E',speed:'A',arm:'C',defense:'B'}, quote:'スタートの一歩が全てを決める！' },
+  { id:'lv15_defense', rarity:'R', pos:'infielder', img:'lv15_defense', last:'霞月',lastKana:'かすみつき', first:'のぞむ',  stats:{meet:'D',power:'E',speed:'B',arm:'B',defense:'A'}, quote:'一球も諦めない、それが守備の神髄！' },
+  { id:'lv15_arm',     rarity:'R', pos:'catcher',   img:'lv15_arm',     last:'紫電',lastKana:'しでん',     first:'けい',    stats:{meet:'C',power:'B',speed:'C',arm:'A',defense:'C'}, quote:'強肩で走者を釘付けにする！' },
+  { id:'lv15_pitcher', rarity:'R', pos:'pitcher',   img:'lv15_pitcher', last:'蒼穹',lastKana:'そうきゅう', first:'しん',    stats:{meet:'E',power:'B',speed:'C',arm:'A',defense:'E'}, quote:'ストライクゾーンを支配する！' },
+  { id:'lv15_all',     rarity:'R', pos:'outfielder',img:'lv15_all',     last:'雷鼓',lastKana:'らいこ',     first:'こう',    stats:{meet:'B',power:'B',speed:'B',arm:'B',defense:'B'}, quote:'万能こそ最強！どのポジションでも任せろ！' },
+  // 新規 R 投手 (p029-p033)
+  { id:'p029', rarity:'R', pos:'pitcher',   img:'lv10_pitcher', last:'黒石',lastKana:'くろいし', first:'りゅうせい',stats:{meet:'F',power:'C',speed:'D',arm:'B',defense:'F'}, quote:'ストライクゾーンを支配する！' },
+  { id:'p030', rarity:'R', pos:'pitcher',   img:'lv15_pitcher', last:'青嶋',lastKana:'あおしま', first:'まさや',    stats:{meet:'E',power:'B',speed:'C',arm:'A',defense:'E'}, quote:'マウンドは俺の城！' },
+  { id:'p031', rarity:'R', pos:'pitcher',   img:'lv10_pitcher', last:'白川',lastKana:'しらかわ', first:'こうすけ',  stats:{meet:'F',power:'C',speed:'E',arm:'B',defense:'F'}, quote:'三振を取った瞬間が最高だ！' },
+  { id:'p032', rarity:'R', pos:'pitcher',   img:'lv15_pitcher', last:'金原',lastKana:'かねはら', first:'しんじ',    stats:{meet:'G',power:'B',speed:'D',arm:'A',defense:'F'}, quote:'ストライクゾーンを支配する！' },
+  { id:'p033', rarity:'R', pos:'pitcher',   img:'lv10_pitcher', last:'荒木',lastKana:'あらき',   first:'ゆうた',    stats:{meet:'F',power:'C',speed:'D',arm:'B',defense:'E'}, quote:'マウンドは俺の城！' },
+  // 新規 R 捕手 (p034-p038)
+  { id:'p034', rarity:'R', pos:'catcher',   img:'lv10_arm',     last:'松岡',lastKana:'まつおか', first:'かずと',    stats:{meet:'D',power:'C',speed:'D',arm:'B',defense:'D'}, quote:'強肩で走者を釘付けにする！' },
+  { id:'p035', rarity:'R', pos:'catcher',   img:'lv15_arm',     last:'田村',lastKana:'たむら',   first:'りんたろう',stats:{meet:'C',power:'B',speed:'C',arm:'A',defense:'C'}, quote:'遠投百メートルは朝飯前！' },
+  { id:'p036', rarity:'R', pos:'catcher',   img:'lv10_arm',     last:'中野',lastKana:'なかの',   first:'たくみ',    stats:{meet:'D',power:'C',speed:'E',arm:'B',defense:'D'}, quote:'俺の肩はチームの最終防衛線だ！' },
+  { id:'p037', rarity:'R', pos:'catcher',   img:'lv15_arm',     last:'岩本',lastKana:'いわもと', first:'あきら',    stats:{meet:'E',power:'B',speed:'D',arm:'A',defense:'D'}, quote:'強肩で走者を釘付けにする！' },
+  { id:'p038', rarity:'R', pos:'catcher',   img:'lv10_arm',     last:'市川',lastKana:'いちかわ', first:'まこと',    stats:{meet:'D',power:'C',speed:'D',arm:'B',defense:'E'}, quote:'遠投百メートルは朝飯前！' },
+  // 新規 R 内野手 (p039-p042)
+  { id:'p039', rarity:'R', pos:'infielder', img:'lv10_meet',    last:'緑山',lastKana:'みどりやま',first:'こうた',    stats:{meet:'B',power:'E',speed:'D',arm:'D',defense:'C'}, quote:'バットに当てることが全ての基本だ！' },
+  { id:'p040', rarity:'R', pos:'infielder', img:'lv10_defense', last:'島田',lastKana:'しまだ',   first:'ゆうとも',  stats:{meet:'E',power:'F',speed:'C',arm:'C',defense:'B'}, quote:'一球も諦めない、それが守備の神髄！' },
+  { id:'p041', rarity:'R', pos:'infielder', img:'lv15_meet',    last:'川本',lastKana:'かわもと', first:'そうすけ',  stats:{meet:'A',power:'D',speed:'C',arm:'D',defense:'C'}, quote:'フルカウントからでも必ず当てる！' },
+  { id:'p042', rarity:'R', pos:'infielder', img:'lv15_defense', last:'石原',lastKana:'いしはら', first:'みさき',    stats:{meet:'D',power:'E',speed:'B',arm:'B',defense:'A'}, quote:'鉄壁の守りでチームを支える！' },
+  // 新規 R 外野手 (p043-p046)
+  { id:'p043', rarity:'R', pos:'outfielder',img:'lv10_speed',   last:'浜田',lastKana:'はまだ',   first:'たくと',    stats:{meet:'D',power:'F',speed:'B',arm:'C',defense:'C'}, quote:'スタートの一歩が全てを決める！' },
+  { id:'p044', rarity:'R', pos:'outfielder',img:'lv10_all',     last:'宮本',lastKana:'みやもと', first:'りょうへい',stats:{meet:'C',power:'C',speed:'C',arm:'C',defense:'C'}, quote:'苦手なプレーなんて一つもない！' },
+  { id:'p045', rarity:'R', pos:'outfielder',img:'lv15_speed',   last:'原田',lastKana:'はらだ',   first:'しょうへい',stats:{meet:'C',power:'E',speed:'A',arm:'C',defense:'B'}, quote:'誰よりも速く、誰よりも遠くへ！' },
+  { id:'p046', rarity:'R', pos:'outfielder',img:'lv15_all',     last:'福島',lastKana:'ふくしま', first:'ゆうき',    stats:{meet:'B',power:'B',speed:'B',arm:'B',defense:'B'}, quote:'チームの穴はどこでも埋めてみせる！' },
+
+  // ─────────── SR (18名) ───────────
+  // 既存12名 (lv20・lv25)
+  { id:'lv20_meet',    rarity:'SR', pos:'infielder', img:'lv20_meet',    last:'白炎',lastKana:'はくえん',   first:'そら',    stats:{meet:'A',power:'D',speed:'B',arm:'C',defense:'B'}, quote:'コンタクト率なら誰にも負けない！' },
+  { id:'lv20_speed',   rarity:'SR', pos:'outfielder',img:'lv20_speed',   last:'暁星',lastKana:'ぎょうせい', first:'ゆうき',  stats:{meet:'B',power:'E',speed:'A',arm:'B',defense:'B'}, quote:'誰よりも速く、誰よりも遠くへ！' },
+  { id:'lv20_defense', rarity:'SR', pos:'infielder', img:'lv20_defense', last:'龍牙',lastKana:'りゅうが',   first:'まさき',  stats:{meet:'C',power:'E',speed:'B',arm:'A',defense:'A'}, quote:'グラウンドの全ての打球は俺のもの！' },
+  { id:'lv20_arm',     rarity:'SR', pos:'catcher',   img:'lv20_arm',     last:'焔王',lastKana:'えんおう',   first:'かずき',  stats:{meet:'B',power:'B',speed:'B',arm:'A',defense:'B'}, quote:'俺の肩はチームの最終防衛線だ！' },
+  { id:'lv20_pitcher', rarity:'SR', pos:'pitcher',   img:'lv20_pitcher', last:'銀翼',lastKana:'ぎんよく',   first:'ひかる',  stats:{meet:'D',power:'B',speed:'B',arm:'A',defense:'D'}, quote:'三振を取った瞬間が最高だ！' },
+  { id:'lv20_all',     rarity:'SR', pos:'outfielder',img:'lv20_all',     last:'黒雷',lastKana:'こくらい',   first:'たつき',  stats:{meet:'A',power:'B',speed:'A',arm:'B',defense:'A'}, quote:'万能こそ最強！どのポジションでも任せろ！' },
+  { id:'lv25_meet',    rarity:'SR', pos:'infielder', img:'lv25_meet',    last:'蒼天',lastKana:'そうてん',   first:'ゆうま',  stats:{meet:'S',power:'C',speed:'A',arm:'B',defense:'A'}, quote:'フルカウントからでも必ず当てる！' },
+  { id:'lv25_speed',   rarity:'SR', pos:'outfielder',img:'lv25_speed',   last:'神速',lastKana:'しんそく',   first:'しゅん',  stats:{meet:'A',power:'D',speed:'S',arm:'A',defense:'A'}, quote:'俺の足は最強の武器だ！' },
+  { id:'lv25_defense', rarity:'SR', pos:'infielder', img:'lv25_defense', last:'天剣',lastKana:'てんけん',   first:'こうすけ',stats:{meet:'B',power:'D',speed:'A',arm:'A',defense:'S'}, quote:'鉄壁の守りでチームを支える！' },
+  { id:'lv25_arm',     rarity:'SR', pos:'catcher',   img:'lv25_arm',     last:'嵐龍',lastKana:'らんりゅう', first:'りん',    stats:{meet:'A',power:'A',speed:'B',arm:'S',defense:'B'}, quote:'遠投百メートルは朝飯前！' },
+  { id:'lv25_pitcher', rarity:'SR', pos:'pitcher',   img:'lv25_pitcher', last:'白鷹',lastKana:'はくたか',   first:'はく',    stats:{meet:'C',power:'A',speed:'A',arm:'S',defense:'C'}, quote:'マウンドは俺の城！' },
+  { id:'lv25_all',     rarity:'SR', pos:'outfielder',img:'lv25_all',     last:'翠嵐',lastKana:'すいらん',   first:'いく',    stats:{meet:'A',power:'A',speed:'B',arm:'B',defense:'B'}, quote:'苦手なプレーなんて一つもない！' },
+  // 新規 SR 投手 (p047-p048)
+  { id:'p047', rarity:'SR', pos:'pitcher',   img:'lv20_pitcher', last:'嵐山',lastKana:'あらしやま',first:'つばさ',    stats:{meet:'D',power:'B',speed:'B',arm:'S',defense:'D'}, quote:'ストライクゾーンを支配する！' },
+  { id:'p048', rarity:'SR', pos:'pitcher',   img:'lv25_pitcher', last:'海鳴',lastKana:'うみなり', first:'りゅうの',  stats:{meet:'C',power:'A',speed:'A',arm:'S',defense:'C'}, quote:'三振を取った瞬間が最高だ！' },
+  // 新規 SR 内野手 (p049-p050)
+  { id:'p049', rarity:'SR', pos:'infielder', img:'lv20_meet',    last:'黄金',lastKana:'こがね',   first:'たける',    stats:{meet:'S',power:'C',speed:'A',arm:'B',defense:'A'}, quote:'コンタクト率なら誰にも負けない！' },
+  { id:'p050', rarity:'SR', pos:'infielder', img:'lv25_defense', last:'月影',lastKana:'つきかげ', first:'ゆいと',    stats:{meet:'B',power:'D',speed:'A',arm:'A',defense:'S'}, quote:'グラウンドの全ての打球は俺のもの！' },
+  // 新規 SR 捕手 (p051)
+  { id:'p051', rarity:'SR', pos:'catcher',   img:'lv25_arm',     last:'銅鏡',lastKana:'どうきょう',first:'いさむ',    stats:{meet:'A',power:'A',speed:'B',arm:'S',defense:'B'}, quote:'強肩で走者を釘付けにする！' },
+  // 新規 SR 外野手 (p052)
+  { id:'p052', rarity:'SR', pos:'outfielder',img:'lv20_all',     last:'虹彩',lastKana:'こうさい', first:'あかね',    stats:{meet:'A',power:'A',speed:'B',arm:'B',defense:'B'}, quote:'万能こそ最強！どのポジションでも任せろ！' },
+
+  // ─────────── SSR (8名) ───────────
+  // 既存6名 (lv30)
+  { id:'lv30_meet',    rarity:'SSR', pos:'infielder', img:'lv30_meet',    last:'黒鉄',lastKana:'くろがね',   first:'なおき',  stats:{meet:'S',power:'B',speed:'B',arm:'C',defense:'B'}, quote:'フルカウントからでも必ず当てる！' },
+  { id:'lv30_speed',   rarity:'SSR', pos:'outfielder',img:'lv30_speed',   last:'鉄城',lastKana:'てつじょう', first:'ゆうせい',stats:{meet:'B',power:'C',speed:'S',arm:'B',defense:'A'}, quote:'誰よりも速く、誰よりも遠くへ！' },
+  { id:'lv30_defense', rarity:'SSR', pos:'infielder', img:'lv30_defense', last:'剛雷',lastKana:'ごうらい',   first:'かんた',  stats:{meet:'C',power:'C',speed:'A',arm:'A',defense:'S'}, quote:'グラウンドの全ての打球は俺のもの！' },
+  { id:'lv30_arm',     rarity:'SSR', pos:'catcher',   img:'lv30_arm',     last:'霊峰',lastKana:'れいほう',   first:'たいが',  stats:{meet:'B',power:'A',speed:'B',arm:'S',defense:'B'}, quote:'俺の肩はチームの最終防衛線だ！' },
+  { id:'lv30_pitcher', rarity:'SSR', pos:'pitcher',   img:'lv30_pitcher', last:'天嵐',lastKana:'てんらん',   first:'あつき',  stats:{meet:'D',power:'A',speed:'B',arm:'S',defense:'D'}, quote:'マウンドは俺の城！' },
+  { id:'lv30_all',     rarity:'SSR', pos:'outfielder',img:'lv30_all',     last:'竜翼',lastKana:'りゅうよく', first:'えいと',  stats:{meet:'A',power:'A',speed:'A',arm:'B',defense:'A'}, quote:'万能こそ最強！どのポジションでも任せろ！' },
+  // 新規 SSR (p053-p054)
+  { id:'p053', rarity:'SSR', pos:'pitcher',   img:'lv30_pitcher', last:'雷神',lastKana:'らいじん', first:'こうき',    stats:{meet:'E',power:'A',speed:'A',arm:'S',defense:'E'}, quote:'ストライクゾーンを支配する！' },
+  { id:'p054', rarity:'SSR', pos:'infielder', img:'lv30_meet',    last:'鋼鉄',lastKana:'はがね',   first:'まきと',    stats:{meet:'S',power:'B',speed:'B',arm:'B',defense:'A'}, quote:'フルカウントからでも必ず当てる！' },
+
+  // ─────────── UR (6名) ───────────
+  // 既存6名 (lv50)
+  { id:'lv50_meet',    rarity:'UR', pos:'infielder', img:'lv50_meet',    last:'碧空',lastKana:'へきくう',   first:'しょうた',stats:{meet:'S',power:'B',speed:'A',arm:'B',defense:'A'}, quote:'フルカウントからでも必ず当てる！' },
+  { id:'lv50_speed',   rarity:'UR', pos:'outfielder',img:'lv50_speed',   last:'鳳凰',lastKana:'ほうおう',   first:'こうき',  stats:{meet:'A',power:'B',speed:'S',arm:'A',defense:'A'}, quote:'誰よりも速く、誰よりも遠くへ！' },
+  { id:'lv50_defense', rarity:'UR', pos:'infielder', img:'lv50_defense', last:'七星',lastKana:'しちせい',   first:'しょうへい',stats:{meet:'A',power:'B',speed:'A',arm:'A',defense:'S'}, quote:'グラウンドの全ての打球は俺のもの！' },
+  { id:'lv50_arm',     rarity:'UR', pos:'catcher',   img:'lv50_arm',     last:'麒麟',lastKana:'きりん',     first:'りょうた',stats:{meet:'A',power:'A',speed:'B',arm:'S',defense:'A'}, quote:'俺の肩はチームの最終防衛線だ！' },
+  { id:'lv50_pitcher', rarity:'UR', pos:'pitcher',   img:'lv50_pitcher', last:'極楽',lastKana:'ごくらく',   first:'けいと',  stats:{meet:'C',power:'A',speed:'A',arm:'S',defense:'C'}, quote:'三振を取った瞬間が最高だ！' },
+  { id:'lv50_all',     rarity:'UR', pos:'outfielder',img:'lv50_all',     last:'天翔',lastKana:'あまかけ',   first:'あおと',  stats:{meet:'A',power:'A',speed:'A',arm:'A',defense:'A'}, quote:'苦手なプレーなんて一つもない！' },
+];
+
+function getPlayerById(id) {
+  return PLAYERS.find(p => p.id === id) || null;
+}
+
 // カードキーを返す（例: "lv01_meet"）
 function cardKey(lv, typeId) {
   return `lv${String(lv).padStart(2,'0')}_${typeId}`;
@@ -2023,7 +2169,8 @@ function rankIdx(r) { return STAT_RANKS.indexOf(r); }
 
 // 1枚のカードのアップグレード消費ポイントを計算
 function calcUpgradeSpend(key, cardUpgrades) {
-  const base    = CARD_BASE_STATS[key];
+  const player  = getPlayerById(key);
+  const base    = CARD_BASE_STATS[key] || (player && player.stats);
   const current = (cardUpgrades || {})[key];
   if (!base || !current) return 0;
   let spend = 0;
@@ -4334,9 +4481,12 @@ function App() {
     checkAndAwardBadges(newData);
   }
 
+  function isPlayerOwned(playerId) {
+    return (data.ownedCards || []).includes(playerId);
+  }
+  // 後方互換（バッジ条件等で引き続き使用）
   function isCardOwned(lv, typeId) {
-    const key = cardKey(lv, typeId);
-    return (data.ownedCards || []).includes(key);
+    return isPlayerOwned(cardKey(lv, typeId));
   }
   function handleBuyCard(lv, typeId) {
     const cost = CARD_PURCHASE_COSTS[lv] || 0;
@@ -4375,19 +4525,19 @@ function App() {
     }));
     setScoutResults(resultsWithNew);
   }
-  function handleUpgradeStat(lv, typeId, stat) {
-    const key = cardKey(lv, typeId);
-    const base = CARD_BASE_STATS[key];
+  function handleUpgradeStat(playerId, stat) {
+    const player = getPlayerById(playerId);
+    const base = CARD_BASE_STATS[playerId] || (player && player.stats);
     if (!base) return;
     const upgrades = data.cardUpgrades || {};
-    const current = upgrades[key] || { ...base };
+    const current = upgrades[playerId] || { ...base };
     const curRankIdx = rankIdx(current[stat]);
     if (curRankIdx >= STAT_RANKS.length - 1) return; // already S
     const cost = UPGRADE_COSTS[curRankIdx];
     if (availablePoints < cost) return;
     const newStat = STAT_RANKS[curRankIdx + 1];
     const newCurrent = { ...current, [stat]: newStat };
-    const newUpgrades = { ...upgrades, [key]: newCurrent };
+    const newUpgrades = { ...upgrades, [playerId]: newCurrent };
     checkAndAwardBadges({ ...data, cardUpgrades: newUpgrades });
     playSound('upgrade.mp3');
   }
@@ -4640,13 +4790,13 @@ function App() {
       {/* メインコンテンツ */}
       <main className={`main${tab === 'home' ? ' main-home' : ''}`}>
         <div className="content">
-          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} onNavigateToShop={() => { setCollectionView('scout'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} records={data.records || {}} />}
+          {tab === 'home' && <HomeTab today={today} streak={data.streak} stampedToday={stampedToday} availablePoints={availablePoints} todayPoints={todayPoints} nextBadge={nextBadge} canStampToday={canStampToday} totalPracticed={totalPracticed} threshold={threshold} profileLevel={profileLevel} profileTitle={profileTitle} profileProgress={profileProgress} ownedCards={data.ownedCards || []} onNavigate={setTab} onNavigateToCard={(playerId) => { setPendingCardDetail({ playerId }); setTab('collection'); }} onReset={handleReset} soundOn={soundOn} playerName={playerName} dailyTargets={dailyTargets} onSoundToggle={handleSoundToggle} onNameSave={handleNameSave} onTargetsChange={handleTargetsChange} todayRec={todayRec} openModal={openModal} unclaimedBadgeCount={unclaimedBadgeCount} onNavigateToShop={() => { setCollectionView('scout'); setTab('collection'); }} onNavigateToMyCards={() => { setCollectionView('mycards'); setTab('collection'); }} cardUpgrades={data.cardUpgrades || {}} records={data.records || {}} />}
           {tab === 'practice' && <PracticeTab today={today} todayRec={todayRec} openModal={openModal} totalPracticed={totalPracticed} threshold={threshold} canStampToday={canStampToday} stampedToday={stampedToday} onGoToStamp={() => setTab('stamp')} todayPoints={todayPoints} streak={data.streak} stamps={data.stamps} availablePoints={availablePoints} nextBadge={nextBadge} dailyTargets={dailyTargets} />}
           {tab === 'quiz' && <QuizTab onQuizComplete={handleQuizComplete} onHomeworkComplete={handleHomeworkComplete} todayQuizBonus={todayQuizBonus} todayKisoBonus={todayKisoBonus} quizDone={data.quizDone || {}} homeworkBonus={data.homeworkBonus || {}} today={today} kisoProgress={data.kisoProgress||{}} kisoBonusLog={data.kisoBonusLog||{}} onKisoComplete={handleKisoComplete} profileLevel={profileLevel} onKisoEnter={() => {}} onViewStateChange={setKisoViewState} />}
           {tab === 'stamp' && <StampTab data={data} today={today} threshold={threshold} goalReached={goalReached} canStampToday={canStampToday} onPressHanko={handlePressHanko} />}
-          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isCardOwned={isCardOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} onScout={handleScout} scoutResults={scoutResults} onClearScoutResults={() => setScoutResults(null)} />}
+          {tab === 'collection' && <CollectionTab totalEarnedPoints={totalEarnedPoints} availablePoints={availablePoints} isPlayerOwned={isPlayerOwned} onBuyCard={handleBuyCard} cardUpgrades={data.cardUpgrades || {}} onUpgradeStat={handleUpgradeStat} pendingCardDetail={pendingCardDetail} onClearPendingCard={() => setPendingCardDetail(null)} today={today} profileLevel={profileLevel} stampDays={_stampDays} initialView={collectionView} onScout={handleScout} scoutResults={scoutResults} onClearScoutResults={() => setScoutResults(null)} />}
           {tab === 'badge' && <BadgeTab badges={BADGES} data={data} earnedBadges={earnedBadges} claimedBadges={claimedBadges} badgeBonusPoints={badgeBonusPoints} onClaim={handleClaimBadge} today={today} />}
-          {tab === 'profile' && <ProfileTab data={data} streak={data.streak} totalStats={data.totalStats} onNavigateToCard={(lv, typeId) => { setPendingCardDetail({ lv, typeId }); setTab('collection'); }} />}
+          {tab === 'profile' && <ProfileTab data={data} streak={data.streak} totalStats={data.totalStats} onNavigateToCard={(playerId) => { setPendingCardDetail({ playerId }); setTab('collection'); }} />}
         </div>
       </main>
     </div>
@@ -5408,33 +5558,33 @@ function HomeTab({ today, streak, stampedToday, availablePoints, todayPoints, ne
             {/* 中央カード情報パネル（名前＋能力値） */}
             {(() => {
               const key = cards[safeIdx];
-              const cname = getCardName(key);
-              const base = CARD_BASE_STATS[key] || {};
+              const player = getPlayerById(key);
+              const base = CARD_BASE_STATS[key] || (player && player.stats) || {};
               const stats = (cardUpgrades||{})[key] || base;
-              const km = key.match(/^lv(\d+)_(.+)$/);
-              const lv = km ? parseInt(km[1]) : 1;
-              const typeId = km ? km[2] : '';
-              const typeInfo = CARD_TYPES.find(t => t.id === typeId) || {};
+              const posInfo = player ? (POSITION_CONFIG[player.pos] || {}) : {};
+              const rc = player ? (RARITY_CONFIG[player.rarity] || {}) : {};
               return (
                 <div style={{
                   background:'white', borderRadius:12, margin:'5px 24px 0',
                   padding:'7px 12px 8px',
                   boxShadow:'0 2px 8px rgba(0,0,0,0.1)',
-                  border:`1.5px solid ${typeInfo.color||'#ddd'}`,
+                  border:`1.5px solid ${posInfo.color||'#ddd'}`,
                 }}>
                   {/* 名前行 */}
                   <div style={{display:'flex', alignItems:'baseline', gap:5, marginBottom:5}}>
-                    {cname
+                    {player
                       ? <>
-                          <ruby style={{fontSize:14, fontWeight:900, color:typeInfo.color||'#333', letterSpacing:0.5}}>
-                            {cname.last}
-                            <rt style={{fontSize:9, fontWeight:400}}>{cname.lastKana}</rt>
+                          <ruby style={{fontSize:14, fontWeight:900, color:posInfo.color||'#333', letterSpacing:0.5}}>
+                            {player.last}
+                            <rt style={{fontSize:9, fontWeight:400}}>{player.lastKana}</rt>
                           </ruby>
-                          <span style={{fontSize:12, fontWeight:800, color:'#555'}}>{cname.first}</span>
+                          <span style={{fontSize:12, fontWeight:800, color:'#555'}}>{player.first}</span>
                         </>
-                      : <span style={{fontSize:12, fontWeight:800, color:'#555'}}>{typeInfo.label}</span>
+                      : <span style={{fontSize:12, fontWeight:800, color:'#555'}}>{key}</span>
                     }
-                    <span style={{marginLeft:'auto', fontSize:10, color:typeInfo.color||'#888', fontWeight:700}}>{typeInfo.emoji} Lv.{lv}</span>
+                    <span style={{marginLeft:'auto', fontSize:10, color:posInfo.color||'#888', fontWeight:700}}>
+                      {posInfo.emoji} <span className={`rarity-badge rarity-badge-${player?.rarity||'N'}`} style={{fontSize:8, padding:'1px 4px', verticalAlign:'middle'}}>{player?.rarity}</span>
+                    </span>
                   </div>
                   {/* 能力値5つ */}
                   <div style={{display:'flex', justifyContent:'space-between'}}>
@@ -6038,12 +6188,12 @@ function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStat
   );
 }
 
-// カード詳細モーダル
-function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoints, onUpgrade, onClose }) {
-  const rarity  = getRarity(lv);
+// カード詳細モーダル（player オブジェクトを受け取る）
+function CardDetailModal({ player, currentStats, baseStats, availablePoints, onUpgrade, onClose }) {
+  const rarity  = player.rarity;
   const rc      = RARITY_CONFIG[rarity];
-  const imgFile = `images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`;
-  const cname   = getCardName(cardKey(lv, typeInfo.id));
+  const posInfo = POSITION_CONFIG[player.pos] || {};
+  const imgFile = `images/card_${player.img}.png`;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -6051,53 +6201,44 @@ function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoint
         style={{maxWidth:440, width:'92%', padding:0, overflow:'hidden', borderRadius:18}}>
 
         {/* ヘッダー */}
-        <div style={{background: typeInfo.headerBg, color: typeInfo.headerColor, padding:'12px 18px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <div style={{background: posInfo.headerBg||'#333', color: posInfo.headerColor||'#fff', padding:'12px 18px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <div>
             <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
               <span className={`rarity-badge rarity-badge-${rarity}`}>{rarity}</span>
-              <span style={{fontWeight:'bold', fontSize:15}}>{typeInfo.emoji} {typeInfo.label}</span>
+              <span style={{fontWeight:'bold', fontSize:15}}>{posInfo.emoji} {posInfo.label}</span>
             </div>
             {/* 選手名 */}
-            {cname && (
-              <div style={{display:'flex', alignItems:'baseline', gap:8}}>
-                <ruby style={{fontSize:20, fontWeight:900, color:'white', lineHeight:1.1, letterSpacing:1}}>
-                  {cname.last}
-                  <rt style={{fontSize:10, fontWeight:400, letterSpacing:0.5}}>{cname.lastKana}</rt>
-                </ruby>
-                <span style={{fontSize:15, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{cname.first}</span>
-              </div>
-            )}
+            <div style={{display:'flex', alignItems:'baseline', gap:8}}>
+              <ruby style={{fontSize:20, fontWeight:900, color:'white', lineHeight:1.1, letterSpacing:1}}>
+                {player.last}
+                <rt style={{fontSize:10, fontWeight:400, letterSpacing:0.5}}>{player.lastKana}</rt>
+              </ruby>
+              <span style={{fontSize:15, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{player.first}</span>
+            </div>
           </div>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.25)', border:'none', color:'white', borderRadius:8, padding:'6px 12px', cursor:'pointer', fontSize:18, lineHeight:1}}>✕</button>
         </div>
 
         {/* キャラクターセリフ */}
-        {(() => {
-          const quote = getCardQuote(lv, typeInfo.id);
-          return (
-            <div style={{
-              background:'linear-gradient(135deg,#1a237e,#283593)',
-              padding:'10px 14px',
-              display:'flex', alignItems:'flex-start', gap:10,
-            }}>
-              <div style={{fontSize:24, flexShrink:0}}>💬</div>
-              <div>
-                {cname && (
-                  <div style={{fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:700, marginBottom:3}}>
-                    {cname.last} {cname.first}
-                  </div>
-                )}
-                <div style={{fontSize:13, color:'white', fontWeight:700, lineHeight:1.5}}>
-                  「{quote}」
-                </div>
-              </div>
+        <div style={{
+          background:'linear-gradient(135deg,#1a237e,#283593)',
+          padding:'10px 14px',
+          display:'flex', alignItems:'flex-start', gap:10,
+        }}>
+          <div style={{fontSize:24, flexShrink:0}}>💬</div>
+          <div>
+            <div style={{fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:700, marginBottom:3}}>
+              {player.last} {player.first}
             </div>
-          );
-        })()}
+            <div style={{fontSize:13, color:'white', fontWeight:700, lineHeight:1.5}}>
+              「{player.quote}」
+            </div>
+          </div>
+        </div>
 
         {/* 画像 + 残りポイント */}
         <div style={{background:'#f8f9ff', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 18px', gap:12}}>
-          <img src={imgFile} alt={typeInfo.label} style={{width:90, height:90, borderRadius:8, objectFit:'contain', flexShrink:0}} />
+          <img src={imgFile} alt={posInfo.label} style={{width:90, height:90, borderRadius:8, objectFit:'contain', flexShrink:0}} />
           <div style={{flex:1, textAlign:'right'}}>
             <div style={{fontSize:11, color:'#888', marginBottom:2}}>残りポイント</div>
             <div style={{fontSize:26, fontWeight:900, color:'#1565c0', lineHeight:1}}>{availablePoints}<span style={{fontSize:14, fontWeight:'normal', color:'#555'}}> pt</span></div>
@@ -6177,12 +6318,11 @@ function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoint
   );
 }
 
-function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays, initialView, onScout, scoutResults, onClearScoutResults }) {
-  const totalCards = CARD_LEVELS.length * CARD_TYPES.length;
-  const ownedCount = CARD_LEVELS.reduce((sum, lv) =>
-    sum + CARD_TYPES.filter(t => isCardOwned(lv, t.id)).length, 0);
-  const [zukanOpenLevels, setZukanOpenLevels] = React.useState(new Set());
-  const [detailCard, setDetailCard] = React.useState(null); // { lv, typeInfo }
+function CollectionTab({ totalEarnedPoints, availablePoints, isPlayerOwned, onBuyCard, cardUpgrades, onUpgradeStat, pendingCardDetail, onClearPendingCard, today, profileLevel, stampDays, initialView, onScout, scoutResults, onClearScoutResults }) {
+  const totalCards = PLAYERS.length;
+  const ownedCount = PLAYERS.filter(p => isPlayerOwned(p.id)).length;
+  const [zukanOpenRarities, setZukanOpenRarities] = React.useState(new Set());
+  const [detailCard, setDetailCard] = React.useState(null); // player object
   const [activeView, setActiveView] = React.useState(initialView || 'scout');
   const [scoutFlipped, setScoutFlipped] = React.useState([]);
   const [showScoutResults, setShowScoutResults] = React.useState(false);
@@ -6193,11 +6333,10 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
   // プロフィールタブから特定カードへのジャンプ
   React.useEffect(() => {
     if (!pendingCardDetail) return;
-    const { lv, typeId } = pendingCardDetail;
-    const typeInfo = CARD_TYPES.find(t => t.id === typeId);
-    if (typeInfo && isCardOwned(lv, typeId)) {
-      setOpenLevels(prev => new Set([...prev, lv]));
-      setDetailCard({ lv, typeInfo });
+    const { playerId } = pendingCardDetail;
+    const player = getPlayerById(playerId);
+    if (player && isPlayerOwned(player.id)) {
+      setDetailCard(player);
     }
     onClearPendingCard();
   }, [pendingCardDetail]);
@@ -6273,15 +6412,10 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
 
       {/* ─── マイカードビュー ─── */}
       {activeView === 'mycards' && (() => {
-        // 所持カードをレアリティグループ別に表示（UR→N順）
+        // 所持選手をレアリティグループ別に表示（UR→N順）
         const rarityOrder = ['UR','SSR','SR','R','N'];
         const ownedGroups = rarityOrder.map(rar => {
-          const cards = [];
-          RARITY_CONFIG[rar].levels.forEach(lv => {
-            CARD_TYPES.forEach(t => {
-              if (isCardOwned(lv, t.id)) cards.push({ lv, typeInfo: t });
-            });
-          });
+          const cards = PLAYERS.filter(p => p.rarity === rar && isPlayerOwned(p.id));
           return { rarity: rar, cards };
         }).filter(g => g.cards.length > 0);
 
@@ -6323,44 +6457,38 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                   </div>
                   {/* カードグリッド */}
                   <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12}}>
-                    {cards.map(({ lv, typeInfo }) => {
-                      const key = cardKey(lv, typeInfo.id);
-                      const base = CARD_BASE_STATS[key] || {};
-                      const stats = cardUpgrades[key] || base;
-                      const cname = getCardName(key);
+                    {cards.map(player => {
+                      const base = CARD_BASE_STATS[player.id] || player.stats;
+                      const stats = cardUpgrades[player.id] || base;
+                      const posInfo = POSITION_CONFIG[player.pos] || {};
                       return (
-                        <div key={key}
+                        <div key={player.id}
                           className={`rarity-${rarity}`}
                           style={{borderRadius:14, overflow:'hidden', cursor:'pointer', background:'white'}}
-                          onClick={() => { playSound('menu_select.mp3', 0.35); setDetailCard({ lv, typeInfo }); }}
+                          onClick={() => { playSound('menu_select.mp3', 0.35); setDetailCard(player); }}
                         >
                           {/* レアリティバーヘッダー */}
                           <div style={{padding:'3px 8px', background:rc.bg, display:'flex', alignItems:'center', gap:6}}>
                             <span className={`rarity-badge rarity-badge-${rarity}`} style={{fontSize:9, padding:'1px 5px'}}>{rarity}</span>
-                            <span style={{fontSize:9, color:rc.textColor, fontWeight:700}}>{typeInfo.emoji} {typeInfo.label}</span>
+                            <span style={{fontSize:9, color:rc.textColor, fontWeight:700}}>{posInfo.emoji} {posInfo.label}</span>
                           </div>
                           {/* カード画像 */}
                           <div style={{width:'100%', aspectRatio:'3/4', background:'#f5f5f5'}}>
                             <img
-                              src={`images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`}
-                              alt={typeInfo.label}
+                              src={`images/card_${player.img}.png`}
+                              alt={posInfo.label}
                               style={{width:'100%', height:'100%', objectFit:'cover'}}
                               onError={e => { e.target.style.display='none'; }}
                             />
                           </div>
                           {/* フッター（選手名） */}
-                          <div style={{padding:'6px 10px 5px', background:typeInfo.headerBg}}>
-                            {cname
-                              ? <div style={{display:'flex', alignItems:'baseline', gap:4}}>
-                                  <ruby style={{fontSize:12, fontWeight:900, color:'white'}}>
-                                    {cname.last}<rt style={{fontSize:7}}>{cname.lastKana}</rt>
-                                  </ruby>
-                                  <span style={{fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{cname.first}</span>
-                                </div>
-                              : <div style={{color:'rgba(255,255,255,0.8)', fontSize:10, fontWeight:700}}>
-                                  {typeInfo.emoji} {typeInfo.label}
-                                </div>
-                            }
+                          <div style={{padding:'6px 10px 5px', background:posInfo.headerBg||'#333'}}>
+                            <div style={{display:'flex', alignItems:'baseline', gap:4}}>
+                              <ruby style={{fontSize:12, fontWeight:900, color:'white'}}>
+                                {player.last}<rt style={{fontSize:7}}>{player.lastKana}</rt>
+                              </ruby>
+                              <span style={{fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{player.first}</span>
+                            </div>
                           </div>
                           {/* 能力値ストリップ */}
                           <div style={{padding:'5px 8px 6px', background:'white', display:'flex', justifyContent:'space-between'}}>
@@ -6404,10 +6532,10 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
           }}>
             {scoutResults.map((r, i) => {
               const flipped = scoutFlipped.includes(i);
-              const imgFile = `images/card_lv${String(r.lv).padStart(2,'0')}_${r.typeInfo.id}.png`;
-              const rarity = r.rarity || getRarity(r.lv);
+              const imgFile = `images/card_${r.img}.png`;
+              const rarity = r.rarity;
               const rc = RARITY_CONFIG[rarity];
-              const cname = getCardName(r.key);
+              const posInfo = POSITION_CONFIG[r.pos] || {};
               return (
                 <div key={i} className="scout-result-card" style={{
                   animationDelay: `${i * 0.1}s`,
@@ -6431,18 +6559,18 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                           padding:'4px 6px', background: rc.bg,
                         }}>
                           <span className={`rarity-badge rarity-badge-${rarity}`}>{rarity}</span>
-                          <span style={{fontSize:10, color:rc.textColor, fontWeight:700}}>{r.typeInfo.emoji} {r.typeInfo.label}</span>
+                          <span style={{fontSize:10, color:rc.textColor, fontWeight:700}}>{posInfo.emoji} {posInfo.label}</span>
                         </div>
                         <div style={{flex:1, background:'#f5f5f5'}}>
                           <img src={imgFile} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}}
                             onError={e => { e.target.style.display='none'; }} />
                         </div>
                         <div style={{
-                          padding:'4px 6px', background:r.typeInfo.headerBg,
+                          padding:'4px 6px', background:posInfo.headerBg||'#333',
                           fontSize: scoutResults.length === 1 ? 12 : 9,
                           fontWeight:800, color:'white', textAlign:'center',
                         }}>
-                          {cname ? `${cname.last} ${cname.first}` : `Lv.${r.lv} ${r.typeInfo.label}`}
+                          {`${r.last} ${r.first}`}
                         </div>
                       </>
                     ) : (
@@ -6481,11 +6609,11 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
               <div style={{display:'flex', alignItems:'center', gap:8}}>
                 <span className={`rarity-badge rarity-badge-${r}`}>{rc.label}</span>
                 <span style={{fontSize:11, color:'#777'}}>
-                  {r === 'N'   && 'Lv.1・Lv.5'}
-                  {r === 'R'   && 'Lv.10・Lv.15'}
-                  {r === 'SR'  && 'Lv.20・Lv.25'}
-                  {r === 'SSR' && 'Lv.30'}
-                  {r === 'UR'  && 'Lv.50 ✨'}
+                  {r === 'N'   && `${PLAYERS.filter(p=>p.rarity==='N').length}名`}
+                  {r === 'R'   && `${PLAYERS.filter(p=>p.rarity==='R').length}名`}
+                  {r === 'SR'  && `${PLAYERS.filter(p=>p.rarity==='SR').length}名`}
+                  {r === 'SSR' && `${PLAYERS.filter(p=>p.rarity==='SSR').length}名`}
+                  {r === 'UR'  && `${PLAYERS.filter(p=>p.rarity==='UR').length}名 ✨`}
                 </span>
               </div>
               <span style={{fontSize:13, fontWeight:900, color:rc.color}}>{rc.prob}%</span>
@@ -6544,93 +6672,99 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
 
     {/* ─── カード詳細モーダル（全ビュー共通）─── */}
     {detailCard && (() => {
-      const { lv, typeInfo } = detailCard;
-      const key = cardKey(lv, typeInfo.id);
-      const base = CARD_BASE_STATS[key] || {};
-      const currentStats = (cardUpgrades[key]) || base;
+      const player = detailCard; // player object
+      const base = CARD_BASE_STATS[player.id] || player.stats || {};
+      const currentStats = (cardUpgrades[player.id]) || base;
       return (
         <CardDetailModal
-          lv={lv}
-          typeInfo={typeInfo}
+          player={player}
           currentStats={currentStats}
           baseStats={base}
           availablePoints={availablePoints}
-          onUpgrade={stat => { onUpgradeStat(lv, typeInfo.id, stat); }}
+          onUpgrade={stat => { onUpgradeStat(player.id, stat); }}
           onClose={() => setDetailCard(null)}
         />
       );
     })()}
 
-    {/* ─── 図鑑ビュー ─── */}
+    {/* ─── 図鑑ビュー（レアリティ別）─── */}
     {activeView === 'zukan' && <>
       <div style={{marginBottom:12, padding:'10px 14px', background:'linear-gradient(135deg,#1a237e,#283593)', borderRadius:14, color:'white'}}>
         <div style={{fontWeight:900, fontSize:14, marginBottom:2}}>📖 図鑑</div>
         <div style={{fontSize:12, opacity:0.85}}>
           <span style={{fontWeight:800, fontSize:18}}>{ownedCount}</span>
-          <span style={{opacity:0.7}}>/{totalCards}枚</span>
+          <span style={{opacity:0.7}}>/{totalCards}名</span>
           <span style={{marginLeft:10, opacity:0.7}}>コンプリートを目指そう！</span>
         </div>
         <div style={{marginTop:6, height:6, background:'rgba(255,255,255,0.2)', borderRadius:99, overflow:'hidden'}}>
           <div style={{height:'100%', width:`${Math.round(ownedCount/totalCards*100)}%`, background:'linear-gradient(90deg,#ffd54f,#ff9800)', borderRadius:99, transition:'width 0.5s'}} />
         </div>
       </div>
-      {CARD_LEVELS.map(lv => {
-        const lvInfo = getLevelInfo(lv);
-        const open = zukanOpenLevels.has(lv);
-        const owned = CARD_TYPES.filter(t => isCardOwned(lv, t.id));
+      {['UR','SSR','SR','R','N'].map(rar => {
+        const rc = RARITY_CONFIG[rar];
+        const open = zukanOpenRarities.has(rar);
+        const rarPlayers = PLAYERS.filter(p => p.rarity === rar);
+        const ownedInRar = rarPlayers.filter(p => isPlayerOwned(p.id)).length;
+        const rarLabel = { N:'ノーマル', R:'レア', SR:'スーパーレア', SSR:'スペシャルスーパーレア', UR:'ウルトラレア ✨' }[rar];
         return (
-          <div key={lv} style={{marginBottom:8}}>
+          <div key={rar} style={{marginBottom:8}}>
             <div
-              onClick={() => setZukanOpenLevels(prev => { const n = new Set(prev); n.has(lv) ? n.delete(lv) : n.add(lv); return n; })}
+              onClick={() => setZukanOpenRarities(prev => { const n = new Set(prev); n.has(rar) ? n.delete(rar) : n.add(rar); return n; })}
               style={{
                 display:'flex', alignItems:'center', justifyContent:'space-between',
                 padding:'8px 14px', borderRadius:12, cursor:'pointer',
-                background: lvInfo.bg, color: lvInfo.color,
-                border: `2px solid ${lvInfo.color}`,
+                background: rc.bg, border: `2px solid ${rc.color}`,
               }}
             >
-              <span style={{fontWeight:900, fontSize:13, textShadow:'0 1px 3px rgba(0,0,0,0.4)'}}>
-                Lv.{lv} {renderLvStars(lv,'sm')} {lvInfo.label}
-              </span>
-              <span style={{fontSize:12, fontWeight:700, opacity:0.9}}>
-                {owned.length}/{CARD_TYPES.length}枚 {open ? '▲' : '▼'}
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <span className={`rarity-badge rarity-badge-${rar}`}>{rar}</span>
+                <span style={{fontWeight:900, fontSize:13, color:rc.textColor}}>{rarLabel}</span>
+              </div>
+              <span style={{fontSize:12, fontWeight:700, color:rc.textColor, opacity:0.9}}>
+                {ownedInRar}/{rarPlayers.length}名 {open ? '▲' : '▼'}
               </span>
             </div>
             {open && (
-              <div className="level-cards-row" style={{paddingTop:8}}>
-                {CARD_TYPES.map(typeInfo => {
-                  const key2 = cardKey(lv, typeInfo.id);
-                  const isOwned = isCardOwned(lv, typeInfo.id);
-                  const imgFile = `images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`;
-                  const cname = getCardName(key2);
+              <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, paddingTop:8}}>
+                {rarPlayers.map(player => {
+                  const isOwned = isPlayerOwned(player.id);
+                  const posInfo = POSITION_CONFIG[player.pos] || {};
                   return (
-                    <div key={typeInfo.id} className={`pcard ${getCardBorderClass(lv)} zukan-card-wrap`}>
-                      <div className="pcard-header" style={{background: typeInfo.headerBg, color: typeInfo.headerColor, fontSize:10}}>
-                        <span>{typeInfo.emoji} {typeInfo.label}</span>
-                        {isOwned && <span className="zukan-owned-badge">✓ 所持</span>}
+                    <div key={player.id}
+                      className={`rarity-${rar}`}
+                      style={{borderRadius:12, overflow:'hidden', background:'white', cursor: isOwned ? 'pointer' : 'default', opacity: isOwned ? 1 : 0.85}}
+                      onClick={() => isOwned && setDetailCard(player)}
+                    >
+                      {/* ポジションヘッダー */}
+                      <div style={{padding:'2px 6px', background: isOwned ? posInfo.headerBg||'#333' : '#bbb', display:'flex', alignItems:'center', justifyContent:'space-between', fontSize:9, color:'white', fontWeight:700}}>
+                        <span>{posInfo.emoji} {posInfo.label}</span>
+                        {isOwned && <span style={{background:'rgba(255,255,255,0.25)', borderRadius:4, padding:'0px 4px'}}>✓</span>}
                       </div>
-                      <div className="pcard-body" style={{position:'relative'}}>
+                      {/* 画像 */}
+                      <div style={{position:'relative', aspectRatio:'3/4', background:'#f0f0f0', overflow:'hidden'}}>
                         <img
-                          className={`pcard-img${isOwned ? '' : ' zukan-silhouette'}`}
-                          src={imgFile} alt=""
+                          src={`images/card_${player.img}.png`}
+                          alt=""
+                          style={{width:'100%', height:'100%', objectFit:'cover', filter: isOwned ? 'none' : 'brightness(0.15) grayscale(1)'}}
                         />
                         {!isOwned && (
-                          <div className="zukan-question">
-                            <div className="zukan-q-mark">？</div>
-                            <div className="zukan-no-name">未取得</div>
+                          <div style={{position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2}}>
+                            <div style={{fontSize:22, color:'rgba(255,255,255,0.7)'}}>？</div>
+                            <div style={{fontSize:8, color:'rgba(255,255,255,0.5)', fontWeight:700}}>未取得</div>
                           </div>
                         )}
                       </div>
-                      <div style={{textAlign:'center', padding:'4px 4px 6px', background:'#f8f9ff', borderTop:'1px solid #eee'}}>
-                        {isOwned && cname ? (
-                          <ruby style={{fontSize:11, fontWeight:900, color:'#1a237e'}}>
-                            {cname.last}<rt style={{fontSize:8}}>{cname.lastKana}</rt>
-                          </ruby>
+                      {/* 名前フッター */}
+                      <div style={{padding:'3px 5px 4px', background:'#f8f9ff', borderTop:'1px solid #eee', textAlign:'center'}}>
+                        {isOwned ? (
+                          <>
+                            <ruby style={{fontSize:10, fontWeight:900, color:'#1a237e', lineHeight:1.3}}>
+                              {player.last}<rt style={{fontSize:7}}>{player.lastKana}</rt>
+                            </ruby>
+                            <span style={{fontSize:9, color:'#555', marginLeft:2}}>{player.first}</span>
+                          </>
                         ) : (
-                          <span style={{fontSize:11, color:'#bbb', fontWeight:700}}>？？？</span>
-                        )}
-                        {isOwned && cname && (
-                          <span style={{fontSize:10, color:'#555', marginLeft:3}}>{cname.first}</span>
+                          <span style={{fontSize:10, color:'#ccc', fontWeight:700}}>？？？</span>
                         )}
                       </div>
                     </div>
@@ -9096,44 +9230,41 @@ function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
 
       {/* 獲得選手一覧 */}
       {(() => {
+        const rarityOrder = { UR:4, SSR:3, SR:2, R:1, N:0 };
         const ownedList = (data.ownedCards || []).map(key => {
-          const m = key.match(/^lv(\d+)_(.+)$/);
-          if (!m) return null;
-          const lv = parseInt(m[1]);
-          const typeInfo = CARD_TYPES.find(t => t.id === m[2]);
-          if (!typeInfo) return null;
-          return { lv, typeInfo, key };
+          const player = getPlayerById(key);
+          return player || null;
         }).filter(Boolean).sort((a, b) =>
-          a.lv - b.lv ||
-          CARD_TYPES.findIndex(t => t.id === a.typeInfo.id) - CARD_TYPES.findIndex(t => t.id === b.typeInfo.id)
+          (rarityOrder[b.rarity]||0) - (rarityOrder[a.rarity]||0) ||
+          a.last.localeCompare(b.last)
         );
 
         return (
           <div className="owned-cards-section">
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14}}>
               <div className="section-title" style={{marginBottom:0}}>🃏 獲得選手一覧</div>
-              <span style={{fontSize:13, color:'#888'}}>{ownedList.length} 枚</span>
+              <span style={{fontSize:13, color:'#888'}}>{ownedList.length} 名</span>
             </div>
             {ownedList.length === 0 ? (
               <div className="owned-cards-empty">
                 <div className="owned-cards-empty-icon">🃏</div>
-                まだカードを獲得していません
+                まだ選手を獲得していません
               </div>
             ) : (
               <div style={{borderRadius:12, overflow:'hidden', border:'1.5px solid #e8eaf6'}}>
-                {ownedList.map(({ lv, typeInfo }, i) => {
-                  const lvInfo = getLevelInfo(lv);
+                {ownedList.map((player, i) => {
+                  const rc = RARITY_CONFIG[player.rarity] || {};
+                  const posInfo = POSITION_CONFIG[player.pos] || {};
                   const isLast = i === ownedList.length - 1;
                   return (
                     <button
-                      key={`${lv}_${typeInfo.id}`}
-                      onClick={() => onNavigateToCard(lv, typeInfo.id)}
+                      key={player.id}
+                      onClick={() => onNavigateToCard(player.id)}
                       style={{
                         display: 'flex', alignItems: 'center', width: '100%',
                         padding: '12px 16px',
                         borderBottom: isLast ? 'none' : '1px solid #f0f0f5',
                         background: 'white', border: 'none',
-                        borderBottom: isLast ? 'none' : '1px solid #f0f0f5',
                         cursor: 'pointer', textAlign: 'left',
                         transition: 'background 0.1s',
                       }}
@@ -9142,25 +9273,18 @@ function ProfileTab({ data, streak, totalStats, onNavigateToCard }) {
                       onTouchStart={e => e.currentTarget.style.background='#f5f6ff'}
                       onTouchEnd={e => e.currentTarget.style.background='white'}
                     >
-                      {/* タイプ絵文字 */}
-                      <span style={{fontSize:20, marginRight:12, flexShrink:0}}>{typeInfo.emoji}</span>
+                      {/* ポジション絵文字 */}
+                      <span style={{fontSize:20, marginRight:12, flexShrink:0}}>{posInfo.emoji}</span>
                       {/* 名称 */}
                       <span style={{flex:1, display:'flex', flexDirection:'column', gap:1}}>
-                        {(() => { const cn = getCardName(cardKey(lv, typeInfo.id)); return cn ? (
-                          <span style={{fontSize:14, fontWeight:900, color:'#1a237e'}}>
-                            <ruby>{cn.last}<rt style={{fontSize:9, fontWeight:400}}>{cn.lastKana}</rt></ruby>
-                            <span style={{marginLeft:4, fontSize:13}}>{cn.first}</span>
-                          </span>
-                        ) : null; })()}
-                        <span style={{fontSize:11, color:'#666', fontWeight:600}}>{typeInfo.label}</span>
+                        <span style={{fontSize:14, fontWeight:900, color:'#1a237e'}}>
+                          <ruby>{player.last}<rt style={{fontSize:9, fontWeight:400}}>{player.lastKana}</rt></ruby>
+                          <span style={{marginLeft:4, fontSize:13}}>{player.first}</span>
+                        </span>
+                        <span style={{fontSize:11, color:'#666', fontWeight:600}}>{posInfo.label}</span>
                       </span>
-                      {/* レベルバッジ */}
-                      <span style={{
-                        fontSize:11, fontWeight:700, padding:'2px 9px',
-                        borderRadius:10, marginRight:10, flexShrink:0,
-                        background: lvInfo.bg, color: lvInfo.color,
-                        border: `1.5px solid ${lvInfo.color}`,
-                      }}>{lvInfo.label}</span>
+                      {/* レアリティバッジ */}
+                      <span className={`rarity-badge rarity-badge-${player.rarity}`} style={{marginRight:10, flexShrink:0}}>{player.rarity}</span>
                       {/* 矢印 */}
                       <i className="fa-solid fa-chevron-right" style={{fontSize:12, color:'#ccc', flexShrink:0}} />
                     </button>
