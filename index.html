@@ -368,6 +368,40 @@
       100% { border-color: #e0e0e0; box-shadow: 0 4px 24px rgba(220,220,220,0.7); }
     }
     .pcard-locked { opacity: 0.55; filter: grayscale(0.6); }
+    /* ─── レアリティ別ボーダー ─── */
+    .rarity-N   { border: 2px solid #b0b8c1; box-shadow: 0 2px 6px rgba(150,160,170,0.2); }
+    .rarity-R   { border: 2px solid #1565c0; box-shadow: 0 3px 14px rgba(21,101,192,0.4); }
+    .rarity-SR  { border: 2px solid #c8a200; box-shadow: 0 4px 16px rgba(200,162,0,0.5); animation: srGlow 2s ease-in-out infinite; }
+    @keyframes srGlow {
+      0%,100% { border-color: #c8a200; box-shadow: 0 4px 16px rgba(200,162,0,0.4); }
+      50%     { border-color: #ffd740; box-shadow: 0 5px 24px rgba(255,215,64,0.8); }
+    }
+    .rarity-SSR { border: 2.5px solid #7b1fa2; animation: ssrGlow 2s ease-in-out infinite; }
+    @keyframes ssrGlow {
+      0%,100% { border-color: #7b1fa2; box-shadow: 0 4px 20px rgba(123,31,162,0.6), 0 0 8px rgba(206,147,216,0.4); }
+      50%     { border-color: #ce93d8; box-shadow: 0 6px 28px rgba(206,147,216,0.9), 0 0 16px rgba(123,31,162,0.6); }
+    }
+    .rarity-UR  { border: 3px solid #e53935; animation: urRainbow 2.4s linear infinite; }
+    @keyframes urRainbow {
+      0%   { border-color: #f44336; box-shadow: 0 0 16px rgba(244,67,54,0.8), 0 0 32px rgba(244,67,54,0.4); }
+      16%  { border-color: #ff9800; box-shadow: 0 0 16px rgba(255,152,0,0.8),  0 0 32px rgba(255,152,0,0.4); }
+      33%  { border-color: #ffeb3b; box-shadow: 0 0 16px rgba(255,235,59,0.8), 0 0 32px rgba(255,235,59,0.4); }
+      50%  { border-color: #4caf50; box-shadow: 0 0 16px rgba(76,175,80,0.8),  0 0 32px rgba(76,175,80,0.4); }
+      66%  { border-color: #2196f3; box-shadow: 0 0 16px rgba(33,150,243,0.8), 0 0 32px rgba(33,150,243,0.4); }
+      83%  { border-color: #9c27b0; box-shadow: 0 0 16px rgba(156,39,176,0.8), 0 0 32px rgba(156,39,176,0.4); }
+      100% { border-color: #f44336; box-shadow: 0 0 16px rgba(244,67,54,0.8), 0 0 32px rgba(244,67,54,0.4); }
+    }
+    /* レアリティバッジ */
+    .rarity-badge { display:inline-block; border-radius:6px; padding:2px 7px; font-size:11px; font-weight:900; letter-spacing:0.5px; }
+    .rarity-badge-N   { background:#f0f0f0; color:#757575; border:1px solid #ccc; }
+    .rarity-badge-R   { background:#e3f2fd; color:#1565c0; border:1px solid #1565c0; }
+    .rarity-badge-SR  { background:linear-gradient(90deg,#fff8dc,#fff3a0); color:#9a7200; border:1px solid #c8a200; }
+    .rarity-badge-SSR { background:linear-gradient(90deg,#f3e5f5,#e1bee7); color:#6a1b9a; border:1px solid #7b1fa2; }
+    .rarity-badge-UR  { background:linear-gradient(90deg,#ffebee,#fce4ec); color:#b71c1c; border:1px solid #e53935; animation:urBadgePulse 1.5s ease-in-out infinite; }
+    @keyframes urBadgePulse {
+      0%,100% { box-shadow: 0 0 4px rgba(229,57,53,0.5); }
+      50%     { box-shadow: 0 0 10px rgba(229,57,53,0.9); }
+    }
     .pcard-header { padding: 5px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: bold; }
     .pcard-body   { padding: 0; overflow: hidden; }
     .pcard-img    { width: 100%; display: block; }
@@ -1770,20 +1804,37 @@ const CARD_PURCHASE_COSTS = { 1:10, 5:30, 10:80, 15:200, 20:400, 25:700, 30:1200
 const SCOUT_COST_SINGLE = 150;  // 単発スカウト
 const SCOUT_COST_MULTI  = 1350; // 10連スカウト（1連分お得）
 
-// スカウト確率テーブル（lv → 確率%）
+// ─── レアリティ設定 ───
+const RARITY_CONFIG = {
+  N:   { label:'N',   color:'#9e9e9e', bg:'#f5f5f5',   textColor:'#757575', levels:[1,5],     prob:50 },
+  R:   { label:'R',   color:'#1565c0', bg:'#dce8ff',   textColor:'#1565c0', levels:[10,15],   prob:30 },
+  SR:  { label:'SR',  color:'#c8a200', bg:'#fff8dc',   textColor:'#9a7200', levels:[20,25],   prob:15 },
+  SSR: { label:'SSR', color:'#7b1fa2', bg:'#f3e5f5',   textColor:'#6a1b9a', levels:[30],      prob: 4 },
+  UR:  { label:'UR',  color:'#c62828', bg:'#ffebee',   textColor:'#b71c1c', levels:[50],      prob: 1 },
+};
+const RARITIES = ['N','R','SR','SSR','UR'];
+function getRarity(lv) {
+  if (lv >= 50) return 'UR';
+  if (lv >= 30) return 'SSR';
+  if (lv >= 20) return 'SR';
+  if (lv >= 10) return 'R';
+  return 'N';
+}
+function getRarityBorderClass(lv) { return `rarity-${getRarity(lv)}`; }
+
+// スカウト：レアリティ基準でカードを抽選
 function pickScoutCard() {
   const r = Math.random() * 100;
-  let lv;
-  if (r < 35)       lv = 1;
-  else if (r < 60)  lv = 5;
-  else if (r < 78)  lv = 10;
-  else if (r < 88)  lv = 15;
-  else if (r < 94)  lv = 20;
-  else if (r < 97)  lv = 25;
-  else if (r < 99)  lv = 30;
-  else              lv = 50;
+  let rarity;
+  if      (r < 1)  rarity = 'UR';
+  else if (r < 5)  rarity = 'SSR';
+  else if (r < 20) rarity = 'SR';
+  else if (r < 50) rarity = 'R';
+  else             rarity = 'N';
+  const levels = RARITY_CONFIG[rarity].levels;
+  const lv = levels[Math.floor(Math.random() * levels.length)];
   const type = CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)];
-  return { lv, typeInfo: type, key: cardKey(lv, type.id) };
+  return { lv, typeInfo: type, key: cardKey(lv, type.id), rarity };
 }
 
 // タイプ別キャラクターセリフ
@@ -5989,7 +6040,8 @@ function PlayerCard({ lv, typeInfo, isOwned, canAfford, cost, onBuy, currentStat
 
 // カード詳細モーダル
 function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoints, onUpgrade, onClose }) {
-  const lvInfo  = getLevelInfo(lv);
+  const rarity  = getRarity(lv);
+  const rc      = RARITY_CONFIG[rarity];
   const imgFile = `images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`;
   const cname   = getCardName(cardKey(lv, typeInfo.id));
 
@@ -6001,13 +6053,13 @@ function CardDetailModal({ lv, typeInfo, currentStats, baseStats, availablePoint
         {/* ヘッダー */}
         <div style={{background: typeInfo.headerBg, color: typeInfo.headerColor, padding:'12px 18px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
           <div>
-            <div style={{fontWeight:'bold', fontSize:16}}>{typeInfo.emoji} {typeInfo.label}</div>
-            <div style={{fontSize:12, opacity:0.9, display:'flex', alignItems:'center', gap:4}}>
-              レベル{lv}　<span>{renderLvStars(lv)}</span>　{lvInfo.label}
+            <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+              <span className={`rarity-badge rarity-badge-${rarity}`}>{rarity}</span>
+              <span style={{fontWeight:'bold', fontSize:15}}>{typeInfo.emoji} {typeInfo.label}</span>
             </div>
             {/* 選手名 */}
             {cname && (
-              <div style={{marginTop:6, display:'flex', alignItems:'baseline', gap:8}}>
+              <div style={{display:'flex', alignItems:'baseline', gap:8}}>
                 <ruby style={{fontSize:20, fontWeight:900, color:'white', lineHeight:1.1, letterSpacing:1}}>
                   {cname.last}
                   <rt style={{fontSize:10, fontWeight:400, letterSpacing:0.5}}>{cname.lastKana}</rt>
@@ -6221,11 +6273,17 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
 
       {/* ─── マイカードビュー ─── */}
       {activeView === 'mycards' && (() => {
-        // 所持カードをレベルグループ別に表示
-        const ownedGroups = CARD_LEVELS.map(lv => ({
-          lv,
-          cards: CARD_TYPES.filter(t => isCardOwned(lv, t.id)),
-        })).filter(g => g.cards.length > 0);
+        // 所持カードをレアリティグループ別に表示（UR→N順）
+        const rarityOrder = ['UR','SSR','SR','R','N'];
+        const ownedGroups = rarityOrder.map(rar => {
+          const cards = [];
+          RARITY_CONFIG[rar].levels.forEach(lv => {
+            CARD_TYPES.forEach(t => {
+              if (isCardOwned(lv, t.id)) cards.push({ lv, typeInfo: t });
+            });
+          });
+          return { rarity: rar, cards };
+        }).filter(g => g.cards.length > 0);
 
         if (ownedGroups.length === 0) return (
           <div style={{textAlign:'center', padding:'48px 24px', color:'#999'}}>
@@ -6243,38 +6301,46 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
 
         return (
           <div style={{display:'flex', flexDirection:'column', gap:16}}>
-            {ownedGroups.map(({ lv, cards }) => {
-              const lvInfo = getLevelInfo(lv);
+            {ownedGroups.map(({ rarity, cards }) => {
+              const rc = RARITY_CONFIG[rarity];
               return (
-                <div key={lv}>
-                  {/* レベルヘッダー */}
-                  <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:10,
-                    padding:'6px 12px', background:lvInfo.bg, borderRadius:10,
-                    borderLeft:`4px solid ${lvInfo.color}`}}>
-                    <span style={{color:lvInfo.color, fontWeight:900, fontSize:14}}>
-                      レベル{lv} {lvInfo.label}
+                <div key={rarity}>
+                  {/* レアリティヘッダー */}
+                  <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:10,
+                    padding:'8px 14px', background:rc.bg, borderRadius:12,
+                    border:`2px solid ${rc.color}`}}>
+                    <span className={`rarity-badge rarity-badge-${rarity}`}>{rarity}</span>
+                    <span style={{color:rc.textColor, fontWeight:900, fontSize:14}}>
+                      {rarity === 'N' && 'ノーマル'}
+                      {rarity === 'R' && 'レア'}
+                      {rarity === 'SR' && 'スーパーレア'}
+                      {rarity === 'SSR' && 'スペシャルスーパーレア'}
+                      {rarity === 'UR' && 'ウルトラレア ✨'}
                     </span>
-                    <span style={{marginLeft:'auto', fontSize:12, color:lvInfo.color, opacity:0.8}}>
+                    <span style={{marginLeft:'auto', fontSize:12, color:rc.textColor, opacity:0.8}}>
                       {cards.length}枚
                     </span>
                   </div>
                   {/* カードグリッド */}
                   <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12}}>
-                    {cards.map(typeInfo => {
+                    {cards.map(({ lv, typeInfo }) => {
                       const key = cardKey(lv, typeInfo.id);
                       const base = CARD_BASE_STATS[key] || {};
                       const stats = cardUpgrades[key] || base;
                       const cname = getCardName(key);
                       return (
-                        <div key={typeInfo.id}
-                          style={{borderRadius:14, overflow:'hidden', cursor:'pointer',
-                            boxShadow:'0 3px 12px rgba(0,0,0,0.12)',
-                            border:`2px solid ${typeInfo.color || '#ccc'}`,
-                            background:'white'}}
+                        <div key={key}
+                          className={`rarity-${rarity}`}
+                          style={{borderRadius:14, overflow:'hidden', cursor:'pointer', background:'white'}}
                           onClick={() => { playSound('menu_select.mp3', 0.35); setDetailCard({ lv, typeInfo }); }}
                         >
+                          {/* レアリティバーヘッダー */}
+                          <div style={{padding:'3px 8px', background:rc.bg, display:'flex', alignItems:'center', gap:6}}>
+                            <span className={`rarity-badge rarity-badge-${rarity}`} style={{fontSize:9, padding:'1px 5px'}}>{rarity}</span>
+                            <span style={{fontSize:9, color:rc.textColor, fontWeight:700}}>{typeInfo.emoji} {typeInfo.label}</span>
+                          </div>
                           {/* カード画像 */}
-                          <div style={{width:'100%', aspectRatio:'3/4', background:'#f5f5f5', position:'relative'}}>
+                          <div style={{width:'100%', aspectRatio:'3/4', background:'#f5f5f5'}}>
                             <img
                               src={`images/card_lv${String(lv).padStart(2,'0')}_${typeInfo.id}.png`}
                               alt={typeInfo.label}
@@ -6282,28 +6348,26 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                               onError={e => { e.target.style.display='none'; }}
                             />
                           </div>
-                          {/* フッター（名前＋タイプ） */}
-                          <div style={{padding:'7px 10px 6px', background:typeInfo.headerBg || lvInfo.bg}}>
+                          {/* フッター（選手名） */}
+                          <div style={{padding:'6px 10px 5px', background:typeInfo.headerBg}}>
                             {cname
-                              ? <div style={{display:'flex', alignItems:'baseline', gap:5}}>
-                                  <ruby style={{fontSize:13, fontWeight:900, color:'white', letterSpacing:0.5}}>
-                                    {cname.last}
-                                    <rt style={{fontSize:8, fontWeight:400}}>{cname.lastKana}</rt>
+                              ? <div style={{display:'flex', alignItems:'baseline', gap:4}}>
+                                  <ruby style={{fontSize:12, fontWeight:900, color:'white'}}>
+                                    {cname.last}<rt style={{fontSize:7}}>{cname.lastKana}</rt>
                                   </ruby>
-                                  <span style={{fontSize:11, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{cname.first}</span>
-                                  <span style={{marginLeft:'auto', color:'rgba(255,255,255,0.75)', fontSize:9, fontWeight:600}}>{typeInfo.emoji} Lv.{lv}</span>
+                                  <span style={{fontSize:10, fontWeight:800, color:'rgba(255,255,255,0.9)'}}>{cname.first}</span>
                                 </div>
-                              : <div style={{color:'rgba(255,255,255,0.75)', fontSize:10, fontWeight:600}}>
-                                  {typeInfo.emoji} {typeInfo.label} · Lv.{lv}
+                              : <div style={{color:'rgba(255,255,255,0.8)', fontSize:10, fontWeight:700}}>
+                                  {typeInfo.emoji} {typeInfo.label}
                                 </div>
                             }
                           </div>
                           {/* 能力値ストリップ */}
-                          <div style={{padding:'6px 8px 7px', background:'white', display:'flex', justifyContent:'space-between'}}>
+                          <div style={{padding:'5px 8px 6px', background:'white', display:'flex', justifyContent:'space-between'}}>
                             {STAT_ORDER.map(stat => (
                               <div key={stat} style={{display:'flex', flexDirection:'column', alignItems:'center', gap:1}}>
-                                <span style={{fontSize:8, color:'#aaa', fontWeight:600, letterSpacing:-0.3}}>{STAT_LABELS[stat]}</span>
-                                <span style={{fontSize:14, fontWeight:900, color:STAT_RANK_COLOR[stats[stat]||'G'], lineHeight:1}}>{stats[stat]||'G'}</span>
+                                <span style={{fontSize:8, color:'#aaa', fontWeight:600}}>{STAT_LABELS[stat]}</span>
+                                <span style={{fontSize:13, fontWeight:900, color:STAT_RANK_COLOR[stats[stat]||'G'], lineHeight:1}}>{stats[stat]||'G'}</span>
                               </div>
                             ))}
                           </div>
@@ -6341,7 +6405,9 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
             {scoutResults.map((r, i) => {
               const flipped = scoutFlipped.includes(i);
               const imgFile = `images/card_lv${String(r.lv).padStart(2,'0')}_${r.typeInfo.id}.png`;
-              const lvInfo = getLevelInfo(r.lv);
+              const rarity = r.rarity || getRarity(r.lv);
+              const rc = RARITY_CONFIG[rarity];
+              const cname = getCardName(r.key);
               return (
                 <div key={i} className="scout-result-card" style={{
                   animationDelay: `${i * 0.1}s`,
@@ -6350,9 +6416,8 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                   {r.isNew && flipped && (
                     <div className="scout-new-badge">NEW!</div>
                   )}
-                  <div style={{
+                  <div className={`rarity-${rarity}`} style={{
                     borderRadius: 12, overflow:'hidden',
-                    border: `2px solid ${lvInfo.color}`,
                     background: flipped ? 'white' : '#1a237e',
                     minHeight: scoutResults.length === 1 ? 280 : 120,
                     transition:'background 0.3s',
@@ -6360,16 +6425,24 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
                   }}>
                     {flipped ? (
                       <>
+                        {/* レアリティバッジ */}
+                        <div style={{
+                          display:'flex', justifyContent:'space-between', alignItems:'center',
+                          padding:'4px 6px', background: rc.bg,
+                        }}>
+                          <span className={`rarity-badge rarity-badge-${rarity}`}>{rarity}</span>
+                          <span style={{fontSize:10, color:rc.textColor, fontWeight:700}}>{r.typeInfo.emoji} {r.typeInfo.label}</span>
+                        </div>
                         <div style={{flex:1, background:'#f5f5f5'}}>
                           <img src={imgFile} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}}
                             onError={e => { e.target.style.display='none'; }} />
                         </div>
                         <div style={{
                           padding:'4px 6px', background:r.typeInfo.headerBg,
-                          fontSize: scoutResults.length === 1 ? 13 : 10,
+                          fontSize: scoutResults.length === 1 ? 12 : 9,
                           fontWeight:800, color:'white', textAlign:'center',
                         }}>
-                          Lv.{r.lv} {r.typeInfo.emoji}
+                          {cname ? `${cname.last} ${cname.first}` : `Lv.${r.lv} ${r.typeInfo.label}`}
                         </div>
                       </>
                     ) : (
@@ -6395,27 +6468,30 @@ function CollectionTab({ totalEarnedPoints, availablePoints, isCardOwned, onBuyC
       {/* スカウト UI */}
       <div style={{marginBottom:12, padding:'12px 14px', background:'linear-gradient(135deg,#4a148c,#7b1fa2)', borderRadius:14, color:'white'}}>
         <div style={{fontWeight:900, fontSize:15, marginBottom:2}}>🎴 スペシャルスカウト</div>
-        <div style={{fontSize:12, opacity:0.85}}>ランダムでカードが手に入る！Lv50はスカウト限定！</div>
+        <div style={{fontSize:12, opacity:0.85}}>ランダムで選手カードが手に入る！UR・SSRは激レア！</div>
       </div>
 
       {/* 確率表示 */}
       <div style={{background:'white', borderRadius:12, padding:'12px 14px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
-        <div style={{fontWeight:800, fontSize:12, color:'#333', marginBottom:8}}>📊 排出確率</div>
-        {[
-          { lv:1,  label:'Lv.1  ルーキー',   pct:'35%', color:'#aaa' },
-          { lv:5,  label:'Lv.5  ブロンズ',   pct:'25%', color:'#8d6e63' },
-          { lv:10, label:'Lv.10 シルバー',   pct:'18%', color:'#90a4ae' },
-          { lv:15, label:'Lv.15 ゴールド',   pct:'10%', color:'#ffd54f' },
-          { lv:20, label:'Lv.20 エメラルド', pct:'6%',  color:'#4caf50' },
-          { lv:25, label:'Lv.25 サファイア', pct:'4%',  color:'#1e88e5' },
-          { lv:30, label:'Lv.30 ルビー',     pct:'1%',  color:'#e53935' },
-          { lv:50, label:'Lv.50 プラチナ ✨', pct:'1%',  color:'#9c27b0' },
-        ].map(row => (
-          <div key={row.lv} style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4}}>
-            <span style={{fontSize:12, color:'#555', fontWeight:600}}>{row.label}</span>
-            <span style={{fontSize:12, fontWeight:900, color:row.color}}>{row.pct}</span>
-          </div>
-        ))}
+        <div style={{fontWeight:800, fontSize:12, color:'#333', marginBottom:10}}>📊 排出確率</div>
+        {RARITIES.map(r => {
+          const rc = RARITY_CONFIG[r];
+          return (
+            <div key={r} style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:7}}>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <span className={`rarity-badge rarity-badge-${r}`}>{rc.label}</span>
+                <span style={{fontSize:11, color:'#777'}}>
+                  {r === 'N'   && 'Lv.1・Lv.5'}
+                  {r === 'R'   && 'Lv.10・Lv.15'}
+                  {r === 'SR'  && 'Lv.20・Lv.25'}
+                  {r === 'SSR' && 'Lv.30'}
+                  {r === 'UR'  && 'Lv.50 ✨'}
+                </span>
+              </div>
+              <span style={{fontSize:13, fontWeight:900, color:rc.color}}>{rc.prob}%</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* 所持pt表示 */}
